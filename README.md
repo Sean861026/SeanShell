@@ -56,6 +56,17 @@ background work; it does not change process priority, disable Windows security,
 or inject an overlay into games. If the UI becomes unavailable, run
 `tools/restore-explorer.ps1` from PowerShell.
 
+## Launcher preview
+
+Press `Alt+Space` or use **Open Launcher** on the dashboard. The M1 launcher
+indexes Start Menu shortcuts once, combines them with safe built-in Windows
+commands, and ranks up to eight results as you type. Use Up/Down to navigate,
+Enter to open, and Escape to close.
+
+The shortcut uses the supported `RegisterHotKey` API. It does not install a
+keyboard hook or intercept input sent to games. If another application already
+owns `Alt+Space`, the dashboard button remains available and explains the conflict.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)

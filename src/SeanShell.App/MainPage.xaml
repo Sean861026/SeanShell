@@ -36,7 +36,16 @@
                 <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
                     <StackPanel Spacing="8">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Launcher" />
-                        <TextBlock Text="Program and command search is planned for M1." TextWrapping="Wrap" />
+                        <TextBlock Text="Search installed apps and safe system commands." TextWrapping="Wrap" />
+                        <Button
+                            HorizontalAlignment="Left"
+                            Click="OnOpenLauncherClicked"
+                            Content="Open Launcher" />
+                        <TextBlock
+                            x:Name="ShortcutStatus"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Keyboard shortcut: Alt + Space"
+                            TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">

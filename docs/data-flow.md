@@ -21,7 +21,7 @@ updates.
 ```text
 query text
   -> normalization
-  -> installed-app provider
+  -> installed-app provider (cached Start Menu index)
   -> system-command provider
   -> repository provider
   -> plugin providers
@@ -32,6 +32,10 @@ query text
 
 Provider calls receive a cancellation token. Results include stable IDs so ranking
 and telemetry do not need to retain user query contents.
+
+Ranking prefers exact title, title prefix, word prefix, substring, keywords, and
+finally ordered-character subsequences. A failed provider contributes no results
+and does not prevent healthy providers from serving the launcher.
 
 ## Configuration
 

@@ -9,9 +9,10 @@
 
 ## M1: Launcher
 
-- Global hotkey using `RegisterHotKey` without input hooks
-- Installed application and system setting providers
-- Ranked, cached, keyboard-first results
+- [x] Global hotkey using `RegisterHotKey` without input hooks
+- [x] Installed application and system setting providers
+- [x] Ranked, cached, keyboard-first results
+- [ ] Measure cold-window and cached-query performance on representative hardware
 - Target: cached results under 50 ms; first window under 300 ms
 
 ## M2: Dock and dashboard
