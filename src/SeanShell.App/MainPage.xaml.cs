@@ -13,6 +13,7 @@ public sealed partial class MainPage : Page
     private readonly SystemMetricsProvider _systemMetrics;
     private readonly int _displayCount;
     private readonly DispatcherQueueTimer _refreshTimer;
+    private bool _applyingSettings;
     private bool _refreshing;
 
     public MainPage()
@@ -28,16 +29,60 @@ public sealed partial class MainPage : Page
         _refreshTimer = DispatcherQueue.CreateTimer();
         _refreshTimer.Interval = TimeSpan.FromSeconds(2);
         _refreshTimer.Tick += OnRefreshTimerTick;
-        DockAutoHideToggle.IsOn = true;
+        ApplySettings(app.SettingsLoad.Settings);
+        if (app.SettingsLoad.Warning is not null)
+        {
+            SetSettingsStatus(
+                app.SettingsLoad.WasRecovered ? "Settings recovered" : "Safe settings active",
+                app.SettingsLoad.Warning,
+                InfoBarSeverity.Warning);
+        }
     }
 
     public event EventHandler? LauncherRequested;
 
     public event Action<bool>? DockAutoHideChanged;
 
-    public void SetShortcutUnavailable(string reason)
+    public event Action<LauncherShortcut>? LauncherShortcutChanged;
+
+    public void SetShortcutApplied(LauncherShortcut shortcut, bool persisted = true)
     {
-        ShortcutStatus.Text = $"Alt + Space is unavailable. Use the button instead. {reason}";
+        SelectShortcut(shortcut);
+        ShortcutStatus.Text = $"Keyboard shortcut: {shortcut.GetDisplayName()}";
+        SetSettingsStatus(
+            persisted ? "Shortcut updated" : "Shortcut active for this session",
+            persisted
+                ? $"{shortcut.GetDisplayName()} now opens the Launcher."
+                : $"{shortcut.GetDisplayName()} works now, but the settings file could not be updated.",
+            persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+    }
+
+    public void SetShortcutUnavailable(LauncherShortcut requested, LauncherShortcut? restored, string reason)
+    {
+        if (restored is not null)
+        {
+            SelectShortcut(restored.Value);
+            ShortcutStatus.Text = $"Keyboard shortcut: {restored.Value.GetDisplayName()}";
+        }
+        else
+        {
+            _applyingSettings = true;
+            LauncherShortcutComboBox.SelectedItem = null;
+            _applyingSettings = false;
+            ShortcutStatus.Text = "No keyboard shortcut is active. Use the Open Launcher button.";
+        }
+
+        SetSettingsStatus(
+            "Shortcut unavailable",
+            restored is null
+                ? $"Windows could not register {requested.GetDisplayName()}. Use Open Launcher or choose another shortcut. {reason}"
+                : $"Windows could not register {requested.GetDisplayName()}. {restored.Value.GetDisplayName()} remains active. {reason}",
+            InfoBarSeverity.Warning);
+    }
+
+    public void SetSettingsSaveFailed(string message)
+    {
+        SetSettingsStatus("Settings not saved", message, InfoBarSeverity.Warning);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -70,8 +115,26 @@ public sealed partial class MainPage : Page
 
     private void OnDockAutoHideToggled(object sender, RoutedEventArgs e)
     {
+        if (_applyingSettings)
+        {
+            return;
+        }
+
         DockAutoHideChanged?.Invoke(DockAutoHideToggle.IsOn);
         UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+    }
+
+    private void OnLauncherShortcutSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_applyingSettings || LauncherShortcutComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        if (Enum.TryParse<LauncherShortcut>(item.Tag?.ToString(), out var shortcut))
+        {
+            LauncherShortcutChanged?.Invoke(shortcut);
+        }
     }
 
     private void OnShellStateChanged(object? sender, ShellState state)
@@ -149,4 +212,31 @@ public sealed partial class MainPage : Page
     }
 
     private static string FormatGiB(ulong bytes) => $"{bytes / 1_073_741_824d:F1} GB";
+
+    private void ApplySettings(ShellSettings settings)
+    {
+        _applyingSettings = true;
+        DockAutoHideToggle.IsOn = settings.DockAutoHide;
+        SelectShortcut(settings.LauncherShortcut);
+        ShortcutStatus.Text = $"Keyboard shortcut: {settings.LauncherShortcut.GetDisplayName()}";
+        _applyingSettings = false;
+    }
+
+    private void SelectShortcut(LauncherShortcut shortcut)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        LauncherShortcutComboBox.SelectedItem = LauncherShortcutComboBox.Items
+            .OfType<ComboBoxItem>()
+            .First(item => string.Equals(item.Tag?.ToString(), shortcut.ToString(), StringComparison.Ordinal));
+        _applyingSettings = wasApplyingSettings;
+    }
+
+    private void SetSettingsStatus(string title, string message, InfoBarSeverity severity)
+    {
+        SettingsStatus.Title = title;
+        SettingsStatus.Message = message;
+        SettingsStatus.Severity = severity;
+        SettingsStatus.IsOpen = true;
+    }
 }

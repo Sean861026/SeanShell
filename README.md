@@ -64,8 +64,10 @@ commands, and ranks up to eight results as you type. Use Up/Down to navigate,
 Enter to open, and Escape to close.
 
 The shortcut uses the supported `RegisterHotKey` API. It does not install a
-keyboard hook or intercept input sent to games. If another application already
-owns `Alt+Space`, the dashboard button remains available and explains the conflict.
+keyboard hook or intercept input sent to games. The dashboard can switch between
+`Alt+Space`, `Ctrl+Alt+Space`, and `Ctrl+Shift+Space`. If another application owns
+the requested shortcut, SeanShell restores the previous shortcut and explains the
+conflict; the dashboard button always remains available.
 
 ## Dock and live dashboard preview
 
@@ -79,6 +81,11 @@ Dock auto-hide leaves a visible edge indicator instead of disappearing completel
 Pointer entry or keyboard focus expands it, and a dashboard toggle keeps all docks
 expanded for users who do not want auto-hide. Display topology is captured at
 startup; restart SeanShell after connecting or disconnecting a monitor.
+
+Dock auto-hide and the selected Launcher shortcut persist in a versioned JSON file
+under `%LOCALAPPDATA%\SeanShell`. Writes use a temporary file and last-known-good
+backup. A damaged settings file falls back to the backup or safe defaults without
+preventing SeanShell from starting.
 
 The dock does not retain process handles, inject code, attach input queues, or
 bypass Windows foreground restrictions.

@@ -113,19 +113,38 @@
                 </Border>
             </Grid>
 
-            <StackPanel Grid.Row="3" Spacing="12">
+            <StackPanel Grid.Row="3" Spacing="16">
                 <ToggleSwitch
                     x:Name="DockAutoHideToggle"
                     Header="Dock auto-hide"
                     OffContent="Dock remains expanded on every display"
                     OnContent="Dock collapses to a visible edge indicator"
                     Toggled="OnDockAutoHideToggled" />
+                <ComboBox
+                    x:Name="LauncherShortcutComboBox"
+                    Width="260"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.HelpText="Choose a supported global shortcut for opening the launcher."
+                    Header="Launcher shortcut"
+                    SelectionChanged="OnLauncherShortcutSelectionChanged">
+                    <ComboBoxItem Content="Alt + Space" Tag="AltSpace" />
+                    <ComboBoxItem Content="Ctrl + Alt + Space" Tag="ControlAltSpace" />
+                    <ComboBoxItem Content="Ctrl + Shift + Space" Tag="ControlShiftSpace" />
+                </ComboBox>
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="A new shortcut is saved only after Windows confirms it is available."
+                    TextWrapping="Wrap" />
                 <ToggleSwitch
                     x:Name="GamingModeToggle"
                     Header="Gaming mode"
                     OffContent="Dashboard and dock providers active"
                     OnContent="Dashboard polling paused and dock hidden"
                     Toggled="OnGamingModeToggled" />
+                <InfoBar
+                    x:Name="SettingsStatus"
+                    IsOpen="False"
+                    IsClosable="True" />
                 <InfoBar
                     x:Name="DashboardStatus"
                     IsOpen="True"
