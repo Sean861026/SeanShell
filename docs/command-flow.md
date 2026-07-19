@@ -52,6 +52,25 @@ Dock refresh timer
 Windows foreground restrictions remain authoritative; SeanShell does not bypass
 them with thread input attachment or injection.
 
+## Multi-monitor dock and auto-hide
+
+```text
+SeanShell startup
+  -> enumerate monitor work areas
+  -> create one dock per monitor
+  -> filter windows by MonitorFromWindow result
+  -> position dock above that monitor's taskbar
+  -> pointer/focus leaves dock
+  -> wait 900 ms
+  -> collapse to visible edge indicator
+  -> pointer enters indicator or keyboard focus returns
+  -> restore full dock immediately
+```
+
+Focus within a dock cancels auto-hide. Gaming mode takes precedence and hides all
+docks completely. Monitor hot-plug is not watched yet; restart after changing the
+display topology.
+
 ## Gaming mode
 
 ```text

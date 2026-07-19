@@ -3,6 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using SeanShell.Core;
 using SeanShell.Windows;
 using Windows.Graphics;
@@ -13,17 +14,28 @@ public sealed partial class DockWindow : Window
 {
     private const int DockWidth = 760;
     private const int DockHeight = 80;
-    private const int EdgeOffset = 12;
+    private const int PeekWidth = 160;
+    private const int PeekHeight = 10;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
+    private readonly DisplayMonitorSnapshot _monitor;
     private readonly DispatcherQueueTimer _refreshTimer;
+    private readonly DispatcherQueueTimer _autoHideTimer;
     private bool _allowClose;
+    private bool _autoHide = true;
+    private bool _collapsed;
+    private bool _hasKeyboardFocus;
+    private bool _pointerInside;
     private bool _refreshing;
 
-    public DockWindow(DesktopWindowService windowService, ShellStateStore shellState)
+    public DockWindow(
+        DesktopWindowService windowService,
+        ShellStateStore shellState,
+        DisplayMonitorSnapshot monitor)
     {
         _windowService = windowService;
         _shellState = shellState;
+        _monitor = monitor;
         InitializeComponent();
 
         WindowList.ItemsSource = Items;
@@ -33,6 +45,12 @@ public sealed partial class DockWindow : Window
         _refreshTimer = DispatcherQueue.CreateTimer();
         _refreshTimer.Interval = TimeSpan.FromSeconds(2);
         _refreshTimer.Tick += OnRefreshTimerTick;
+
+        _autoHideTimer = DispatcherQueue.CreateTimer();
+        _autoHideTimer.Interval = TimeSpan.FromMilliseconds(900);
+        _autoHideTimer.IsRepeating = false;
+        _autoHideTimer.Tick += OnAutoHideTimerTick;
+
         _shellState.StateChanged += OnShellStateChanged;
         AppWindow.Closing += OnWindowClosing;
     }
@@ -41,16 +59,31 @@ public sealed partial class DockWindow : Window
 
     public void ShowDock()
     {
-        PositionDock();
+        SetCollapsed(false);
         EmptyState.Visibility = Visibility.Visible;
         AppWindow.Show();
         _refreshTimer.Start();
         _ = RefreshWindowsAsync();
+        ScheduleAutoHide();
+    }
+
+    public void SetAutoHide(bool enabled)
+    {
+        _autoHide = enabled;
+        if (!enabled)
+        {
+            _autoHideTimer.Stop();
+            SetCollapsed(false);
+            return;
+        }
+
+        ScheduleAutoHide();
     }
 
     public void Shutdown()
     {
         _refreshTimer.Stop();
+        _autoHideTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
         _allowClose = true;
         Close();
@@ -65,16 +98,34 @@ public sealed partial class DockWindow : Window
         presenter.IsResizable = false;
         presenter.SetBorderAndTitleBar(false, false);
         AppWindow.SetPresenter(presenter);
-        AppWindow.Resize(new SizeInt32(DockWidth, DockHeight));
     }
 
-    private void PositionDock()
+    private void SetCollapsed(bool collapsed)
     {
-        var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
-        var workArea = displayArea.WorkArea;
-        var x = workArea.X + Math.Max(0, (workArea.Width - DockWidth) / 2);
-        var y = workArea.Y + Math.Max(0, workArea.Height - DockHeight - EdgeOffset);
-        AppWindow.Move(new PointInt32(x, y));
+        _collapsed = collapsed;
+        ExpandedDock.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+        PeekIndicator.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
+
+        var bounds = DockPlacement.Calculate(
+            _monitor,
+            DockWidth,
+            DockHeight,
+            collapsed,
+            PeekWidth,
+            PeekHeight);
+        AppWindow.Resize(new SizeInt32(bounds.Width, bounds.Height));
+        AppWindow.Move(new PointInt32(bounds.X, bounds.Y));
+    }
+
+    private void ScheduleAutoHide()
+    {
+        if (!_autoHide || _shellState.Current.Mode == ShellMode.Gaming)
+        {
+            return;
+        }
+
+        _autoHideTimer.Stop();
+        _autoHideTimer.Start();
     }
 
     private async Task RefreshWindowsAsync()
@@ -87,8 +138,10 @@ public sealed partial class DockWindow : Window
         _refreshing = true;
         try
         {
-            var windows = await Task.Run(() => _windowService.Capture().Take(12).ToArray())
-                .ConfigureAwait(true);
+            var windows = await Task.Run(() => _windowService.Capture()
+                .Where(window => window.MonitorHandle == _monitor.Handle)
+                .Take(12)
+                .ToArray()).ConfigureAwait(true);
             if (_allowClose)
             {
                 return;
@@ -107,7 +160,7 @@ public sealed partial class DockWindow : Window
                 Items.Add(new DockItemViewModel(window));
             }
 
-            EmptyStateText.Text = "No open application windows";
+            EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
             EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         catch (Exception exception)
@@ -127,11 +180,52 @@ public sealed partial class DockWindow : Window
         await RefreshWindowsAsync().ConfigureAwait(true);
     }
 
+    private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        if (!_pointerInside && !_hasKeyboardFocus && _autoHide)
+        {
+            SetCollapsed(true);
+        }
+    }
+
+    private void OnDockPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerInside = true;
+        _autoHideTimer.Stop();
+        if (_collapsed)
+        {
+            SetCollapsed(false);
+        }
+    }
+
+    private void OnDockPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _pointerInside = false;
+        ScheduleAutoHide();
+    }
+
+    private void OnDockGotFocus(object sender, RoutedEventArgs e)
+    {
+        _hasKeyboardFocus = true;
+        _autoHideTimer.Stop();
+        if (_collapsed)
+        {
+            SetCollapsed(false);
+        }
+    }
+
+    private void OnDockLostFocus(object sender, RoutedEventArgs e)
+    {
+        _hasKeyboardFocus = false;
+        ScheduleAutoHide();
+    }
+
     private void OnWindowClicked(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is DockItemViewModel item)
         {
             _ = _windowService.Activate(item.Handle);
+            ScheduleAutoHide();
         }
     }
 
@@ -140,14 +234,16 @@ public sealed partial class DockWindow : Window
         if (state.Mode == ShellMode.Gaming)
         {
             _refreshTimer.Stop();
+            _autoHideTimer.Stop();
             AppWindow.Hide();
             return;
         }
 
-        PositionDock();
+        SetCollapsed(false);
         AppWindow.Show();
         _refreshTimer.Start();
         _ = RefreshWindowsAsync();
+        ScheduleAutoHide();
     }
 
     private void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)

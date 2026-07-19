@@ -115,6 +115,12 @@
 
             <StackPanel Grid.Row="3" Spacing="12">
                 <ToggleSwitch
+                    x:Name="DockAutoHideToggle"
+                    Header="Dock auto-hide"
+                    OffContent="Dock remains expanded on every display"
+                    OnContent="Dock collapses to a visible edge indicator"
+                    Toggled="OnDockAutoHideToggled" />
+                <ToggleSwitch
                     x:Name="GamingModeToggle"
                     Header="Gaming mode"
                     OffContent="Dashboard and dock providers active"
