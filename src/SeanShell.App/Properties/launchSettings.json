@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SeanShell.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SeanShell.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
