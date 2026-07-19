@@ -29,6 +29,12 @@ public partial class App : Application
 
     public LauncherSearchService LauncherSearch { get; }
 
+    public ShellStateStore ShellState { get; } = new();
+
+    public DesktopWindowService DesktopWindows { get; } = new();
+
+    public SystemMetricsProvider SystemMetrics { get; } = new();
+
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().

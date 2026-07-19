@@ -1,24 +1,31 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SeanShell.Core;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using SeanShell.Windows;
 
 namespace SeanShell.App;
 
-/// <summary>
-/// The main content page displayed inside the application window.
-/// Add your UI logic, event handlers, and data binding here.
-/// </summary>
 public sealed partial class MainPage : Page
 {
-    private readonly ShellStateStore _shellState = new();
+    private readonly ShellStateStore _shellState;
+    private readonly DesktopWindowService _desktopWindows;
+    private readonly SystemMetricsProvider _systemMetrics;
+    private readonly DispatcherQueueTimer _refreshTimer;
+    private bool _refreshing;
 
     public MainPage()
     {
         InitializeComponent();
-        _shellState.StateChanged += OnShellStateChanged;
+
+        var app = (App)Application.Current;
+        _shellState = app.ShellState;
+        _desktopWindows = app.DesktopWindows;
+        _systemMetrics = app.SystemMetrics;
+
+        _refreshTimer = DispatcherQueue.CreateTimer();
+        _refreshTimer.Interval = TimeSpan.FromSeconds(2);
+        _refreshTimer.Tick += OnRefreshTimerTick;
     }
 
     public event EventHandler? LauncherRequested;
@@ -26,6 +33,24 @@ public sealed partial class MainPage : Page
     public void SetShortcutUnavailable(string reason)
     {
         ShortcutStatus.Text = $"Alt + Space is unavailable. Use the button instead. {reason}";
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        _shellState.StateChanged -= OnShellStateChanged;
+        _shellState.StateChanged += OnShellStateChanged;
+        ApplyShellState(_shellState.Current);
+        if (_shellState.Current.Mode == ShellMode.Normal)
+        {
+            _refreshTimer.Start();
+            _ = RefreshDashboardAsync();
+        }
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        _refreshTimer.Stop();
+        _shellState.StateChanged -= OnShellStateChanged;
     }
 
     private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
@@ -40,6 +65,68 @@ public sealed partial class MainPage : Page
 
     private void OnShellStateChanged(object? sender, ShellState state)
     {
-        ModeText.Text = state.Mode == ShellMode.Gaming ? "Gaming" : "Normal";
+        ApplyShellState(state);
+        if (state.Mode == ShellMode.Gaming)
+        {
+            _refreshTimer.Stop();
+            return;
+        }
+
+        _refreshTimer.Start();
+        _ = RefreshDashboardAsync();
     }
+
+    private void ApplyShellState(ShellState state)
+    {
+        var gaming = state.Mode == ShellMode.Gaming;
+        GamingModeToggle.IsOn = gaming;
+        ModeText.Text = gaming ? "Gaming" : "Normal";
+        ProviderStatus.Text = gaming ? "Providers paused" : "Providers active";
+        DockStatus.Text = gaming ? "Hidden during gaming mode" : "Visible above the primary taskbar";
+    }
+
+    private async void OnRefreshTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        await RefreshDashboardAsync().ConfigureAwait(true);
+    }
+
+    private async Task RefreshDashboardAsync()
+    {
+        if (_refreshing || _shellState.Current.Mode == ShellMode.Gaming)
+        {
+            return;
+        }
+
+        _refreshing = true;
+        try
+        {
+            var snapshot = await Task.Run(() =>
+            {
+                var metrics = _systemMetrics.Capture();
+                var windowCount = _desktopWindows.Capture().Count;
+                return (metrics, windowCount);
+            }).ConfigureAwait(true);
+
+            CpuValue.Text = $"{snapshot.metrics.CpuUsagePercent:F0}%";
+            CpuProgress.Value = snapshot.metrics.CpuUsagePercent;
+            MemoryValue.Text = $"{FormatGiB(snapshot.metrics.UsedPhysicalMemoryBytes)} / {FormatGiB(snapshot.metrics.TotalPhysicalMemoryBytes)}";
+            MemoryProgress.Value = snapshot.metrics.MemoryUsagePercent;
+            WindowCountValue.Text = snapshot.windowCount.ToString();
+            DashboardStatus.Severity = InfoBarSeverity.Informational;
+            DashboardStatus.Title = "Compatibility-first";
+            DashboardStatus.Message = "Explorer remains active; the dock only enumerates supported top-level windows.";
+        }
+        catch (Exception exception)
+        {
+            DashboardStatus.Severity = InfoBarSeverity.Warning;
+            DashboardStatus.Title = "Dashboard update paused";
+            DashboardStatus.Message = exception.Message;
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    private static string FormatGiB(ulong bytes) => $"{bytes / 1_073_741_824d:F1} GB";
 }

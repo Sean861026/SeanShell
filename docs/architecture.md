@@ -28,6 +28,11 @@ Dependencies point inward: App may depend on every module; Windows, Gaming, and
 PluginContracts depend on Core; Core depends only on .NET. Plugins never receive
 the App service container or direct access to UI internals.
 
+The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
+service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
+and memory sampling follows the same boundary and publishes a
+`SystemMetricsSnapshot` to the dashboard.
+
 ## Reliability boundaries
 
 - Explorer remains the fallback throughout the MVP.
@@ -36,6 +41,8 @@ the App service container or direct access to UI internals.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.
+- The dock lists ordinary visible top-level application windows, excludes
+  SeanShell itself, and uses `SetForegroundWindow` only after a user selection.
 - A crash loop guard is required before any automatic startup feature ships.
 
 ## Deployment

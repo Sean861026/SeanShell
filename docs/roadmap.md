@@ -17,10 +17,14 @@
 
 ## M2: Dock and dashboard
 
-- Current-window enumeration and activation
-- Multi-monitor placement and auto-hide
-- CPU and memory cards, recent repositories, Git status, Docker and WSL providers
+- [x] Current-window enumeration and user-initiated activation
+- [x] Lightweight primary-display dock with gaming-mode suspension
+- [x] Live CPU and memory cards with two-second sampling
+- [ ] Multi-monitor placement and auto-hide
+- [ ] Recent repositories, Git status, Docker and WSL providers
 - Target: idle CPU below 0.5% and working set below 200 MB
+- Current local Release sample: 0.31% average CPU and 155 MB working set over
+  15 seconds with the dashboard and dock visible; longer hardware coverage remains.
 
 ## M3: Gaming compatibility
 
