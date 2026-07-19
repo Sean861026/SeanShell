@@ -37,6 +37,25 @@ Ranking prefers exact title, title prefix, word prefix, substring, keywords, and
 finally ordered-character subsequences. A failed provider contributes no results
 and does not prevent healthy providers from serving the launcher.
 
+## Dock and dashboard
+
+```text
+EnumWindows + DWM visibility
+  -> DesktopWindowSnapshot[]
+  -> dock view models
+  -> horizontal dock list
+  -> user selection
+  -> SetForegroundWindow
+
+GetSystemTimes + GlobalMemoryStatusEx
+  -> SystemMetricsSnapshot
+  -> dashboard CPU/RAM cards
+```
+
+Both surfaces refresh every two seconds in normal mode. Gaming mode stops their
+timers and hides the dock. No process handles are retained, and no data is written
+to disk.
+
 ## Configuration
 
 The planned configuration model is a versioned JSON document stored under the

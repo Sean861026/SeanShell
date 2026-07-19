@@ -37,6 +37,21 @@ Commands carry behavior rather than raw shell strings. Providers that intentiona
 invoke a terminal must show the exact command and working directory before any
 elevated action.
 
+## Dock window activation
+
+```text
+Dock refresh timer
+  -> enumerate visible top-level application windows
+  -> exclude cloaked, tool, owned, shell, and SeanShell windows
+  -> display up to twelve window entries
+  -> user selects an entry
+  -> restore it when minimized
+  -> request foreground activation
+```
+
+Windows foreground restrictions remain authoritative; SeanShell does not bypass
+them with thread input attachment or injection.
+
 ## Gaming mode
 
 ```text

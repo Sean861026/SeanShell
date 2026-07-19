@@ -67,6 +67,17 @@ The shortcut uses the supported `RegisterHotKey` API. It does not install a
 keyboard hook or intercept input sent to games. If another application already
 owns `Alt+Space`, the dashboard button remains available and explains the conflict.
 
+## Dock and live dashboard preview
+
+The M2 preview adds a compact always-on-top dock above the primary taskbar. It
+lists ordinary visible application windows and switches to a selected window. The
+dashboard samples CPU, physical memory, and the current window count every two
+seconds. Gaming mode stops this polling and hides the dock.
+
+The dock does not retain process handles, inject code, attach input queues, or
+bypass Windows foreground restrictions. Multi-monitor placement and auto-hide are
+planned for the next M2 slice.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)

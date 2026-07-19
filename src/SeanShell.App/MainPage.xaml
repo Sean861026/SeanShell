@@ -4,43 +4,106 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:SeanShell.App"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded"
     mc:Ignorable="d">
 
-    <!--
-        This is the main content area of your application.
-        Add your UI elements here — for example, controls, layouts, and data-bound views.
-        Use 'dotnet new winui-page' to create additional pages and navigate to them via
-        the Frame in MainWindow (RootFrame).
-    -->
     <ScrollViewer>
         <Grid Padding="32" RowSpacing="24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <StackPanel Spacing="8">
-                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Developer workspace" />
-                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           Text="A safe companion shell running beside Windows Explorer."
-                           TextWrapping="Wrap" />
-            </StackPanel>
-            <Grid Grid.Row="1" ColumnSpacing="16">
+
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="8">
+                    <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Developer workspace" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Live Windows context without replacing Explorer."
+                        TextWrapping="Wrap" />
+                </StackPanel>
+                <Button
+                    Grid.Column="1"
+                    MinHeight="44"
+                    AutomationProperties.HelpText="Open the keyboard-first application launcher."
+                    Click="OnOpenLauncherClicked"
+                    Content="Open Launcher"
+                    Style="{StaticResource AccentButtonStyle}" />
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+
+                <Border Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
                     <StackPanel Spacing="8">
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="CPU" />
+                        <TextBlock x:Name="CpuValue" FontSize="24" FontWeight="SemiBold" Text="Sampling…" />
+                        <ProgressBar x:Name="CpuProgress" Maximum="100" AutomationProperties.Name="CPU usage" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Memory" />
+                        <TextBlock x:Name="MemoryValue" FontSize="24" FontWeight="SemiBold" Text="Loading…" />
+                        <ProgressBar x:Name="MemoryProgress" Maximum="100" AutomationProperties.Name="Memory usage" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Open windows" />
+                        <TextBlock x:Name="WindowCountValue" FontSize="24" FontWeight="SemiBold" Text="Loading…" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Shown in the dock" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Shell mode" />
+                        <TextBlock x:Name="ModeText" FontSize="24" FontWeight="SemiBold" Text="Normal" />
+                        <TextBlock x:Name="ProviderStatus" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Providers active" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Window dock" />
+                        <TextBlock
+                            Text="The lightweight dock lists normal application windows and switches focus without injection."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="DockStatus"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Visible above the primary taskbar"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                    <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Launcher" />
                         <TextBlock Text="Search installed apps and safe system commands." TextWrapping="Wrap" />
-                        <Button
-                            HorizontalAlignment="Left"
-                            Click="OnOpenLauncherClicked"
-                            Content="Open Launcher" />
                         <TextBlock
                             x:Name="ShortcutStatus"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -48,30 +111,22 @@
                             TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Repositories" />
-                        <TextBlock Text="Git status providers arrive through plugins." TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Shell state" />
-                        <TextBlock x:Name="ModeText" Text="Normal" />
-                    </StackPanel>
-                </Border>
             </Grid>
-            <StackPanel Grid.Row="2" Spacing="12">
-                <ToggleSwitch x:Name="GamingModeToggle"
-                              Header="Gaming mode"
-                              OffContent="Background providers active"
-                              OnContent="Optional providers paused"
-                              Toggled="OnGamingModeToggled" />
-                <InfoBar IsOpen="True"
-                         IsClosable="False"
-                         Message="Explorer remains active; this preview does not hook or inject into games."
-                         Severity="Informational"
-                         Title="Compatibility-first" />
+
+            <StackPanel Grid.Row="3" Spacing="12">
+                <ToggleSwitch
+                    x:Name="GamingModeToggle"
+                    Header="Gaming mode"
+                    OffContent="Dashboard and dock providers active"
+                    OnContent="Dashboard polling paused and dock hidden"
+                    Toggled="OnGamingModeToggled" />
+                <InfoBar
+                    x:Name="DashboardStatus"
+                    IsOpen="True"
+                    IsClosable="False"
+                    Message="Explorer remains active; the dock only enumerates supported top-level windows."
+                    Severity="Informational"
+                    Title="Compatibility-first" />
             </StackPanel>
         </Grid>
     </ScrollViewer>
