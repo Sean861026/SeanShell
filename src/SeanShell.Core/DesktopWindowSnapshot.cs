@@ -5,4 +5,5 @@ public sealed record DesktopWindowSnapshot(
     int ProcessId,
     string ProcessName,
     string Title,
-    bool IsMinimized);
+    bool IsMinimized,
+    nint MonitorHandle);

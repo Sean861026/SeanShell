@@ -33,6 +33,8 @@ public partial class App : Application
 
     public DesktopWindowService DesktopWindows { get; } = new();
 
+    public DisplayMonitorService Displays { get; } = new();
+
     public SystemMetricsProvider SystemMetrics { get; } = new();
 
     /// <summary>

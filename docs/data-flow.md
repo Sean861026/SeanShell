@@ -56,6 +56,20 @@ Both surfaces refresh every two seconds in normal mode. Gaming mode stops their
 timers and hides the dock. No process handles are retained, and no data is written
 to disk.
 
+```text
+EnumDisplayMonitors + monitor work areas
+  -> DisplayMonitorSnapshot[]
+  -> one DockWindow per monitor
+
+MonitorFromWindow
+  -> DesktopWindowSnapshot.MonitorHandle
+  -> monitor-local dock filtering
+```
+
+Auto-hide is a session UI preference. A collapsed dock retains a visible edge
+indicator; pointer entry or routed keyboard focus expands it. Persistent settings
+are intentionally deferred to the configuration milestone.
+
 ## Configuration
 
 The planned configuration model is a versioned JSON document stored under the

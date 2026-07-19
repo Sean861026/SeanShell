@@ -20,11 +20,17 @@
 - [x] Current-window enumeration and user-initiated activation
 - [x] Lightweight primary-display dock with gaming-mode suspension
 - [x] Live CPU and memory cards with two-second sampling
-- [ ] Multi-monitor placement and auto-hide
+- [x] One monitor-local dock per startup display snapshot
+- [x] Edge-peek auto-hide with pointer and keyboard-focus safeguards
+- [ ] Rebuild dock windows after display hot-plug without restarting
 - [ ] Recent repositories, Git status, Docker and WSL providers
 - Target: idle CPU below 0.5% and working set below 200 MB
 - Current local Release sample: 0.31% average CPU and 155 MB working set over
   15 seconds with the dashboard and dock visible; longer hardware coverage remains.
+- Current multi-display Release sample after auto-hide: 0.14% average CPU,
+  201 MB working set, and 151 MB private memory over 15 seconds. The additional
+  WinUI composition surface slightly exceeds the original working-set target and
+  remains an optimization item.
 
 ## M3: Gaming compatibility
 

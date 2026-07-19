@@ -15,7 +15,7 @@ public sealed partial class MainWindow : Window
 {
     private const uint SpaceVirtualKey = 0x20;
     private readonly LauncherWindow _launcherWindow;
-    private readonly DockWindow _dockWindow;
+    private readonly IReadOnlyList<DockWindow> _dockWindows;
     private GlobalHotKey? _launcherHotKey;
 
     public MainWindow()
@@ -32,11 +32,14 @@ public sealed partial class MainWindow : Window
 
         var app = (App)Application.Current;
         _launcherWindow = new LauncherWindow(app.LauncherSearch);
-        _dockWindow = new DockWindow(app.DesktopWindows, app.ShellState);
+        _dockWindows = app.Displays.Capture()
+            .Select(monitor => new DockWindow(app.DesktopWindows, app.ShellState, monitor))
+            .ToArray();
 
         if (RootFrame.Content is MainPage mainPage)
         {
             mainPage.LauncherRequested += OnLauncherRequested;
+            mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
         }
 
         RegisterLauncherHotKey();
@@ -47,7 +50,18 @@ public sealed partial class MainWindow : Window
     private void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
-        _dockWindow.ShowDock();
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.ShowDock();
+        }
+    }
+
+    private void OnDockAutoHideChanged(bool enabled)
+    {
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.SetAutoHide(enabled);
+        }
     }
 
     private void RegisterLauncherHotKey()
@@ -78,7 +92,11 @@ public sealed partial class MainWindow : Window
     private void OnClosed(object sender, WindowEventArgs args)
     {
         _launcherHotKey?.Dispose();
-        _dockWindow.Shutdown();
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.Shutdown();
+        }
+
         _launcherWindow.Shutdown();
     }
 }

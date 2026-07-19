@@ -12,79 +12,100 @@
         <MicaBackdrop Kind="BaseAlt" />
     </Window.SystemBackdrop>
 
-    <Border
-        Padding="8"
-        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-        BorderThickness="1"
-        CornerRadius="14">
-        <Grid>
-            <ListView
-                x:Name="WindowList"
-                AutomationProperties.Name="Open windows"
-                IsItemClickEnabled="True"
-                ItemClick="OnWindowClicked"
-                SelectionMode="None"
-                ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                ScrollViewer.HorizontalScrollMode="Enabled"
-                ScrollViewer.VerticalScrollMode="Disabled">
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <ItemsStackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="MinWidth" Value="112" />
-                        <Setter Property="MaxWidth" Value="176" />
-                        <Setter Property="MinHeight" Value="56" />
-                        <Setter Property="Margin" Value="0,0,4,0" />
-                        <Setter Property="Padding" Value="10,6" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid
-                            AutomationProperties.Name="{Binding AccessibleName}"
-                            ColumnSpacing="8"
-                            ToolTipService.ToolTip="{Binding Title}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <FontIcon
-                                FontFamily="Segoe Fluent Icons"
-                                FontSize="16"
-                                Glyph="&#xE8A7;"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock
-                                    FontWeight="SemiBold"
-                                    Text="{Binding Title}"
-                                    TextTrimming="CharacterEllipsis" />
-                                <TextBlock
-                                    FontSize="12"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Text="{Binding ProcessName}"
-                                    TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+    <Grid
+        x:Name="DockRoot"
+        Background="Transparent"
+        GotFocus="OnDockGotFocus"
+        LostFocus="OnDockLostFocus"
+        PointerEntered="OnDockPointerEntered"
+        PointerExited="OnDockPointerExited">
+        <Border
+            x:Name="ExpandedDock"
+            Padding="8"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="14">
+            <Grid>
+                <ListView
+                    x:Name="WindowList"
+                    AutomationProperties.Name="Open windows on this display"
+                    IsItemClickEnabled="True"
+                    ItemClick="OnWindowClicked"
+                    SelectionMode="None"
+                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                    ScrollViewer.HorizontalScrollMode="Enabled"
+                    ScrollViewer.VerticalScrollMode="Disabled">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsStackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="MinWidth" Value="112" />
+                            <Setter Property="MaxWidth" Value="176" />
+                            <Setter Property="MinHeight" Value="56" />
+                            <Setter Property="Margin" Value="0,0,4,0" />
+                            <Setter Property="Padding" Value="10,6" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid
+                                AutomationProperties.Name="{Binding AccessibleName}"
+                                ColumnSpacing="8"
+                                ToolTipService.ToolTip="{Binding Title}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="28" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons"
+                                    FontSize="16"
+                                    Glyph="&#xE8A7;"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock
+                                        FontWeight="SemiBold"
+                                        Text="{Binding Title}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{Binding ProcessName}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
 
-            <StackPanel
-                x:Name="EmptyState"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Spacing="8"
-                VerticalAlignment="Center"
-                Visibility="Collapsed">
-                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
-                <TextBlock x:Name="EmptyStateText" Text="Loading open windows…" />
-            </StackPanel>
-        </Grid>
-    </Border>
+                <StackPanel
+                    x:Name="EmptyState"
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
+                    <TextBlock x:Name="EmptyStateText" Text="Loading open windows…" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border
+            x:Name="PeekIndicator"
+            Width="96"
+            Height="4"
+            AutomationProperties.HelpText="Move the pointer here to expand the SeanShell dock."
+            AutomationProperties.Name="SeanShell dock is collapsed"
+            Background="{ThemeResource AccentFillColorDefaultBrush}"
+            CornerRadius="2"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Visibility="Collapsed" />
+    </Grid>
 </Window>

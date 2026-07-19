@@ -14,6 +14,7 @@ public sealed class DesktopWindowService
     private const long WsExToolWindow = 0x00000080L;
     private const int DwmwaCloaked = 14;
     private const int SwRestore = 9;
+    private const uint MonitorDefaultToNearest = 2;
     private readonly object _cacheGate = new();
     private IReadOnlyList<DesktopWindowSnapshot> _cachedWindows = [];
     private long _cacheExpiresAt;
@@ -63,7 +64,8 @@ public sealed class DesktopWindowService
                 checked((int)processId),
                 GetProcessName(processId),
                 title,
-                IsIconic(handle)));
+                IsIconic(handle),
+                MonitorFromWindow(handle, MonitorDefaultToNearest)));
 
             return true;
         }, 0);
@@ -187,6 +189,9 @@ public sealed class DesktopWindowService
 
     [DllImport("user32.dll")]
     private static extern nint GetWindow(nint handle, uint command);
+
+    [DllImport("user32.dll")]
+    private static extern nint MonitorFromWindow(nint handle, uint flags);
 
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
     private static extern nint GetWindowLongPtr64(nint handle, int index);

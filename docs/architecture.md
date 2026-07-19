@@ -33,6 +33,11 @@ service. The UI never calls `EnumWindows` or activation APIs directly. System CP
 and memory sampling follows the same boundary and publishes a
 `SystemMetricsSnapshot` to the dashboard.
 
+`DisplayMonitorService` captures Win32 work areas as immutable monitor snapshots.
+The App composition root creates one dock window per startup snapshot. Window
+snapshots carry the nearest monitor handle, allowing each dock to filter locally
+without opening or retaining process handles.
+
 ## Reliability boundaries
 
 - Explorer remains the fallback throughout the MVP.

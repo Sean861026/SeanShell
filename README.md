@@ -69,14 +69,19 @@ owns `Alt+Space`, the dashboard button remains available and explains the confli
 
 ## Dock and live dashboard preview
 
-The M2 preview adds a compact always-on-top dock above the primary taskbar. It
-lists ordinary visible application windows and switches to a selected window. The
+The M2 preview adds a compact always-on-top dock above each connected display's
+taskbar. Each dock lists ordinary visible application windows on that display and
+switches to a selected window. The
 dashboard samples CPU, physical memory, and the current window count every two
 seconds. Gaming mode stops this polling and hides the dock.
 
+Dock auto-hide leaves a visible edge indicator instead of disappearing completely.
+Pointer entry or keyboard focus expands it, and a dashboard toggle keeps all docks
+expanded for users who do not want auto-hide. Display topology is captured at
+startup; restart SeanShell after connecting or disconnecting a monitor.
+
 The dock does not retain process handles, inject code, attach input queues, or
-bypass Windows foreground restrictions. Multi-monitor placement and auto-hide are
-planned for the next M2 slice.
+bypass Windows foreground restrictions.
 
 ## Documentation
 

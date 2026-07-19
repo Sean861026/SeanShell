@@ -11,6 +11,7 @@ public sealed partial class MainPage : Page
     private readonly ShellStateStore _shellState;
     private readonly DesktopWindowService _desktopWindows;
     private readonly SystemMetricsProvider _systemMetrics;
+    private readonly int _displayCount;
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _refreshing;
 
@@ -22,13 +23,17 @@ public sealed partial class MainPage : Page
         _shellState = app.ShellState;
         _desktopWindows = app.DesktopWindows;
         _systemMetrics = app.SystemMetrics;
+        _displayCount = app.Displays.Capture().Count;
 
         _refreshTimer = DispatcherQueue.CreateTimer();
         _refreshTimer.Interval = TimeSpan.FromSeconds(2);
         _refreshTimer.Tick += OnRefreshTimerTick;
+        DockAutoHideToggle.IsOn = true;
     }
 
     public event EventHandler? LauncherRequested;
+
+    public event Action<bool>? DockAutoHideChanged;
 
     public void SetShortcutUnavailable(string reason)
     {
@@ -63,6 +68,12 @@ public sealed partial class MainPage : Page
         _shellState.SetMode(GamingModeToggle.IsOn ? ShellMode.Gaming : ShellMode.Normal);
     }
 
+    private void OnDockAutoHideToggled(object sender, RoutedEventArgs e)
+    {
+        DockAutoHideChanged?.Invoke(DockAutoHideToggle.IsOn);
+        UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+    }
+
     private void OnShellStateChanged(object? sender, ShellState state)
     {
         ApplyShellState(state);
@@ -82,7 +93,16 @@ public sealed partial class MainPage : Page
         GamingModeToggle.IsOn = gaming;
         ModeText.Text = gaming ? "Gaming" : "Normal";
         ProviderStatus.Text = gaming ? "Providers paused" : "Providers active";
-        DockStatus.Text = gaming ? "Hidden during gaming mode" : "Visible above the primary taskbar";
+        UpdateDockStatus(gaming);
+    }
+
+    private void UpdateDockStatus(bool gaming)
+    {
+        DockStatus.Text = gaming
+            ? $"Hidden during gaming mode on {_displayCount} display(s)"
+            : DockAutoHideToggle.IsOn
+                ? $"Auto-hide active on {_displayCount} display(s)"
+                : $"Expanded on {_displayCount} display(s)";
     }
 
     private async void OnRefreshTimerTick(DispatcherQueueTimer sender, object args)
