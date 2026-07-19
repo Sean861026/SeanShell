@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="SeanShell.App.LauncherWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="SeanShell Launcher"
+    mc:Ignorable="d">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="BaseAlt" />
+    </Window.SystemBackdrop>
+
+    <Grid KeyDown="OnWindowKeyDown">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TitleBar
+            x:Name="LauncherTitleBar"
+            Subtitle="Alt + Space"
+            Title="SeanShell Launcher" />
+
+        <Grid Grid.Row="1" Padding="24,16,24,20" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBox
+                x:Name="SearchBox"
+                AutomationProperties.HelpText="Search installed applications and safe system commands."
+                Header="Search apps and commands"
+                KeyDown="OnSearchBoxKeyDown"
+                PlaceholderText="Try Terminal, Settings, or Task Manager"
+                TextChanged="OnSearchTextChanged" />
+
+            <Grid Grid.Row="1">
+                <ListView
+                    x:Name="ResultsList"
+                    AutomationProperties.LiveSetting="Polite"
+                    IsItemClickEnabled="True"
+                    ItemClick="OnResultClicked"
+                    SelectionMode="Single">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="MinHeight" Value="64" />
+                            <Setter Property="Margin" Value="0,0,0,4" />
+                            <Setter Property="Padding" Value="12,8" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border
+                                    Width="40"
+                                    Height="40"
+                                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                    CornerRadius="8">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons"
+                                        FontSize="18"
+                                        Glyph="{Binding Glyph}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{Binding Subtitle}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Border
+                                    Grid.Column="2"
+                                    Padding="8,3"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="10"
+                                    VerticalAlignment="Center">
+                                    <TextBlock
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{Binding KindLabel}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <StackPanel
+                    x:Name="EmptyState"
+                    HorizontalAlignment="Center"
+                    Spacing="8"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed">
+                    <FontIcon
+                        FontFamily="Segoe Fluent Icons"
+                        FontSize="32"
+                        Glyph="&#xE721;" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Text="No matching commands" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Try an application name or a shorter search."
+                        TextAlignment="Center" />
+                </StackPanel>
+
+                <ProgressRing
+                    x:Name="SearchProgress"
+                    Width="32"
+                    Height="32"
+                    HorizontalAlignment="Center"
+                    IsActive="False"
+                    VerticalAlignment="Center" />
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    x:Name="ResultStatus"
+                    AutomationProperties.LiveSetting="Polite"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="Loading commands…" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="↑↓ Navigate" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Enter Open" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Esc Close" />
+                </StackPanel>
+            </Grid>
+
+            <InfoBar
+                x:Name="ErrorInfoBar"
+                Grid.Row="3"
+                IsOpen="False"
+                IsClosable="True"
+                Severity="Error"
+                Title="Unable to open command" />
+        </Grid>
+    </Grid>
+</Window>

@@ -17,6 +17,9 @@ Windows sign-in
 
 ```text
 User opens launcher
+  -> Alt+Space is delivered by RegisterHotKey (or dashboard button)
+  -> launcher window centers on the active display
+  -> search input receives keyboard focus
   -> query is normalized
   -> built-in providers run in parallel
   -> enabled plugins return ShellCommand records
@@ -25,6 +28,10 @@ User opens launcher
   -> command executes with cancellation and audit logging
   -> launcher closes or displays a recoverable error
 ```
+
+Start Menu shortcuts are indexed once per process and warmed after the dashboard
+starts. The first launcher opening remains functional if indexing fails because
+system commands are provided independently.
 
 Commands carry behavior rather than raw shell strings. Providers that intentionally
 invoke a terminal must show the exact command and working directory before any

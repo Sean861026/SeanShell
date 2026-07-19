@@ -1,5 +1,5 @@
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using SeanShell.Core;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -19,6 +19,18 @@ public sealed partial class MainPage : Page
     {
         InitializeComponent();
         _shellState.StateChanged += OnShellStateChanged;
+    }
+
+    public event EventHandler? LauncherRequested;
+
+    public void SetShortcutUnavailable(string reason)
+    {
+        ShortcutStatus.Text = $"Alt + Space is unavailable. Use the button instead. {reason}";
+    }
+
+    private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
+    {
+        LauncherRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnGamingModeToggled(object sender, RoutedEventArgs e)
