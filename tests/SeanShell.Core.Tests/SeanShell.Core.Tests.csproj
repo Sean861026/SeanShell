@@ -18,6 +18,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SeanShell.Core\SeanShell.Core.csproj" />
     <ProjectReference Include="..\..\src\SeanShell.Gaming\SeanShell.Gaming.csproj" />
+    <ProjectReference Include="..\..\src\SeanShell.PluginContracts\SeanShell.PluginContracts.csproj" />
+    <ProjectReference Include="..\..\src\SeanShell.Plugins\SeanShell.Plugins.csproj" />
   </ItemGroup>
 
 </Project>

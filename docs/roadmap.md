@@ -46,9 +46,14 @@
 
 ## M4: Plugin platform
 
-- Versioned manifest and capability model
-- Timeouts, fault isolation, signing policy, and plugin diagnostics
-- Built-in Git, Docker, WSL, and OpenTAP plugins
+- [x] Versioned schema-1 manifest and capability model
+- [x] Bounded lifecycle/query calls with session fault isolation
+- [x] Fluent dashboard diagnostics for explicitly registered built-in plugins
+- [x] Gaming Mode suspend/resume integration
+- [x] Built-in Developer tools Launcher plugin
+- [ ] Signed external loading, consent, revocation, and process isolation
+- [ ] Persistent per-plugin enable/disable controls
+- [ ] Built-in Git, Docker, WSL, and OpenTAP plugins
 
 ## Later: shell modes
 

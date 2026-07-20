@@ -43,6 +43,26 @@ Ranking prefers exact title, title prefix, word prefix, substring, keywords, and
 finally ordered-character subsequences. A failed provider contributes no results
 and does not prevent healthy providers from serving the launcher.
 
+## Plugin lifecycle and diagnostics
+
+```text
+App-owned built-in registration
+  -> PluginManifest validation
+  -> PluginHost runtime state
+  -> bounded Initialize / Query / Suspend / Resume
+  -> PluginDiagnostic snapshot
+  -> DiagnosticsChanged event
+  -> dashboard Plugin list
+
+ShellStateChanged
+  -> Gaming: suspend Active plugins
+  -> Normal: resume Suspended plugins
+```
+
+Diagnostics contain plugin identity, declared capabilities, state, last operation,
+duration, and exception type/message. They do not contain Launcher queries,
+command arguments, environment values, file contents, or credentials.
+
 ## Dock and dashboard
 
 ```text

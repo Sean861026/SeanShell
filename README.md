@@ -25,7 +25,9 @@ src/
   SeanShell.Windows/          Windows process and shell integration
   SeanShell.Gaming/           Game detection and gaming-mode policy
   SeanShell.PluginContracts/  Stable public plugin boundary
-plugins/                      Built-in and sample plugins (future milestones)
+  SeanShell.Plugins/          Manifest validation, lifecycle, and diagnostics host
+plugins/
+  SeanShell.Plugin.DeveloperTools/  First built-in launcher plugin
 tests/                        Automated tests
 docs/                         Architecture and contributor documentation
 tools/                        Recovery and development utilities
@@ -101,6 +103,22 @@ While gaming mode is active, dashboard sampling stops and every Dock window is
 hidden. The small process detector remains active so SeanShell can restore the
 workspace after the last matching game exits. Steam and other launchers are not
 matched unless the user explicitly adds them. No process handles are retained.
+
+## Plugin platform preview
+
+The first M4 slice adds a bounded host for explicitly registered built-in plugins.
+Every plugin declares a versioned manifest, minimum host API, publisher, and
+capabilities. Initialization and lifecycle calls have time limits; launcher
+queries are limited to 250 ms. A plugin that throws or exceeds a limit is marked
+faulted and removed from subsequent queries without affecting healthy providers.
+
+Expand **Plugins** on the dashboard to inspect state, capabilities, last operation,
+duration, and recoverable errors. Gaming mode suspends active plugins and resumes
+them when normal mode returns. The included Developer tools plugin contributes
+Windows Developer Settings and Environment Variables to Launcher search.
+
+Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
+and stronger process isolation must ship before external plugins are accepted.
 
 ## Documentation
 

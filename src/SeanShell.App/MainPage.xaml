@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:SeanShell.App"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Loaded="OnLoaded"
     Unloaded="OnUnloaded"
@@ -135,6 +136,55 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="A new shortcut is saved only after Windows confirms it is available."
                     TextWrapping="Wrap" />
+                <Expander Header="Plugins">
+                    <StackPanel Padding="0,12,0,4" Spacing="12">
+                        <TextBlock
+                            Text="Built-in plugins run behind capability checks and bounded operation timeouts."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="PluginStatusSummary"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Loading plugin status"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="PluginEmptyState"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="No built-in plugins are registered."
+                            Visibility="Collapsed" />
+                        <ItemsControl
+                            x:Name="PluginDiagnosticsList"
+                            AutomationProperties.Name="Plugin diagnostics">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:PluginDiagnosticViewModel">
+                                    <Grid Padding="4,10" ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind Name}" />
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind Identity}"
+                                                TextWrapping="Wrap" />
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind Detail}"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
+                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind State}" />
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind CapabilityText}"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
                 <Expander Header="Gaming mode">
                     <StackPanel Padding="0,12,0,4" Spacing="12">
                         <ToggleSwitch

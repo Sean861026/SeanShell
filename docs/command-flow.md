@@ -9,7 +9,9 @@ Windows sign-in
   -> App loads validated configuration
   -> Core state store is created
   -> Windows services and built-in providers start
-  -> Plugin contracts initialize with cancellation and timeout
+  -> validate explicitly registered built-in plugin manifests
+  -> initialize each plugin with an independent timeout
+  -> failed plugin: record diagnostics and continue startup
   -> Dashboard and dock become visible
 ```
 
@@ -36,6 +38,22 @@ system commands are provided independently.
 Commands carry behavior rather than raw shell strings. Providers that intentionally
 invoke a terminal must show the exact command and working directory before any
 elevated action.
+
+## Plugin launcher query
+
+```text
+Launcher query
+  -> PluginHost selects active plugins with LauncherCommands capability
+  -> query selected plugins concurrently with a 250 ms limit
+  -> healthy result: merge ShellCommand records into Launcher ranking
+  -> exception or timeout: mark only that plugin Faulted
+  -> publish diagnostic update to Dashboard
+  -> keep all other providers and plugins available
+```
+
+Faulted plugins stay disabled for the rest of the session. Restarting SeanShell
+creates a fresh built-in plugin instance; persistent disable and retry controls are
+deferred until a signed external loading model exists.
 
 ## Launcher shortcut change
 
@@ -99,6 +117,10 @@ Two-second process snapshot
   -> ShellStateStore returns to Normal mode
   -> suspended providers resume
 ```
+
+Plugin suspend and resume calls are idempotent host state transitions. A lifecycle
+failure faults only the responsible plugin and never prevents the Dock or dashboard
+from applying Gaming Mode.
 
 Automatic detection is opt-in and rules are explicit. Manual mode always remains
 available and is not persisted, preventing an accidental permanent gaming state.
