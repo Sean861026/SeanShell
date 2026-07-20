@@ -117,6 +117,11 @@ duration, and recoverable errors. Gaming mode suspends active plugins and resume
 them when normal mode returns. The included Developer tools plugin contributes
 Windows Developer Settings and Environment Variables to Launcher search.
 
+Each built-in plugin has an **Enabled** switch. Disabling a plugin suspends it,
+removes its Launcher commands, and persists the choice across restarts. A plugin
+disabled at startup is not initialized until it is enabled. If saving fails,
+SeanShell restores the previous runtime state and reports the failure.
+
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.
 

@@ -57,6 +57,13 @@ App-owned built-in registration
 ShellStateChanged
   -> Gaming: suspend Active plugins
   -> Normal: resume Suspended plugins
+
+Dashboard Enabled switch
+  -> PluginHost SetEnabledAsync
+  -> initialize/resume or suspend
+  -> normalized disabled plugin ID set
+  -> atomic settings write
+  -> refreshed PluginDiagnostic snapshot
 ```
 
 Diagnostics contain plugin identity, declared capabilities, state, last operation,
@@ -104,7 +111,8 @@ SeanShell startup
   -> invalid primary: load settings.json.bak
   -> invalid backup: use safe defaults and show warning
   -> apply Dock auto-hide and register Launcher shortcut
-  -> migrate schema v1 to v2 in memory
+  -> migrate schema v1 or v2 to v3 in memory
+  -> construct PluginHost with persisted disabled plugin IDs
   -> configure automatic game detection and normalized process rules
 
 User changes a setting

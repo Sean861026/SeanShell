@@ -61,6 +61,7 @@ public sealed partial class MainWindow : Window
             mainPage.AutomaticGamingModeChanged += OnAutomaticGamingModeChanged;
             mainPage.GameProcessRulesSaved += OnGameProcessRulesSaved;
             mainPage.ManualGamingModeChanged += OnManualGamingModeChanged;
+            mainPage.PluginEnabledChanged += OnPluginEnabledChanged;
         }
 
         _gamingModeTimer = DispatcherQueue.CreateTimer();
@@ -111,6 +112,73 @@ public sealed partial class MainWindow : Window
     private void OnManualGamingModeChanged(bool enabled)
     {
         _gamingMode.SetManualMode(enabled);
+    }
+
+    private async void OnPluginEnabledChanged(string pluginId, bool enabled)
+    {
+        var previousSettings = _settings;
+        try
+        {
+            var result = await _pluginHost.SetEnabledAsync(pluginId, enabled).ConfigureAwait(true);
+            if (!result.Success)
+            {
+                if (RootFrame.Content is MainPage failedPage)
+                {
+                    failedPage.SetPluginEnabledFailed(
+                        pluginId,
+                        result.Diagnostic.LastError ?? "The plugin rejected the lifecycle change.");
+                }
+
+                return;
+            }
+
+            var disabledIds = PluginIdList.Parse(_settings.DisabledPluginIds)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (enabled)
+            {
+                disabledIds.Remove(pluginId);
+            }
+            else
+            {
+                disabledIds.Add(pluginId);
+            }
+
+            _settings = _settings with
+            {
+                DisabledPluginIds = PluginIdList.Serialize(disabledIds),
+            };
+            if (!PersistSettings())
+            {
+                _settings = previousSettings;
+                var rollback = await _pluginHost.SetEnabledAsync(pluginId, !enabled).ConfigureAwait(true);
+                if (RootFrame.Content is MainPage rollbackPage)
+                {
+                    rollbackPage.SetPluginEnabledFailed(
+                        pluginId,
+                        rollback.Success
+                            ? "The settings file could not be updated, so the previous plugin state was restored."
+                            : $"The settings file could not be updated and the previous state could not be restored. {rollback.Diagnostic.LastError}");
+                }
+
+                return;
+            }
+
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetPluginEnabledApplied(
+                    pluginId,
+                    result.Diagnostic.Name,
+                    enabled);
+            }
+        }
+        catch (Exception exception)
+        {
+            _settings = previousSettings;
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetPluginEnabledFailed(pluginId, exception.Message);
+            }
+        }
     }
 
     private void OnAutomaticGamingModeChanged(bool enabled)

@@ -15,6 +15,7 @@ public sealed class ShellSettingsStoreTests
 
         Assert.IsTrue(result.Settings.DockAutoHide);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
+        Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
         Assert.IsFalse(result.WasRecovered);
         Assert.IsNull(result.Warning);
     }
@@ -30,6 +31,7 @@ public sealed class ShellSettingsStoreTests
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
             AutomaticGamingModeEnabled = true,
             GameProcessRules = "eldenring",
+            DisabledPluginIds = "seanshell.developer-tools",
         };
 
         store.Save(expected);
@@ -121,6 +123,33 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(LauncherShortcut.ControlAltSpace, result.Settings.LauncherShortcut);
         Assert.IsFalse(result.Settings.AutomaticGamingModeEnabled);
         Assert.AreEqual(string.Empty, result.Settings.GameProcessRules);
+        Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionTwoSettingsWithPluginsEnabledByDefault()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 2,
+              "dockAutoHide": false,
+              "launcherShortcut": "controlShiftSpace",
+              "automaticGamingModeEnabled": true,
+              "gameProcessRules": "notepad"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
+        Assert.IsTrue(result.Settings.AutomaticGamingModeEnabled);
+        Assert.AreEqual("notepad", result.Settings.GameProcessRules);
+        Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
     }
 
     private sealed class TemporaryDirectory : IDisposable

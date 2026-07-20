@@ -16,8 +16,10 @@ public sealed partial class MainPage : Page
     private readonly int _displayCount;
     private readonly GamingModeManager _gamingMode;
     private readonly PluginHost _pluginHost;
+    private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _applyingSettings;
+    private bool _applyingPluginDiagnostics;
     private bool _refreshing;
 
     public MainPage()
@@ -56,6 +58,8 @@ public sealed partial class MainPage : Page
     public event Action<string>? GameProcessRulesSaved;
 
     public event Action<bool>? ManualGamingModeChanged;
+
+    public event Action<string, bool>? PluginEnabledChanged;
 
     public void SetShortcutApplied(LauncherShortcut shortcut, bool persisted = true)
     {
@@ -124,6 +128,25 @@ public sealed partial class MainPage : Page
             InfoBarSeverity.Warning);
     }
 
+    public void SetPluginEnabledApplied(string pluginId, string pluginName, bool enabled)
+    {
+        _pendingPluginIds.Remove(pluginId);
+        ApplyPluginDiagnostics();
+        SetSettingsStatus(
+            enabled ? "Plugin enabled" : "Plugin disabled",
+            enabled
+                ? $"{pluginName} is available to Launcher and normal-mode providers."
+                : $"{pluginName} is disabled and will remain off after restart.",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetPluginEnabledFailed(string pluginId, string message)
+    {
+        _pendingPluginIds.Remove(pluginId);
+        ApplyPluginDiagnostics();
+        SetSettingsStatus("Plugin setting not changed", message, InfoBarSeverity.Warning);
+    }
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _shellState.StateChanged -= OnShellStateChanged;
@@ -174,6 +197,28 @@ public sealed partial class MainPage : Page
     private void OnSaveGameRulesClicked(object sender, RoutedEventArgs e)
     {
         GameProcessRulesSaved?.Invoke(GameProcessRulesTextBox.Text);
+    }
+
+    private void OnPluginEnabledToggled(object sender, RoutedEventArgs e)
+    {
+        if (_applyingPluginDiagnostics ||
+            sender is not ToggleSwitch toggle ||
+            toggle.Tag is not string pluginId ||
+            _pendingPluginIds.Contains(pluginId))
+        {
+            return;
+        }
+
+        _pendingPluginIds.Add(pluginId);
+        ApplyPluginDiagnostics();
+        if (PluginEnabledChanged is null)
+        {
+            _pendingPluginIds.Remove(pluginId);
+            ApplyPluginDiagnostics();
+            return;
+        }
+
+        PluginEnabledChanged.Invoke(pluginId, toggle.IsOn);
     }
 
     private void OnDockAutoHideToggled(object sender, RoutedEventArgs e)
@@ -254,16 +299,27 @@ public sealed partial class MainPage : Page
     private void ApplyPluginDiagnostics()
     {
         var diagnostics = _pluginHost.Diagnostics;
-        PluginDiagnosticsList.ItemsSource = diagnostics
-            .Select(static diagnostic => new PluginDiagnosticViewModel(diagnostic))
-            .ToArray();
+        _applyingPluginDiagnostics = true;
+        try
+        {
+            PluginDiagnosticsList.ItemsSource = diagnostics
+                .Select(diagnostic => new PluginDiagnosticViewModel(
+                    diagnostic,
+                    !_pendingPluginIds.Contains(diagnostic.Id)))
+                .ToArray();
+        }
+        finally
+        {
+            _applyingPluginDiagnostics = false;
+        }
 
         var active = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Active);
         var suspended = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Suspended);
         var faulted = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Faulted);
+        var disabled = diagnostics.Count(static diagnostic => !diagnostic.IsEnabled);
         PluginStatusSummary.Text = diagnostics.Count == 0
             ? "No built-in plugins are registered"
-            : $"{diagnostics.Count} registered · {active} active · {suspended} suspended · {faulted} faulted";
+            : $"{diagnostics.Count} registered · {active} active · {suspended} suspended · {disabled} disabled · {faulted} faulted";
         PluginEmptyState.Visibility = diagnostics.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         PluginDiagnosticsList.Visibility = diagnostics.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }

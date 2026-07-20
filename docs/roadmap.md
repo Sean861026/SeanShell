@@ -52,7 +52,7 @@
 - [x] Gaming Mode suspend/resume integration
 - [x] Built-in Developer tools Launcher plugin
 - [ ] Signed external loading, consent, revocation, and process isolation
-- [ ] Persistent per-plugin enable/disable controls
+- [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [ ] Built-in Git, Docker, WSL, and OpenTAP plugins
 
 ## Later: shell modes

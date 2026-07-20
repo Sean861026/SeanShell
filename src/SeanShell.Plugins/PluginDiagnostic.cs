@@ -9,6 +9,7 @@ public sealed record PluginDiagnostic(
     string Publisher,
     PluginCapability Capabilities,
     bool IsBuiltIn,
+    bool IsEnabled,
     PluginRuntimeState State,
     string LastOperation,
     TimeSpan LastDuration,

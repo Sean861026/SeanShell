@@ -9,6 +9,19 @@ namespace SeanShell.Core.Tests;
 public sealed class PluginHostTests
 {
     [TestMethod]
+    public void PluginIdListNormalizesAndDeduplicatesValues()
+    {
+        var parsed = PluginIdList.Parse("second.plugin; FIRST.plugin\r\nfirst.plugin");
+
+        CollectionAssert.AreEqual(
+            new[] { "FIRST.plugin", "second.plugin" },
+            parsed.ToArray());
+        Assert.AreEqual(
+            $"FIRST.plugin{Environment.NewLine}second.plugin",
+            PluginIdList.Serialize(parsed));
+    }
+
+    [TestMethod]
     public async Task DeveloperToolsCommandsAppearInLauncherSearch()
     {
         var plugin = new DeveloperToolsPlugin();
@@ -91,6 +104,66 @@ public sealed class PluginHostTests
     }
 
     [TestMethod]
+    public async Task InitiallyDisabledPluginSkipsInitializationUntilEnabled()
+    {
+        var plugin = new TestPlugin("test.disabled", "Disabled plugin")
+        {
+            Commands = [CreateCommand("disabled")],
+        };
+        await using var host = new PluginHost(
+            [new PluginRegistration(CreateManifest(plugin), plugin)],
+            CreateOptions(),
+            [plugin.Id]);
+
+        await host.InitializeAsync();
+        Assert.AreEqual(0, plugin.InitializeCount);
+        Assert.IsFalse(host.Diagnostics.Single().IsEnabled);
+        Assert.AreEqual(PluginRuntimeState.Disabled, host.Diagnostics.Single().State);
+        Assert.IsEmpty(await host.GetCommandsAsync(string.Empty, CancellationToken.None));
+
+        var enabled = await host.SetEnabledAsync(plugin.Id, true);
+        Assert.IsTrue(enabled.Success);
+        Assert.AreEqual(1, plugin.InitializeCount);
+        Assert.AreEqual(PluginRuntimeState.Active, enabled.Diagnostic.State);
+        Assert.HasCount(1, await host.GetCommandsAsync(string.Empty, CancellationToken.None));
+
+        var disabled = await host.SetEnabledAsync(plugin.Id, false);
+        Assert.IsTrue(disabled.Success);
+        Assert.AreEqual(1, plugin.SuspendCount);
+        Assert.IsFalse(disabled.Diagnostic.IsEnabled);
+        Assert.IsEmpty(await host.GetCommandsAsync(string.Empty, CancellationToken.None));
+
+        var reenabled = await host.SetEnabledAsync(plugin.Id, true);
+        Assert.IsTrue(reenabled.Success);
+        Assert.AreEqual(1, plugin.InitializeCount);
+        Assert.AreEqual(1, plugin.ResumeCount);
+    }
+
+    [TestMethod]
+    public async Task EnablingInitiallyDisabledPluginDuringGamingLeavesItSuspended()
+    {
+        var plugin = new TestPlugin("test.gaming-disabled", "Gaming disabled plugin");
+        await using var host = new PluginHost(
+            [new PluginRegistration(CreateManifest(plugin), plugin)],
+            CreateOptions(),
+            [plugin.Id]);
+        await host.SuspendAsync();
+        await host.InitializeAsync();
+
+        var enabled = await host.SetEnabledAsync(plugin.Id, true);
+
+        Assert.IsTrue(enabled.Success);
+        Assert.IsTrue(enabled.Diagnostic.IsEnabled);
+        Assert.AreEqual(PluginRuntimeState.Suspended, enabled.Diagnostic.State);
+        Assert.AreEqual(1, plugin.InitializeCount);
+        Assert.AreEqual(1, plugin.SuspendCount);
+
+        await host.ResumeAsync();
+        Assert.AreEqual(PluginRuntimeState.Active, host.Diagnostics.Single().State);
+        Assert.AreEqual(1, plugin.ResumeCount);
+    }
+
+    [TestMethod]
     public async Task FinishingQueryDoesNotOverwriteConcurrentSuspendState()
     {
         var queryStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -122,6 +195,38 @@ public sealed class PluginHostTests
     }
 
     [TestMethod]
+    public async Task FinishingQueryAfterDisableDoesNotReturnStaleCommands()
+    {
+        var queryStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishQuery = new TaskCompletionSource<IReadOnlyList<ShellCommand>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var plugin = new TestPlugin("test.disable-query", "Disable query plugin")
+        {
+            QueryAsync = _ =>
+            {
+                queryStarted.SetResult();
+                return finishQuery.Task;
+            },
+        };
+        await using var host = new PluginHost(
+            [new PluginRegistration(CreateManifest(plugin), plugin)],
+            new PluginHostOptions(
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromMilliseconds(100)));
+        await host.InitializeAsync();
+
+        var query = host.GetCommandsAsync(string.Empty, CancellationToken.None).AsTask();
+        await queryStarted.Task;
+        var disabled = await host.SetEnabledAsync(plugin.Id, false);
+        finishQuery.SetResult([CreateCommand("stale")]);
+
+        Assert.IsTrue(disabled.Success);
+        Assert.IsEmpty(await query);
+        Assert.AreEqual(PluginRuntimeState.Disabled, host.Diagnostics.Single().State);
+    }
+
+    [TestMethod]
     public void ConstructorRejectsThirdPartyRegistrationBeforeIsolationExists()
     {
         var plugin = new TestPlugin("test.external", "External plugin");
@@ -136,10 +241,13 @@ public sealed class PluginHostTests
     private static PluginHost CreateHost(params TestPlugin[] plugins) =>
         new(
             plugins.Select(plugin => new PluginRegistration(CreateManifest(plugin), plugin)),
-            new PluginHostOptions(
-                TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromMilliseconds(40),
-                TimeSpan.FromMilliseconds(100)));
+            CreateOptions());
+
+    private static PluginHostOptions CreateOptions() =>
+        new(
+            TimeSpan.FromMilliseconds(100),
+            TimeSpan.FromMilliseconds(40),
+            TimeSpan.FromMilliseconds(100));
 
     private static PluginManifest CreateManifest(TestPlugin plugin) =>
         new(
@@ -169,9 +277,12 @@ public sealed class PluginHostTests
 
         public int ResumeCount { get; private set; }
 
+        public int InitializeCount { get; private set; }
+
         public ValueTask InitializeAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            InitializeCount++;
             return ValueTask.CompletedTask;
         }
 

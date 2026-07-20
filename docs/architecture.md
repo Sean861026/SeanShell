@@ -68,12 +68,19 @@ flushes it to disk, and replaces the primary document while retaining
 shortcut values never reach the UI: the store loads the backup or safe defaults
 and returns a warning for the dashboard.
 
-Schema version 2 persists Dock auto-hide, one of three reviewed Launcher
-shortcuts, opt-in automatic game detection, and newline-delimited game process
-rules. Version 1 settings migrate in memory without losing existing preferences.
+Schema version 3 persists Dock auto-hide, one of three reviewed Launcher
+shortcuts, opt-in automatic game detection, newline-delimited game process rules,
+and normalized disabled plugin IDs. Version 1 and 2 settings migrate in memory
+without losing existing preferences.
 Arbitrary key capture is intentionally excluded so SeanShell never needs a
 keyboard hook. A shortcut change is committed only after `RegisterHotKey`
 succeeds; failed registration restores the previously active shortcut.
+
+Plugin enablement is independent of Gaming Mode. Disabling a plugin suspends it
+and removes its Launcher commands; disabling before startup skips initialization.
+Enabling while Gaming Mode is active initializes or resumes the plugin and then
+keeps it suspended until normal mode returns. A failed settings write rolls the
+runtime state back so persisted and visible state remain consistent.
 
 `GamingModeManager` combines two independent sources: a session-only manual
 override and the active process matches produced by automatic detection. Effective

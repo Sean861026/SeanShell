@@ -138,7 +138,7 @@ public sealed class ShellSettingsStore
                 throw new InvalidDataException("The settings document is empty.");
             }
 
-            if (settings.SchemaVersion == 1)
+            if (settings.SchemaVersion is 1 or 2)
             {
                 settings = settings with { SchemaVersion = ShellSettings.CurrentSchemaVersion };
             }
