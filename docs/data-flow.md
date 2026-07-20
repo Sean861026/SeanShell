@@ -66,13 +66,26 @@ MonitorFromWindow
   -> monitor-local dock filtering
 ```
 
-Auto-hide is a session UI preference. A collapsed dock retains a visible edge
-indicator; pointer entry or routed keyboard focus expands it. Persistent settings
-are intentionally deferred to the configuration milestone.
+Auto-hide is a persistent UI preference. A collapsed dock retains a visible edge
+indicator; pointer entry or routed keyboard focus expands it.
 
 ## Configuration
 
-The planned configuration model is a versioned JSON document stored under the
-user's local application data. Secrets and OAuth tokens are not valid configuration
-values; plugins must use Windows Credential Manager or an equivalent protected
-store. Logs must omit command arguments, file contents, and credentials by default.
+```text
+SeanShell startup
+  -> load %LOCALAPPDATA%\SeanShell\settings.json
+  -> validate schema and shortcut value
+  -> invalid primary: load settings.json.bak
+  -> invalid backup: use safe defaults and show warning
+  -> apply Dock auto-hide and register Launcher shortcut
+
+User changes a setting
+  -> validate/register requested shortcut when applicable
+  -> registration failure: restore previous shortcut and do not save
+  -> write settings.json.tmp and flush to disk
+  -> atomically replace settings.json and retain settings.json.bak
+```
+
+Secrets and OAuth tokens are not valid configuration values; plugins must use
+Windows Credential Manager or an equivalent protected store. Logs must omit
+command arguments, file contents, and credentials by default.

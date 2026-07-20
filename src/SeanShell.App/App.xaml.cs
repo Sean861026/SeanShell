@@ -29,6 +29,10 @@ public partial class App : Application
 
     public LauncherSearchService LauncherSearch { get; }
 
+    public ShellSettingsStore SettingsStore { get; }
+
+    public SettingsLoadResult SettingsLoad { get; }
+
     public ShellStateStore ShellState { get; } = new();
 
     public DesktopWindowService DesktopWindows { get; } = new();
@@ -43,6 +47,13 @@ public partial class App : Application
     /// </summary>
     public App()
     {
+        var settingsPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "settings.json");
+        SettingsStore = new ShellSettingsStore(settingsPath);
+        SettingsLoad = SettingsStore.Load();
+
         LauncherSearch = new LauncherSearchService(
         [
             InstalledApplications,

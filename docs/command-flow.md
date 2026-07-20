@@ -37,6 +37,20 @@ Commands carry behavior rather than raw shell strings. Providers that intentiona
 invoke a terminal must show the exact command and working directory before any
 elevated action.
 
+## Launcher shortcut change
+
+```text
+User selects a reviewed shortcut preset
+  -> release the current RegisterHotKey registration
+  -> request the new registration from Windows
+  -> success: activate it and persist settings atomically
+  -> conflict: re-register the previous shortcut
+  -> restore the ComboBox selection and show a recovery message
+```
+
+The dashboard button remains available even when no global shortcut can be
+registered. SeanShell does not capture arbitrary keys or install an input hook.
+
 ## Dock window activation
 
 ```text

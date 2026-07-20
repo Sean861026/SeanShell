@@ -50,6 +50,20 @@ without opening or retaining process handles.
   SeanShell itself, and uses `SetForegroundWindow` only after a user selection.
 - A crash loop guard is required before any automatic startup feature ships.
 
+## Configuration
+
+`ShellSettingsStore` owns a versioned JSON document at
+`%LOCALAPPDATA%\SeanShell\settings.json`. It writes a sibling temporary file,
+flushes it to disk, and replaces the primary document while retaining
+`settings.json.bak`. Invalid JSON, unknown schema versions, and unsupported
+shortcut values never reach the UI: the store loads the backup or safe defaults
+and returns a warning for the dashboard.
+
+The initial schema persists Dock auto-hide and one of three reviewed Launcher
+shortcuts. Arbitrary key capture is intentionally excluded so SeanShell never
+needs a keyboard hook. A shortcut change is committed only after `RegisterHotKey`
+succeeds; failed registration restores the previously active shortcut.
+
 ## Deployment
 
 The initial app uses single-project MSIX packaging and a debug identity generated
