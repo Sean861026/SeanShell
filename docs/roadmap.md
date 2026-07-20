@@ -37,8 +37,10 @@
 - [x] Versioned local settings with atomic writes and backup recovery
 - [x] Persistent Dock auto-hide preference
 - [x] Configurable Launcher shortcut presets with conflict rollback
-- Manual and rule-based gaming mode
-- Pause/resume policies with measured resource use
+- [x] Source-aware manual and rule-based gaming mode
+- [x] Persisted opt-in process rules with schema v1 to v2 migration
+- [x] Pause/resume policy for dashboard sampling and all Dock windows
+- [ ] Measure automatic detector CPU use during representative game sessions
 - Compatibility matrix for Steam and anti-cheat-enabled games
 - No injection, graphics hooks, overlays, or input interception
 

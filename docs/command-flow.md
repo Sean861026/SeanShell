@@ -88,19 +88,22 @@ display topology.
 ## Gaming mode
 
 ```text
-Process snapshot changes
+Two-second process snapshot
   -> GameDetector matches normalized executable rules
-  -> GamingModeManager updates active game process IDs
-  -> ShellStateStore enters Gaming mode
+  -> GamingModeManager replaces its active detected-game set
+  -> combine detected games with the manual session override
+  -> either source active: ShellStateStore enters Gaming mode
   -> dashboard polling and optional plugins suspend
   -> dock hides and animations reduce
-  -> last matched game exits
+  -> last matched game exits and manual override is off
   -> ShellStateStore returns to Normal mode
   -> suspended providers resume
 ```
 
-Manual mode always remains available. Steam itself is not treated as a game;
-rules target game executables to avoid keeping gaming mode active indefinitely.
+Automatic detection is opt-in and rules are explicit. Manual mode always remains
+available and is not persisted, preventing an accidental permanent gaming state.
+Steam itself is not treated as a game unless the user adds it; rules should target
+game executables to avoid keeping gaming mode active indefinitely.
 
 ## Recovery
 

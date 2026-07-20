@@ -1,5 +1,7 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using SeanShell.Core;
+using SeanShell.Gaming;
 using SeanShell.Windows;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -17,7 +19,11 @@ public sealed partial class MainWindow : Window
     private const uint SpaceVirtualKey = 0x20;
     private readonly LauncherWindow _launcherWindow;
     private readonly IReadOnlyList<DockWindow> _dockWindows;
+    private readonly GamingModeManager _gamingMode;
+    private readonly DispatcherQueueTimer _gamingModeTimer;
+    private readonly ProcessCatalog _processCatalog;
     private readonly ShellSettingsStore _settingsStore;
+    private bool _refreshingGamingMode;
     private GlobalHotKey? _launcherHotKey;
     private LauncherShortcut? _registeredShortcut;
     private ShellSettings _settings;
@@ -37,6 +43,8 @@ public sealed partial class MainWindow : Window
         var app = (App)Application.Current;
         _settingsStore = app.SettingsStore;
         _settings = app.SettingsLoad.Settings;
+        _gamingMode = app.GamingMode;
+        _processCatalog = app.Processes;
         _launcherWindow = new LauncherWindow(app.LauncherSearch);
         _dockWindows = app.Displays.Capture()
             .Select(monitor => new DockWindow(app.DesktopWindows, app.ShellState, monitor))
@@ -47,7 +55,14 @@ public sealed partial class MainWindow : Window
             mainPage.LauncherRequested += OnLauncherRequested;
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
+            mainPage.AutomaticGamingModeChanged += OnAutomaticGamingModeChanged;
+            mainPage.GameProcessRulesSaved += OnGameProcessRulesSaved;
+            mainPage.ManualGamingModeChanged += OnManualGamingModeChanged;
         }
+
+        _gamingModeTimer = DispatcherQueue.CreateTimer();
+        _gamingModeTimer.Interval = TimeSpan.FromSeconds(2);
+        _gamingModeTimer.Tick += OnGamingModeTimerTick;
 
         RegisterLauncherHotKey(_settings.LauncherShortcut);
         Activated += OnActivated;
@@ -62,6 +77,46 @@ public sealed partial class MainWindow : Window
             dockWindow.ShowDock();
             dockWindow.SetAutoHide(_settings.DockAutoHide);
         }
+
+        UpdateGamingModeMonitor();
+    }
+
+    private void OnManualGamingModeChanged(bool enabled)
+    {
+        _gamingMode.SetManualMode(enabled);
+    }
+
+    private void OnAutomaticGamingModeChanged(bool enabled)
+    {
+        _settings = _settings with { AutomaticGamingModeEnabled = enabled };
+        _gamingMode.ConfigureAutomaticDetection(
+            enabled,
+            GameDetector.ParseRules(_settings.GameProcessRules));
+        if (PersistSettings() && RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetGamingSettingsApplied(
+                "Automatic detection updated",
+                enabled ? "SeanShell is watching the configured game process names." : "Automatic game detection is off.");
+        }
+
+        UpdateGamingModeMonitor();
+    }
+
+    private void OnGameProcessRulesSaved(string rules)
+    {
+        var processNames = GameDetector.ParseRules(rules);
+        var normalizedRules = string.Join(Environment.NewLine, processNames);
+        _settings = _settings with { GameProcessRules = normalizedRules };
+        _gamingMode.ConfigureAutomaticDetection(
+            _settings.AutomaticGamingModeEnabled,
+            processNames);
+        var persisted = PersistSettings();
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetGameProcessRulesApplied(normalizedRules, processNames.Count, persisted);
+        }
+
+        UpdateGamingModeMonitor();
     }
 
     private void OnDockAutoHideChanged(bool enabled)
@@ -180,6 +235,53 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void OnGamingModeTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        await RefreshGamingModeAsync().ConfigureAwait(true);
+    }
+
+    private async Task RefreshGamingModeAsync()
+    {
+        if (_refreshingGamingMode || !ShouldMonitorGames())
+        {
+            return;
+        }
+
+        _refreshingGamingMode = true;
+        try
+        {
+            var processes = await Task.Run(_processCatalog.Capture).ConfigureAwait(true);
+            _gamingMode.Reconcile(processes);
+        }
+        catch (Exception exception)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetGamingDetectionUnavailable(exception.Message);
+            }
+        }
+        finally
+        {
+            _refreshingGamingMode = false;
+        }
+    }
+
+    private void UpdateGamingModeMonitor()
+    {
+        if (!ShouldMonitorGames())
+        {
+            _gamingModeTimer.Stop();
+            return;
+        }
+
+        _gamingModeTimer.Start();
+        _ = RefreshGamingModeAsync();
+    }
+
+    private bool ShouldMonitorGames() =>
+        _settings.AutomaticGamingModeEnabled &&
+        GameDetector.ParseRules(_settings.GameProcessRules).Count > 0;
+
     private void OnLauncherRequested(object? sender, EventArgs e)
     {
         _ = _launcherWindow.ShowLauncherAsync();
@@ -187,6 +289,7 @@ public sealed partial class MainWindow : Window
 
     private void OnClosed(object sender, WindowEventArgs args)
     {
+        _gamingModeTimer.Stop();
         _launcherHotKey?.Dispose();
         foreach (var dockWindow in _dockWindows)
         {

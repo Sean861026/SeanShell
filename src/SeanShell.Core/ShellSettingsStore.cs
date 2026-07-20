@@ -138,7 +138,11 @@ public sealed class ShellSettingsStore
                 throw new InvalidDataException("The settings document is empty.");
             }
 
-            if (settings.SchemaVersion != ShellSettings.CurrentSchemaVersion)
+            if (settings.SchemaVersion == 1)
+            {
+                settings = settings with { SchemaVersion = ShellSettings.CurrentSchemaVersion };
+            }
+            else if (settings.SchemaVersion != ShellSettings.CurrentSchemaVersion)
             {
                 throw new InvalidDataException($"Unsupported settings schema version {settings.SchemaVersion}.");
             }

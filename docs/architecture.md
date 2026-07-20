@@ -59,10 +59,18 @@ flushes it to disk, and replaces the primary document while retaining
 shortcut values never reach the UI: the store loads the backup or safe defaults
 and returns a warning for the dashboard.
 
-The initial schema persists Dock auto-hide and one of three reviewed Launcher
-shortcuts. Arbitrary key capture is intentionally excluded so SeanShell never
-needs a keyboard hook. A shortcut change is committed only after `RegisterHotKey`
+Schema version 2 persists Dock auto-hide, one of three reviewed Launcher
+shortcuts, opt-in automatic game detection, and newline-delimited game process
+rules. Version 1 settings migrate in memory without losing existing preferences.
+Arbitrary key capture is intentionally excluded so SeanShell never needs a
+keyboard hook. A shortcut change is committed only after `RegisterHotKey`
 succeeds; failed registration restores the previously active shortcut.
+
+`GamingModeManager` combines two independent sources: a session-only manual
+override and the active process matches produced by automatic detection. Effective
+gaming mode remains active while either source is active. This prevents a game
+exit from cancelling a manual override, and prevents disabling the manual toggle
+from cancelling a still-running detected game.
 
 ## Deployment
 

@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using SeanShell.Core;
+using SeanShell.Gaming;
 using SeanShell.Windows;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -35,6 +36,10 @@ public partial class App : Application
 
     public ShellStateStore ShellState { get; } = new();
 
+    public GamingModeManager GamingMode { get; }
+
+    public ProcessCatalog Processes { get; } = new();
+
     public DesktopWindowService DesktopWindows { get; } = new();
 
     public DisplayMonitorService Displays { get; } = new();
@@ -53,6 +58,10 @@ public partial class App : Application
             "settings.json");
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
+        GamingMode = new GamingModeManager(ShellState);
+        GamingMode.ConfigureAutomaticDetection(
+            SettingsLoad.Settings.AutomaticGamingModeEnabled,
+            GameDetector.ParseRules(SettingsLoad.Settings.GameProcessRules));
 
         LauncherSearch = new LauncherSearchService(
         [

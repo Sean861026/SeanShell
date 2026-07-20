@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using SeanShell.Core;
 
@@ -9,14 +10,23 @@ public sealed class ProcessCatalog
     {
         var observedAt = DateTimeOffset.UtcNow;
 
-        return Process.GetProcesses()
-            .Select(process =>
+        var snapshots = new List<ProcessSnapshot>();
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process)
             {
-                using (process)
+                try
                 {
-                    return new ProcessSnapshot(process.Id, process.ProcessName, observedAt);
+                    snapshots.Add(new ProcessSnapshot(process.Id, process.ProcessName, observedAt));
                 }
-            })
+                catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
+                {
+                    // Processes may exit or become inaccessible while the snapshot is collected.
+                }
+            }
+        }
+
+        return snapshots
             .OrderBy(static process => process.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(static process => process.Id)
             .ToArray();

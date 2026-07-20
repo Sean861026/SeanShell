@@ -90,11 +90,24 @@ preventing SeanShell from starting.
 The dock does not retain process handles, inject code, attach input queues, or
 bypass Windows foreground restrictions.
 
+## Gaming mode preview
+
+The M3 preview supports a manual override and opt-in automatic detection. Add one
+game process name per line in the dashboard, enable automatic detection, and
+SeanShell checks a disposable process snapshot every two seconds. Matching is
+case-insensitive and accepts names with or without `.exe`.
+
+While gaming mode is active, dashboard sampling stops and every Dock window is
+hidden. The small process detector remains active so SeanShell can restore the
+workspace after the last matching game exits. Steam and other launchers are not
+matched unless the user explicitly adds them. No process handles are retained.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Command flow](docs/command-flow.md)
 - [Data flow](docs/data-flow.md)
+- [Gaming compatibility](docs/gaming-compatibility.md)
 - [Plugin specification](docs/plugin-spec.md)
 - [Roadmap](docs/roadmap.md)
 - [Contributing](docs/contributing.md)
