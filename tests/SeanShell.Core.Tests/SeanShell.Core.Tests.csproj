@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\plugins\SeanShell.Plugin.DeveloperTools\SeanShell.Plugin.DeveloperTools.csproj" />
     <ProjectReference Include="..\..\src\SeanShell.Core\SeanShell.Core.csproj" />
     <ProjectReference Include="..\..\src\SeanShell.Gaming\SeanShell.Gaming.csproj" />
     <ProjectReference Include="..\..\src\SeanShell.PluginContracts\SeanShell.PluginContracts.csproj" />

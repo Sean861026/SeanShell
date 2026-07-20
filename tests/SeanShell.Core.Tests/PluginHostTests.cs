@@ -1,4 +1,5 @@
 using SeanShell.Core;
+using SeanShell.Plugin.DeveloperTools;
 using SeanShell.PluginContracts;
 using SeanShell.Plugins;
 
@@ -7,6 +8,20 @@ namespace SeanShell.Core.Tests;
 [TestClass]
 public sealed class PluginHostTests
 {
+    [TestMethod]
+    public async Task DeveloperToolsCommandsAppearInLauncherSearch()
+    {
+        var plugin = new DeveloperToolsPlugin();
+        await using var host = new PluginHost(
+            [new PluginRegistration(DeveloperToolsPlugin.Manifest, plugin)]);
+        await host.InitializeAsync();
+        var search = new LauncherSearchService([host]);
+
+        var results = await search.SearchAsync("developer", 8, CancellationToken.None);
+
+        Assert.IsTrue(results.Any(command => command.Title == "Windows Developer Settings"));
+    }
+
     [TestMethod]
     public async Task InitializeAndQueryExposeHealthyPluginCommands()
     {
