@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SeanShell.Core;
+using SeanShell.Gaming;
 using SeanShell.Windows;
 
 namespace SeanShell.App;
@@ -12,6 +13,7 @@ public sealed partial class MainPage : Page
     private readonly DesktopWindowService _desktopWindows;
     private readonly SystemMetricsProvider _systemMetrics;
     private readonly int _displayCount;
+    private readonly GamingModeManager _gamingMode;
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _applyingSettings;
     private bool _refreshing;
@@ -24,6 +26,7 @@ public sealed partial class MainPage : Page
         _shellState = app.ShellState;
         _desktopWindows = app.DesktopWindows;
         _systemMetrics = app.SystemMetrics;
+        _gamingMode = app.GamingMode;
         _displayCount = app.Displays.Capture().Count;
 
         _refreshTimer = DispatcherQueue.CreateTimer();
@@ -44,6 +47,12 @@ public sealed partial class MainPage : Page
     public event Action<bool>? DockAutoHideChanged;
 
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
+
+    public event Action<bool>? AutomaticGamingModeChanged;
+
+    public event Action<string>? GameProcessRulesSaved;
+
+    public event Action<bool>? ManualGamingModeChanged;
 
     public void SetShortcutApplied(LauncherShortcut shortcut, bool persisted = true)
     {
@@ -85,11 +94,41 @@ public sealed partial class MainPage : Page
         SetSettingsStatus("Settings not saved", message, InfoBarSeverity.Warning);
     }
 
+    public void SetGamingSettingsApplied(string title, string message)
+    {
+        SetSettingsStatus(title, message, InfoBarSeverity.Success);
+    }
+
+    public void SetGameProcessRulesApplied(string rules, int count, bool persisted)
+    {
+        _applyingSettings = true;
+        GameProcessRulesTextBox.Text = rules;
+        _applyingSettings = false;
+        if (persisted)
+        {
+            SetSettingsStatus(
+                "Game rules updated",
+                count == 0 ? "No automatic game rules are configured." : $"Saved {count} game process rule(s).",
+                InfoBarSeverity.Success);
+        }
+    }
+
+    public void SetGamingDetectionUnavailable(string message)
+    {
+        SetSettingsStatus(
+            "Game detection paused",
+            $"SeanShell could not read the current process snapshot and will retry automatically. {message}",
+            InfoBarSeverity.Warning);
+    }
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _shellState.StateChanged -= OnShellStateChanged;
         _shellState.StateChanged += OnShellStateChanged;
+        _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
+        _gamingMode.StatusChanged += OnGamingModeStatusChanged;
         ApplyShellState(_shellState.Current);
+        ApplyGamingModeStatus(_gamingMode.Current);
         if (_shellState.Current.Mode == ShellMode.Normal)
         {
             _refreshTimer.Start();
@@ -101,6 +140,7 @@ public sealed partial class MainPage : Page
     {
         _refreshTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
+        _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
     }
 
     private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
@@ -110,7 +150,23 @@ public sealed partial class MainPage : Page
 
     private void OnGamingModeToggled(object sender, RoutedEventArgs e)
     {
-        _shellState.SetMode(GamingModeToggle.IsOn ? ShellMode.Gaming : ShellMode.Normal);
+        if (!_applyingSettings)
+        {
+            ManualGamingModeChanged?.Invoke(GamingModeToggle.IsOn);
+        }
+    }
+
+    private void OnAutomaticGamingModeToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_applyingSettings)
+        {
+            AutomaticGamingModeChanged?.Invoke(AutomaticGamingModeToggle.IsOn);
+        }
+    }
+
+    private void OnSaveGameRulesClicked(object sender, RoutedEventArgs e)
+    {
+        GameProcessRulesSaved?.Invoke(GameProcessRulesTextBox.Text);
     }
 
     private void OnDockAutoHideToggled(object sender, RoutedEventArgs e)
@@ -150,13 +206,37 @@ public sealed partial class MainPage : Page
         _ = RefreshDashboardAsync();
     }
 
+    private void OnGamingModeStatusChanged(object? sender, GamingModeStatus status)
+    {
+        ApplyGamingModeStatus(status);
+    }
+
     private void ApplyShellState(ShellState state)
     {
         var gaming = state.Mode == ShellMode.Gaming;
-        GamingModeToggle.IsOn = gaming;
         ModeText.Text = gaming ? "Gaming" : "Normal";
         ProviderStatus.Text = gaming ? "Providers paused" : "Providers active";
         UpdateDockStatus(gaming);
+    }
+
+    private void ApplyGamingModeStatus(GamingModeStatus status)
+    {
+        _applyingSettings = true;
+        GamingModeToggle.IsOn = status.ManualModeEnabled;
+        AutomaticGamingModeToggle.IsOn = status.AutomaticDetectionEnabled;
+        _applyingSettings = false;
+
+        GamingDetectionStatus.Text = status.ManualModeEnabled
+            ? status.ActiveGameNames.Count > 0
+                ? $"Manual mode active; also detected: {string.Join(", ", status.ActiveGameNames)}"
+                : "Manual gaming mode is active"
+            : status.ActiveGameNames.Count > 0
+                ? $"Automatically detected: {string.Join(", ", status.ActiveGameNames)}"
+                : status.AutomaticDetectionEnabled
+                    ? status.ConfiguredRuleCount > 0
+                        ? "Watching configured game processes"
+                        : "Automatic detection is on; add at least one process name"
+                    : "Automatic detection is off";
     }
 
     private void UpdateDockStatus(bool gaming)
@@ -217,6 +297,8 @@ public sealed partial class MainPage : Page
     {
         _applyingSettings = true;
         DockAutoHideToggle.IsOn = settings.DockAutoHide;
+        AutomaticGamingModeToggle.IsOn = settings.AutomaticGamingModeEnabled;
+        GameProcessRulesTextBox.Text = settings.GameProcessRules;
         SelectShortcut(settings.LauncherShortcut);
         ShortcutStatus.Text = $"Keyboard shortcut: {settings.LauncherShortcut.GetDisplayName()}";
         _applyingSettings = false;

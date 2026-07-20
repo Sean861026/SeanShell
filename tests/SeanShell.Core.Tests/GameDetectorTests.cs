@@ -14,4 +14,12 @@ public sealed class GameDetectorTests
         Assert.IsTrue(detector.IsGame("eldenring.exe"));
         Assert.IsFalse(detector.IsGame("explorer.exe"));
     }
+
+    [TestMethod]
+    public void ParseRulesNormalizesSeparatorsAndRemovesDuplicates()
+    {
+        var rules = GameDetector.ParseRules("eldenring.exe; Game.EXE\r\neldenring");
+
+        CollectionAssert.AreEqual(new[] { "eldenring", "Game" }, rules.ToArray());
+    }
 }

@@ -6,7 +6,8 @@
 Windows process snapshot
   -> ProcessSnapshot[]
   -> GameDetector
-  -> GamingModeManager
+  -> detected process ID/name set
+  -> GamingModeManager + manual override
   -> ShellStateStore
   -> ShellStateChanged event
   -> App, dashboard providers, dock, and plugins
@@ -15,6 +16,11 @@ Windows process snapshot
 `ShellState` is immutable. The store serializes transitions and emits an event only
 when the mode changes, preventing repeated process scans from causing unnecessary UI
 updates.
+
+`ProcessCatalog` disposes every temporary `Process` object immediately and skips
+processes that exit or become inaccessible during enumeration. The detector runs
+every two seconds even in gaming mode because it is the mechanism that restores
+normal mode; dashboard and Dock polling remain suspended.
 
 ## Launcher results
 
@@ -78,6 +84,8 @@ SeanShell startup
   -> invalid primary: load settings.json.bak
   -> invalid backup: use safe defaults and show warning
   -> apply Dock auto-hide and register Launcher shortcut
+  -> migrate schema v1 to v2 in memory
+  -> configure automatic game detection and normalized process rules
 
 User changes a setting
   -> validate/register requested shortcut when applicable

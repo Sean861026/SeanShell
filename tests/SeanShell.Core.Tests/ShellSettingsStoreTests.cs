@@ -28,6 +28,8 @@ public sealed class ShellSettingsStoreTests
         {
             DockAutoHide = false,
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
+            AutomaticGamingModeEnabled = true,
+            GameProcessRules = "eldenring",
         };
 
         store.Save(expected);
@@ -94,6 +96,31 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(new ShellSettings(), result.Settings);
         Assert.IsFalse(result.WasRecovered);
         Assert.IsNotNull(result.Warning);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionOneSettingsWithoutLosingPreferences()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 1,
+              "dockAutoHide": false,
+              "launcherShortcut": "controlAltSpace"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
+        Assert.IsFalse(result.Settings.DockAutoHide);
+        Assert.AreEqual(LauncherShortcut.ControlAltSpace, result.Settings.LauncherShortcut);
+        Assert.IsFalse(result.Settings.AutomaticGamingModeEnabled);
+        Assert.AreEqual(string.Empty, result.Settings.GameProcessRules);
     }
 
     private sealed class TemporaryDirectory : IDisposable

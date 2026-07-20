@@ -135,12 +135,40 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="A new shortcut is saved only after Windows confirms it is available."
                     TextWrapping="Wrap" />
-                <ToggleSwitch
-                    x:Name="GamingModeToggle"
-                    Header="Gaming mode"
-                    OffContent="Dashboard and dock providers active"
-                    OnContent="Dashboard polling paused and dock hidden"
-                    Toggled="OnGamingModeToggled" />
+                <Expander Header="Gaming mode">
+                    <StackPanel Padding="0,12,0,4" Spacing="12">
+                        <ToggleSwitch
+                            x:Name="GamingModeToggle"
+                            Header="Manual gaming mode"
+                            OffContent="Automatic detection controls the effective mode"
+                            OnContent="Keep gaming mode active until manually disabled"
+                            Toggled="OnGamingModeToggled" />
+                        <ToggleSwitch
+                            x:Name="AutomaticGamingModeToggle"
+                            Header="Automatic game detection"
+                            OffContent="Configured processes are not monitored"
+                            OnContent="Enter gaming mode while a configured process is running"
+                            Toggled="OnAutomaticGamingModeToggled" />
+                        <TextBox
+                            x:Name="GameProcessRulesTextBox"
+                            MinHeight="88"
+                            AcceptsReturn="True"
+                            AutomationProperties.HelpText="Enter one game executable name per line. File paths and executable extensions are optional."
+                            Header="Game process names"
+                            PlaceholderText="eldenring.exe"
+                            TextWrapping="Wrap" />
+                        <Button
+                            MinHeight="44"
+                            HorizontalAlignment="Left"
+                            Click="OnSaveGameRulesClicked"
+                            Content="Save game rules" />
+                        <TextBlock
+                            x:Name="GamingDetectionStatus"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Automatic detection is off"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Expander>
                 <InfoBar
                     x:Name="SettingsStatus"
                     IsOpen="False"
