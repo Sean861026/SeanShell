@@ -32,6 +32,13 @@ Gaming mode calls `SuspendAsync` for optional providers and `ResumeAsync` after 
 last detected game exits. Plugins must treat both operations as idempotent and must
 not assume they run on the UI thread.
 
+The dashboard may disable a built-in plugin at runtime. Disabling suspends an
+active plugin, excludes it from queries and later lifecycle broadcasts, and saves
+its stable ID. A plugin disabled at startup is not initialized. Re-enabling calls
+`InitializeAsync` only if that instance has never initialized; otherwise it calls
+`ResumeAsync`. If Gaming Mode is active, the plugin remains suspended after being
+enabled.
+
 ## Host limits and failure policy
 
 - Initialization timeout: 3 seconds.
@@ -58,8 +65,9 @@ arguments, file contents, environment values, or secrets.
 
 An external manifest will additionally declare its entry assembly and signed
 publisher identity. Third-party loading remains blocked until capability consent,
-signature verification and revocation, a persistent disable switch, and stronger
-out-of-process crash isolation are implemented.
+signature verification and revocation, and stronger out-of-process crash
+isolation are implemented. The current persistent switch applies only to trusted
+built-in registrations.
 
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable

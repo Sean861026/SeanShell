@@ -173,6 +173,14 @@
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
+                                            <ToggleSwitch
+                                                MinHeight="44"
+                                                AutomationProperties.Name="{x:Bind ToggleName}"
+                                                Header="Enabled"
+                                                IsEnabled="{x:Bind CanToggle}"
+                                                IsOn="{x:Bind IsEnabled}"
+                                                Tag="{x:Bind Id}"
+                                                Toggled="OnPluginEnabledToggled" />
                                             <TextBlock FontWeight="SemiBold" Text="{x:Bind State}" />
                                             <TextBlock
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"

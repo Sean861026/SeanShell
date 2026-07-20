@@ -51,9 +51,26 @@ Launcher query
   -> keep all other providers and plugins available
 ```
 
-Faulted plugins stay disabled for the rest of the session. Restarting SeanShell
-creates a fresh built-in plugin instance; persistent disable and retry controls are
-deferred until a signed external loading model exists.
+Faulted plugins remain isolated for the rest of the session. Restarting SeanShell
+creates a fresh built-in plugin instance. User-disabled plugins remain disabled
+across restarts and skip startup initialization.
+
+## Plugin enable or disable
+
+```text
+User changes a plugin Enabled switch
+  -> disable the switch while the operation is pending
+  -> PluginHost serializes the lifecycle transition
+  -> disable: suspend active plugin and remove its Launcher commands
+  -> enable: initialize once or resume an initialized plugin
+  -> Gaming Mode active: keep the enabled plugin suspended
+  -> persist normalized disabled plugin IDs atomically
+  -> save success: refresh diagnostics and report success
+  -> save failure: restore the previous runtime state and report a warning
+```
+
+Unknown IDs are preserved in settings so temporarily unavailable built-in plugins
+do not lose the user's choice. No third-party assemblies are discovered or loaded.
 
 ## Launcher shortcut change
 

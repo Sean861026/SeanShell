@@ -71,7 +71,8 @@ public partial class App : Application
         PluginHost = new PluginHost(
         [
             new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
-        ]);
+        ],
+        disabledPluginIds: PluginIdList.Parse(SettingsLoad.Settings.DisabledPluginIds));
 
         LauncherSearch = new LauncherSearchService(
         [

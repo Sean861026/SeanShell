@@ -13,16 +13,24 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
     private readonly PluginRuntime[] _plugins;
     private bool _disposed;
     private bool _initialized;
+    private volatile bool _suspensionRequested;
 
     public PluginHost(
         IEnumerable<PluginRegistration> registrations,
-        PluginHostOptions? options = null)
+        PluginHostOptions? options = null,
+        IEnumerable<string>? disabledPluginIds = null)
     {
         ArgumentNullException.ThrowIfNull(registrations);
 
         _options = options ?? PluginHostOptions.Default;
         _options.Validate();
-        _plugins = registrations.Select(CreateRuntime).ToArray();
+        var disabledIds = (disabledPluginIds ?? [])
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _plugins = registrations
+            .Select(registration => CreateRuntime(
+                registration,
+                !disabledIds.Contains(registration.Manifest.Id)))
+            .ToArray();
 
         var duplicate = _plugins
             .GroupBy(static plugin => plugin.Manifest.Id, StringComparer.OrdinalIgnoreCase)
@@ -50,15 +58,29 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
             }
 
             _initialized = true;
-            foreach (var plugin in _plugins)
+            foreach (var plugin in _plugins.Where(static plugin => plugin.IsEnabled))
             {
-                await RunLifecycleAsync(
+                var initialized = await RunLifecycleAsync(
                     plugin,
                     "Initialize",
                     _options.InitializationTimeout,
                     plugin.Instance.InitializeAsync,
                     PluginRuntimeState.Active,
                     cancellationToken).ConfigureAwait(false);
+                if (initialized)
+                {
+                    plugin.MarkInitialized();
+                    if (_suspensionRequested)
+                    {
+                        await RunLifecycleAsync(
+                            plugin,
+                            "Suspend",
+                            _options.LifecycleTimeout,
+                            plugin.Instance.SuspendAsync,
+                            PluginRuntimeState.Suspended,
+                            cancellationToken).ConfigureAwait(false);
+                    }
+                }
             }
         }
         finally
@@ -72,9 +94,14 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
+        if (_suspensionRequested)
+        {
+            return [];
+        }
 
         var queryTasks = _plugins
             .Where(static plugin =>
+                plugin.IsEnabled &&
                 plugin.State == PluginRuntimeState.Active &&
                 plugin.Manifest.Capabilities.HasFlag(PluginCapability.LauncherCommands))
             .Select(plugin => QueryPluginAsync(plugin, query, cancellationToken))
@@ -91,20 +118,52 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
     }
 
     public ValueTask SuspendAsync(CancellationToken cancellationToken = default) =>
-        ChangeLifecycleStateAsync(
-            PluginRuntimeState.Active,
-            PluginRuntimeState.Suspended,
-            "Suspend",
-            static (plugin, token) => plugin.SuspendAsync(token),
-            cancellationToken);
+        SetSuspensionRequestedAsync(true, cancellationToken);
 
     public ValueTask ResumeAsync(CancellationToken cancellationToken = default) =>
-        ChangeLifecycleStateAsync(
-            PluginRuntimeState.Suspended,
-            PluginRuntimeState.Active,
-            "Resume",
-            static (plugin, token) => plugin.ResumeAsync(token),
-            cancellationToken);
+        SetSuspensionRequestedAsync(false, cancellationToken);
+
+    public async ValueTask<PluginStateChangeResult> SetEnabledAsync(
+        string pluginId,
+        bool enabled,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginId);
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            var plugin = _plugins.FirstOrDefault(plugin =>
+                string.Equals(plugin.Manifest.Id, pluginId, StringComparison.OrdinalIgnoreCase))
+                ?? throw new KeyNotFoundException($"Plugin '{pluginId}' is not registered.");
+
+            if (plugin.IsEnabled == enabled)
+            {
+                return new PluginStateChangeResult(true, plugin.CreateDiagnostic());
+            }
+
+            if (!_initialized)
+            {
+                plugin.SetEnabled(enabled);
+                plugin.Update(
+                    enabled ? PluginRuntimeState.NotInitialized : PluginRuntimeState.Disabled,
+                    enabled ? "Enabled by settings" : "Disabled by settings",
+                    TimeSpan.Zero,
+                    null);
+                PublishDiagnosticsChanged();
+                return new PluginStateChangeResult(true, plugin.CreateDiagnostic());
+            }
+
+            var success = enabled
+                ? await EnablePluginAsync(plugin, cancellationToken).ConfigureAwait(false)
+                : await DisablePluginAsync(plugin, cancellationToken).ConfigureAwait(false);
+            return new PluginStateChangeResult(success, plugin.CreateDiagnostic());
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -128,6 +187,30 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         }
     }
 
+    private async ValueTask SetSuspensionRequestedAsync(
+        bool suspended,
+        CancellationToken cancellationToken)
+    {
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfDisposed();
+            _suspensionRequested = suspended;
+            await ChangeLifecycleStateAsync(
+                suspended ? PluginRuntimeState.Active : PluginRuntimeState.Suspended,
+                suspended ? PluginRuntimeState.Suspended : PluginRuntimeState.Active,
+                suspended ? "Suspend" : "Resume",
+                suspended
+                    ? static (plugin, token) => plugin.SuspendAsync(token)
+                    : static (plugin, token) => plugin.ResumeAsync(token),
+                cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _lifecycleGate.Release();
+        }
+    }
+
     private async ValueTask ChangeLifecycleStateAsync(
         PluginRuntimeState requiredState,
         PluginRuntimeState successState,
@@ -135,25 +218,103 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         Func<ISeanShellPlugin, CancellationToken, ValueTask> action,
         CancellationToken cancellationToken)
     {
-        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        foreach (var plugin in _plugins.Where(plugin =>
+            plugin.IsEnabled && plugin.State == requiredState))
         {
-            ThrowIfDisposed();
-            foreach (var plugin in _plugins.Where(plugin => plugin.State == requiredState))
+            await RunLifecycleAsync(
+                plugin,
+                operation,
+                _options.LifecycleTimeout,
+                token => action(plugin.Instance, token),
+                successState,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<bool> EnablePluginAsync(
+        PluginRuntime plugin,
+        CancellationToken cancellationToken)
+    {
+        plugin.SetEnabled(true);
+        var success = true;
+        if (!plugin.WasInitialized)
+        {
+            success = await RunLifecycleAsync(
+                plugin,
+                "Initialize",
+                _options.InitializationTimeout,
+                plugin.Instance.InitializeAsync,
+                PluginRuntimeState.Active,
+                cancellationToken).ConfigureAwait(false);
+            if (success)
             {
-                await RunLifecycleAsync(
-                    plugin,
-                    operation,
-                    _options.LifecycleTimeout,
-                    token => action(plugin.Instance, token),
-                    successState,
-                    cancellationToken).ConfigureAwait(false);
+                plugin.MarkInitialized();
             }
         }
-        finally
+        else if (!_suspensionRequested)
         {
-            _lifecycleGate.Release();
+            success = await RunLifecycleAsync(
+                plugin,
+                "Resume",
+                _options.LifecycleTimeout,
+                plugin.Instance.ResumeAsync,
+                PluginRuntimeState.Active,
+                cancellationToken).ConfigureAwait(false);
         }
+        else
+        {
+            plugin.Update(PluginRuntimeState.Suspended, "Enable", TimeSpan.Zero, null);
+            PublishDiagnosticsChanged();
+        }
+
+        if (success && _suspensionRequested && plugin.State == PluginRuntimeState.Active)
+        {
+            success = await RunLifecycleAsync(
+                plugin,
+                "Suspend",
+                _options.LifecycleTimeout,
+                plugin.Instance.SuspendAsync,
+                PluginRuntimeState.Suspended,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!success)
+        {
+            plugin.SetEnabled(false);
+            PublishDiagnosticsChanged();
+        }
+
+        return success;
+    }
+
+    private async Task<bool> DisablePluginAsync(
+        PluginRuntime plugin,
+        CancellationToken cancellationToken)
+    {
+        var success = true;
+        if (plugin.State == PluginRuntimeState.Active)
+        {
+            success = await RunLifecycleAsync(
+                plugin,
+                "Disable",
+                _options.LifecycleTimeout,
+                plugin.Instance.SuspendAsync,
+                PluginRuntimeState.Disabled,
+                cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            plugin.Update(PluginRuntimeState.Disabled, "Disable", TimeSpan.Zero, null);
+            PublishDiagnosticsChanged();
+        }
+
+        if (success)
+        {
+            plugin.SetEnabled(false);
+            PublishDiagnosticsChanged();
+        }
+
+        return success;
     }
 
     private async Task<IReadOnlyList<ShellCommand>> QueryPluginAsync(
@@ -170,7 +331,9 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
                 cancellationToken).ConfigureAwait(false);
             plugin.RecordOperation("Query commands", stopwatch.Elapsed);
             PublishDiagnosticsChanged();
-            return commands;
+            return plugin.IsEnabled && plugin.State == PluginRuntimeState.Active
+                ? commands
+                : [];
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -184,7 +347,7 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         }
     }
 
-    private async Task RunLifecycleAsync(
+    private async Task<bool> RunLifecycleAsync(
         PluginRuntime plugin,
         string operation,
         TimeSpan timeout,
@@ -204,6 +367,8 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
                 timeout,
                 cancellationToken).ConfigureAwait(false);
             plugin.Update(successState, operation, stopwatch.Elapsed, null);
+            PublishDiagnosticsChanged();
+            return true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -212,9 +377,9 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         catch (Exception exception)
         {
             plugin.Update(PluginRuntimeState.Faulted, operation, stopwatch.Elapsed, FormatError(exception));
+            PublishDiagnosticsChanged();
+            return false;
         }
-
-        PublishDiagnosticsChanged();
     }
 
     private async Task RunDisposeAsync(PluginRuntime plugin)
@@ -260,7 +425,7 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
         }
     }
 
-    private static PluginRuntime CreateRuntime(PluginRegistration registration)
+    private static PluginRuntime CreateRuntime(PluginRegistration registration, bool enabled)
     {
         ArgumentNullException.ThrowIfNull(registration);
         ArgumentNullException.ThrowIfNull(registration.Manifest);
@@ -277,7 +442,7 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
             throw new ArgumentException("The plugin manifest name must match the plugin instance name.", nameof(registration));
         }
 
-        return new PluginRuntime(registration.Manifest, registration.Instance);
+        return new PluginRuntime(registration.Manifest, registration.Instance, enabled);
     }
 
     private static void ValidateManifest(PluginManifest manifest)
@@ -335,17 +500,46 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
-    private sealed class PluginRuntime(PluginManifest manifest, ISeanShellPlugin instance)
+    private sealed class PluginRuntime(
+        PluginManifest manifest,
+        ISeanShellPlugin instance,
+        bool enabled)
     {
         private readonly object _sync = new();
-        private PluginRuntimeState _state = PluginRuntimeState.NotInitialized;
-        private string _lastOperation = "Registered";
+        private bool _enabled = enabled;
+        private bool _wasInitialized;
+        private PluginRuntimeState _state = enabled
+            ? PluginRuntimeState.NotInitialized
+            : PluginRuntimeState.Disabled;
+        private string _lastOperation = enabled ? "Registered" : "Disabled by settings";
         private TimeSpan _lastDuration;
         private string? _lastError;
 
         public PluginManifest Manifest { get; } = manifest;
 
         public ISeanShellPlugin Instance { get; } = instance;
+
+        public bool IsEnabled
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _enabled;
+                }
+            }
+        }
+
+        public bool WasInitialized
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _wasInitialized;
+                }
+            }
+        }
 
         public PluginRuntimeState State
         {
@@ -373,6 +567,22 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
             }
         }
 
+        public void SetEnabled(bool value)
+        {
+            lock (_sync)
+            {
+                _enabled = value;
+            }
+        }
+
+        public void MarkInitialized()
+        {
+            lock (_sync)
+            {
+                _wasInitialized = true;
+            }
+        }
+
         public void RecordOperation(string operation, TimeSpan duration)
         {
             lock (_sync)
@@ -394,6 +604,7 @@ public sealed class PluginHost : ILauncherCommandProvider, IAsyncDisposable
                     Manifest.Publisher,
                     Manifest.Capabilities,
                     Manifest.IsBuiltIn,
+                    _enabled,
                     _state,
                     _lastOperation,
                     _lastDuration,
