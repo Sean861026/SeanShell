@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SeanShell.Core;
 using SeanShell.Gaming;
+using SeanShell.Plugins;
 using SeanShell.Windows;
 
 namespace SeanShell.App;
@@ -14,6 +15,7 @@ public sealed partial class MainPage : Page
     private readonly SystemMetricsProvider _systemMetrics;
     private readonly int _displayCount;
     private readonly GamingModeManager _gamingMode;
+    private readonly PluginHost _pluginHost;
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _applyingSettings;
     private bool _refreshing;
@@ -27,6 +29,7 @@ public sealed partial class MainPage : Page
         _desktopWindows = app.DesktopWindows;
         _systemMetrics = app.SystemMetrics;
         _gamingMode = app.GamingMode;
+        _pluginHost = app.PluginHost;
         _displayCount = app.Displays.Capture().Count;
 
         _refreshTimer = DispatcherQueue.CreateTimer();
@@ -127,8 +130,11 @@ public sealed partial class MainPage : Page
         _shellState.StateChanged += OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
         _gamingMode.StatusChanged += OnGamingModeStatusChanged;
+        _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
+        _pluginHost.DiagnosticsChanged += OnPluginDiagnosticsChanged;
         ApplyShellState(_shellState.Current);
         ApplyGamingModeStatus(_gamingMode.Current);
+        ApplyPluginDiagnostics();
         if (_shellState.Current.Mode == ShellMode.Normal)
         {
             _refreshTimer.Start();
@@ -141,6 +147,7 @@ public sealed partial class MainPage : Page
         _refreshTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
+        _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
     }
 
     private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
@@ -211,6 +218,11 @@ public sealed partial class MainPage : Page
         ApplyGamingModeStatus(status);
     }
 
+    private void OnPluginDiagnosticsChanged(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(ApplyPluginDiagnostics);
+    }
+
     private void ApplyShellState(ShellState state)
     {
         var gaming = state.Mode == ShellMode.Gaming;
@@ -237,6 +249,23 @@ public sealed partial class MainPage : Page
                         ? "Watching configured game processes"
                         : "Automatic detection is on; add at least one process name"
                     : "Automatic detection is off";
+    }
+
+    private void ApplyPluginDiagnostics()
+    {
+        var diagnostics = _pluginHost.Diagnostics;
+        PluginDiagnosticsList.ItemsSource = diagnostics
+            .Select(static diagnostic => new PluginDiagnosticViewModel(diagnostic))
+            .ToArray();
+
+        var active = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Active);
+        var suspended = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Suspended);
+        var faulted = diagnostics.Count(static diagnostic => diagnostic.State == PluginRuntimeState.Faulted);
+        PluginStatusSummary.Text = diagnostics.Count == 0
+            ? "No built-in plugins are registered"
+            : $"{diagnostics.Count} registered · {active} active · {suspended} suspended · {faulted} faulted";
+        PluginEmptyState.Visibility = diagnostics.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        PluginDiagnosticsList.Visibility = diagnostics.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void UpdateDockStatus(bool gaming)

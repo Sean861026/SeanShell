@@ -23,10 +23,14 @@ optional, late-stage deployment mode, not an MVP requirement.
 - `SeanShell.Windows` isolates Win32, process, registry, and shell integration.
 - `SeanShell.Gaming` owns process rules and the policy for pausing optional work.
 - `SeanShell.PluginContracts` is the small, versioned surface available to plugins.
+- `SeanShell.Plugins` validates manifests and owns bounded plugin lifecycle,
+  launcher queries, fault isolation, and diagnostics.
+- projects under `plugins/` contain explicitly registered built-in implementations.
 
 Dependencies point inward: App may depend on every module; Windows, Gaming, and
-PluginContracts depend on Core; Core depends only on .NET. Plugins never receive
-the App service container or direct access to UI internals.
+PluginContracts depend on Core; the plugin host depends on Core and contracts;
+Core depends only on .NET. Plugins never receive the App service container or
+direct access to UI internals.
 
 The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
 service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
@@ -41,8 +45,13 @@ without opening or retaining process handles.
 ## Reliability boundaries
 
 - Explorer remains the fallback throughout the MVP.
-- Plugin operations are asynchronous, cancellable, and will gain timeouts and
-  out-of-process isolation before third-party plugins are accepted.
+- Plugin operations are asynchronous and cancellable. Initialization, command
+  queries, suspend, resume, and disposal are bounded by host timeouts. A failed
+  plugin transitions to a session-local faulted state while healthy plugins keep
+  serving commands.
+- Only built-in instances registered by the App composition root are accepted.
+  Third-party discovery remains blocked until signing, user consent, revocation,
+  and out-of-process isolation are implemented.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.

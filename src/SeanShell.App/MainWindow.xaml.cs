@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using SeanShell.Core;
 using SeanShell.Gaming;
+using SeanShell.Plugins;
 using SeanShell.Windows;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -22,6 +23,7 @@ public sealed partial class MainWindow : Window
     private readonly GamingModeManager _gamingMode;
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly ProcessCatalog _processCatalog;
+    private readonly PluginHost _pluginHost;
     private readonly ShellSettingsStore _settingsStore;
     private bool _refreshingGamingMode;
     private GlobalHotKey? _launcherHotKey;
@@ -44,6 +46,7 @@ public sealed partial class MainWindow : Window
         _settingsStore = app.SettingsStore;
         _settings = app.SettingsLoad.Settings;
         _gamingMode = app.GamingMode;
+        _pluginHost = app.PluginHost;
         _processCatalog = app.Processes;
         _launcherWindow = new LauncherWindow(app.LauncherSearch);
         _dockWindows = app.Displays.Capture()
@@ -65,11 +68,12 @@ public sealed partial class MainWindow : Window
         _gamingModeTimer.Tick += OnGamingModeTimerTick;
 
         RegisterLauncherHotKey(_settings.LauncherShortcut);
+        app.ShellState.StateChanged += OnShellStateChanged;
         Activated += OnActivated;
         Closed += OnClosed;
     }
 
-    private void OnActivated(object sender, WindowActivatedEventArgs args)
+    private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
         foreach (var dockWindow in _dockWindows)
@@ -79,6 +83,29 @@ public sealed partial class MainWindow : Window
         }
 
         UpdateGamingModeMonitor();
+        await _pluginHost.InitializeAsync().ConfigureAwait(true);
+        if (_gamingMode.Current.IsGaming)
+        {
+            await _pluginHost.SuspendAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async void OnShellStateChanged(object? sender, ShellState state)
+    {
+        try
+        {
+            if (state.Mode == ShellMode.Gaming)
+            {
+                await _pluginHost.SuspendAsync().ConfigureAwait(true);
+            }
+            else
+            {
+                await _pluginHost.ResumeAsync().ConfigureAwait(true);
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private void OnManualGamingModeChanged(bool enabled)
@@ -287,15 +314,17 @@ public sealed partial class MainWindow : Window
         _ = _launcherWindow.ShowLauncherAsync();
     }
 
-    private void OnClosed(object sender, WindowEventArgs args)
+    private async void OnClosed(object sender, WindowEventArgs args)
     {
         _gamingModeTimer.Stop();
         _launcherHotKey?.Dispose();
+        ((App)Application.Current).ShellState.StateChanged -= OnShellStateChanged;
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.Shutdown();
         }
 
         _launcherWindow.Shutdown();
+        await _pluginHost.DisposeAsync().ConfigureAwait(true);
     }
 }

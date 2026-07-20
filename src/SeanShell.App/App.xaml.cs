@@ -8,6 +8,9 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using SeanShell.Core;
 using SeanShell.Gaming;
+using SeanShell.Plugin.DeveloperTools;
+using SeanShell.PluginContracts;
+using SeanShell.Plugins;
 using SeanShell.Windows;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -29,6 +32,8 @@ public partial class App : Application
     public InstalledApplicationProvider InstalledApplications { get; } = new();
 
     public LauncherSearchService LauncherSearch { get; }
+
+    public PluginHost PluginHost { get; }
 
     public ShellSettingsStore SettingsStore { get; }
 
@@ -63,10 +68,16 @@ public partial class App : Application
             SettingsLoad.Settings.AutomaticGamingModeEnabled,
             GameDetector.ParseRules(SettingsLoad.Settings.GameProcessRules));
 
+        PluginHost = new PluginHost(
+        [
+            new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
+        ]);
+
         LauncherSearch = new LauncherSearchService(
         [
             InstalledApplications,
             new SystemCommandProvider(),
+            PluginHost,
         ]);
 
         InitializeComponent();

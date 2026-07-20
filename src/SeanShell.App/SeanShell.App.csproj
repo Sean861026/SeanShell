@@ -55,9 +55,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\plugins\SeanShell.Plugin.DeveloperTools\SeanShell.Plugin.DeveloperTools.csproj" />
     <ProjectReference Include="..\SeanShell.Core\SeanShell.Core.csproj" />
     <ProjectReference Include="..\SeanShell.Gaming\SeanShell.Gaming.csproj" />
     <ProjectReference Include="..\SeanShell.PluginContracts\SeanShell.PluginContracts.csproj" />
+    <ProjectReference Include="..\SeanShell.Plugins\SeanShell.Plugins.csproj" />
     <ProjectReference Include="..\SeanShell.Windows\SeanShell.Windows.csproj" />
   </ItemGroup>
 
