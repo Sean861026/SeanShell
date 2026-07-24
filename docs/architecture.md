@@ -66,6 +66,12 @@ without opening or retaining process handles.
   selected distribution by opening its shell or files, but exposes no terminate,
   unregister, import, export, default-change, or arbitrary command actions.
   Docker Desktop's internal distributions are filtered from Launcher commands.
+- Docker integration caches `docker container ls --all` JSON lines during plugin
+  initialization or an explicit refresh. A missing CLI or offline Engine is a
+  recoverable availability state, not a plugin fault. Container commands may open
+  a running container's published localhost TCP port or follow logs in a separate
+  console, but expose no start, stop, restart, exec, remove, pull, or Compose
+  mutations.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.

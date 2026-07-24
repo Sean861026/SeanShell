@@ -71,6 +71,12 @@ The built-in WSL plugin follows the same cached-provider model. Enumeration star
 Terminate, shutdown, unregister, import, export, default changes, and arbitrary
 Linux command execution are intentionally excluded.
 
+The built-in Docker plugin invokes the Docker CLI directly without a command
+shell. An offline Engine remains a normal cached state so it cannot fault SeanShell
+startup. Commands may follow a selected container's logs or open its published
+localhost TCP ports. Container lifecycle changes, image pulls, `docker exec`, and
+Compose operations are intentionally excluded.
+
 ## Planned external loading model
 
 An external manifest will additionally declare its entry assembly and signed

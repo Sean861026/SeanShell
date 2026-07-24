@@ -135,6 +135,23 @@ version. They are held in memory and refreshed only by initialization or explici
 user action. No Linux command, environment value, filesystem content, or
 distribution configuration is read or persisted.
 
+## Docker container snapshots
+
+```text
+docker container ls --all --format "{{json .}}"
+  -> one JSON object per line
+  -> DockerContainerParser
+  -> DockerContainerSnapshot[]
+  -> cached availability and container state
+  -> plugin ShellCommand records
+  -> Launcher ranking
+```
+
+Snapshots contain container ID, name, image, state, status text, and published TCP
+port mappings. They remain in memory and refresh only during initialization or an
+explicit user action. Docker stderr, configuration, credentials, environment
+values, mounts, labels, and file contents are not retained or shown.
+
 ## Configuration
 
 ```text

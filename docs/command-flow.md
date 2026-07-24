@@ -108,6 +108,26 @@ User selects a distribution
 Normal Launcher queries never invoke `wsl.exe`. Destructive lifecycle and
 registration commands are not represented as `ShellCommand` records.
 
+## Docker container refresh and open
+
+```text
+Docker plugin initialization or explicit Launcher refresh
+  -> start docker container ls --all --format "{{json .}}" without a command shell
+  -> CLI missing: cache "Docker CLI unavailable"
+  -> Engine offline: cache "Docker Engine unavailable"
+  -> Engine online: parse container identity, image, state, status, and TCP ports
+  -> atomically replace the cached snapshot
+  -> next Launcher query returns logs and localhost-port commands
+
+User selects a cached container
+  -> "<name> Docker logs": open docker logs --tail 200 --follow <exact ID>
+  -> "<name> Docker port <host>": open http://localhost:<host>
+```
+
+Normal Launcher queries never invoke Docker. Log arguments are passed directly to
+`docker.exe`, not through `cmd.exe` or PowerShell. Start, stop, restart, exec,
+remove, pull, and Compose commands are not represented as `ShellCommand` records.
+
 ## Launcher shortcut change
 
 ```text
