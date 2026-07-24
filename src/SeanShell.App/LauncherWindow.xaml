@@ -20,7 +20,6 @@
 
         <TitleBar
             x:Name="LauncherTitleBar"
-            Subtitle="Alt + Space"
             Title="SeanShell Launcher" />
 
         <Grid Grid.Row="1" Padding="24,16,24,20" RowSpacing="16">

@@ -66,6 +66,32 @@ public sealed class GitPluginTests
     }
 
     [TestMethod]
+    public void DiscoveryFindsRepositoryContainingADeepApplicationDirectory()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, ".git"));
+            var applicationDirectory = Directory.CreateDirectory(
+                Path.Combine(root, "src", "App", "bin", "Release", "AppX"));
+
+            var containingRepository = GitRepositoryDiscovery.FindContainingRepository(
+                applicationDirectory.FullName);
+            var repositories = GitRepositoryDiscovery.Discover(
+                [applicationDirectory.FullName]);
+
+            Assert.AreEqual(Path.GetFullPath(root), containingRepository);
+            CollectionAssert.AreEqual(
+                new[] { Path.GetFullPath(root) },
+                repositories.ToArray());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PluginReturnsCachedRepositoryCommandsAndRefreshesOnRequest()
     {
         var root = CreateTemporaryDirectory();

@@ -76,7 +76,8 @@ do not lose the user's choice. No third-party assemblies are discovered or loade
 
 ```text
 Git plugin initialization or explicit Launcher refresh
-  -> inspect configured repository roots to a bounded depth
+  -> resolve any repository containing the App working/binary directory
+  -> inspect configured common repository roots to a bounded depth
   -> skip reparse points, dependency folders, and inaccessible paths
   -> cap discovery at twelve repositories
   -> run cancellable git status processes concurrently

@@ -90,14 +90,23 @@ public partial class App : Application
     {
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        return
-        [
-            Environment.CurrentDirectory,
+        var containingRepositories = new[]
+        {
+            GitRepositoryDiscovery.FindContainingRepository(Environment.CurrentDirectory),
+            GitRepositoryDiscovery.FindContainingRepository(AppContext.BaseDirectory),
+        };
+        return containingRepositories
+            .Where(static path => path is not null)
+            .Cast<string>()
+            .Concat(
+            [
             System.IO.Path.Combine(userProfile, "source", "repos"),
             System.IO.Path.Combine(documents, "GitHub"),
             System.IO.Path.Combine(documents, "Repos"),
             System.IO.Path.Combine(documents, "Repositories"),
-        ];
+            ])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     /// <summary>

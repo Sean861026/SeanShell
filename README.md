@@ -123,9 +123,10 @@ removes its Launcher commands, and persists the choice across restarts. A plugin
 disabled at startup is not initialized until it is enabled. If saving fails,
 SeanShell restores the previous runtime state and reports the failure.
 
-The built-in **Git repositories** plugin scans the current working directory and
-common `GitHub`, `Repos`, `Repositories`, and Visual Studio `source/repos`
-locations to a depth of two folders. It caches up to twelve repositories and adds
+The built-in **Git repositories** plugin first resolves the repository containing
+the current working directory or application build output, then scans common
+`GitHub`, `Repos`, `Repositories`, and Visual Studio `source/repos` locations to a
+depth of two folders. It caches up to twelve repositories and adds
 Launcher results for opening the folder, VS Code, or Windows Terminal. Branch,
 working-tree change count, and ahead/behind state are read with `git status`.
 The plugin never runs commands that modify a repository. Use **Refresh Git

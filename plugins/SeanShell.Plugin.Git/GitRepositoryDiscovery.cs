@@ -47,6 +47,24 @@ public static class GitRepositoryDiscovery
             .ToArray();
     }
 
+    public static string? FindContainingRepository(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var current = new DirectoryInfo(Path.GetFullPath(path));
+        while (current is not null)
+        {
+            if (IsRepository(current.FullName))
+            {
+                return current.FullName;
+            }
+
+            current = current.Parent;
+        }
+
+        return null;
+    }
+
     private static void DiscoverRoot(
         string root,
         int maximumDepth,
@@ -56,6 +74,13 @@ public static class GitRepositoryDiscovery
     {
         if (!Directory.Exists(root))
         {
+            return;
+        }
+
+        var containingRepository = FindContainingRepository(root);
+        if (containingRepository is not null)
+        {
+            repositories.Add(containingRepository);
             return;
         }
 
