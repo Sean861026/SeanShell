@@ -32,6 +32,16 @@ PluginContracts depend on Core; the plugin host depends on Core and contracts;
 Core depends only on .NET. Plugins never receive the App service container or
 direct access to UI internals.
 
+The built-in Git plugin receives a small list of repository roots from the App
+composition root. The App first walks upward from its current and binary
+directories to resolve a containing repository, which keeps packaged build output
+discoverable without scanning arbitrary working directories. Common developer
+folders use breadth-first discovery capped at depth two and twelve repositories,
+skip reparse points and build/dependency folders, and never scan all of the user's
+Documents directory. Repository metadata is read by a
+cancellable `git status` child process during initialization or an explicit
+Launcher refresh. Launcher queries use the cached immutable snapshots.
+
 The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
 service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
 and memory sampling follows the same boundary and publishes a
@@ -49,6 +59,8 @@ without opening or retaining process handles.
   queries, suspend, resume, and disposal are bounded by host timeouts. A failed
   plugin transitions to a session-local faulted state while healthy plugins keep
   serving commands.
+- Git integration is read-only. It may open a repository in Explorer, VS Code, or
+  Windows Terminal, but never runs pull, commit, checkout, reset, or clean.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.

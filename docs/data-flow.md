@@ -102,6 +102,23 @@ MonitorFromWindow
 Auto-hide is a persistent UI preference. A collapsed dock retains a visible edge
 indicator; pointer entry or routed keyboard focus expands it.
 
+## Git repository snapshots
+
+```text
+App-configured repository roots
+  -> bounded GitRepositoryDiscovery
+  -> repository paths
+  -> git status --porcelain --branch
+  -> GitRepositorySnapshot[]
+  -> cached plugin ShellCommand records
+  -> Launcher ranking
+```
+
+Snapshots contain only repository path, display name, branch, working-tree change
+count, and ahead/behind text. Git output is not persisted or logged. Repository
+mutation, credential access, remote calls, and unbounded filesystem scanning are
+outside this plugin.
+
 ## Configuration
 
 ```text

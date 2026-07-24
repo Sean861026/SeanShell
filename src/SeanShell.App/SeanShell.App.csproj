@@ -56,6 +56,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\plugins\SeanShell.Plugin.DeveloperTools\SeanShell.Plugin.DeveloperTools.csproj" />
+    <ProjectReference Include="..\..\plugins\SeanShell.Plugin.Git\SeanShell.Plugin.Git.csproj" />
     <ProjectReference Include="..\SeanShell.Core\SeanShell.Core.csproj" />
     <ProjectReference Include="..\SeanShell.Gaming\SeanShell.Gaming.csproj" />
     <ProjectReference Include="..\SeanShell.PluginContracts\SeanShell.PluginContracts.csproj" />

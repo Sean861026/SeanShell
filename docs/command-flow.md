@@ -72,6 +72,23 @@ User changes a plugin Enabled switch
 Unknown IDs are preserved in settings so temporarily unavailable built-in plugins
 do not lose the user's choice. No third-party assemblies are discovered or loaded.
 
+## Git repository refresh
+
+```text
+Git plugin initialization or explicit Launcher refresh
+  -> resolve any repository containing the App working/binary directory
+  -> inspect configured common repository roots to a bounded depth
+  -> skip reparse points, dependency folders, and inaccessible paths
+  -> cap discovery at twelve repositories
+  -> run cancellable git status processes concurrently
+  -> parse branch, change count, and ahead/behind state
+  -> atomically replace the cached repository snapshot
+  -> next Launcher query returns folder, VS Code, and terminal commands
+```
+
+Normal Launcher queries never start Git processes. The cache changes only during
+plugin initialization or the explicit **Refresh Git repositories** command.
+
 ## Launcher shortcut change
 
 ```text
