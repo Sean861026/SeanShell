@@ -138,10 +138,7 @@ public sealed class WslPlugin : ISeanShellPlugin
 
     private static ValueTask LaunchWslAsync(string distributionName)
     {
-        var startInfo = new ProcessStartInfo("wsl.exe") { UseShellExecute = true };
-        startInfo.ArgumentList.Add("--distribution");
-        startInfo.ArgumentList.Add(distributionName);
-        Process.Start(startInfo);
+        Process.Start(WslShellStartInfoFactory.Create(distributionName));
         return ValueTask.CompletedTask;
     }
 

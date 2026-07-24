@@ -6,6 +6,25 @@ namespace SeanShell.Core.Tests;
 public sealed class WslPluginTests
 {
     [TestMethod]
+    public void ShellStartInfoUsesSystemExecutableAndUserProfile()
+    {
+        var startInfo = WslShellStartInfoFactory.Create("Ubuntu Test");
+
+        Assert.IsTrue(Path.IsPathRooted(startInfo.FileName));
+        Assert.AreEqual(
+            "wsl.exe",
+            Path.GetFileName(startInfo.FileName),
+            true);
+        Assert.AreEqual(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            startInfo.WorkingDirectory);
+        Assert.IsTrue(startInfo.UseShellExecute);
+        CollectionAssert.AreEqual(
+            new[] { "--distribution", "Ubuntu Test" },
+            startInfo.ArgumentList.ToArray());
+    }
+
+    [TestMethod]
     public void ParserReadsDefaultStateAndVersion()
     {
         const string output =
