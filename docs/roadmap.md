@@ -23,7 +23,8 @@
 - [x] One monitor-local dock per startup display snapshot
 - [x] Edge-peek auto-hide with pointer and keyboard-focus safeguards
 - [ ] Rebuild dock windows after display hot-plug without restarting
-- [ ] Recent repositories, Git status, Docker and WSL providers
+- [x] Cached recent repositories and Git status Launcher provider
+- [ ] Docker and WSL providers
 - Target: idle CPU below 0.5% and working set below 200 MB
 - Current local Release sample: 0.31% average CPU and 155 MB working set over
   15 seconds with the dashboard and dock visible; longer hardware coverage remains.
@@ -53,7 +54,8 @@
 - [x] Built-in Developer tools Launcher plugin
 - [ ] Signed external loading, consent, revocation, and process isolation
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
-- [ ] Built-in Git, Docker, WSL, and OpenTAP plugins
+- [x] Built-in read-only Git repository plugin
+- [ ] Built-in Docker, WSL, and OpenTAP plugins
 
 ## Later: shell modes
 

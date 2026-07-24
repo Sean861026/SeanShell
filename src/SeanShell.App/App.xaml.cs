@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Shapes;
 using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugin.DeveloperTools;
+using SeanShell.Plugin.Git;
 using SeanShell.PluginContracts;
 using SeanShell.Plugins;
 using SeanShell.Windows;
@@ -71,6 +72,7 @@ public partial class App : Application
         PluginHost = new PluginHost(
         [
             new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
+            new PluginRegistration(GitPlugin.Manifest, new GitPlugin(GetGitRepositoryRoots())),
         ],
         disabledPluginIds: PluginIdList.Parse(SettingsLoad.Settings.DisabledPluginIds));
 
@@ -82,6 +84,20 @@ public partial class App : Application
         ]);
 
         InitializeComponent();
+    }
+
+    private static IReadOnlyList<string> GetGitRepositoryRoots()
+    {
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return
+        [
+            Environment.CurrentDirectory,
+            System.IO.Path.Combine(userProfile, "source", "repos"),
+            System.IO.Path.Combine(documents, "GitHub"),
+            System.IO.Path.Combine(documents, "Repos"),
+            System.IO.Path.Combine(documents, "Repositories"),
+        ];
     }
 
     /// <summary>

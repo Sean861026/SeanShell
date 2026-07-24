@@ -61,6 +61,11 @@ arguments, file contents, environment values, or secrets.
 - Plugins may not inject into processes, install drivers, intercept global input,
   disable Windows security, or hook graphics APIs.
 
+The built-in Git plugin is a reference implementation of a read-only provider. It
+uses bounded discovery and cached status snapshots, starts `git` without a command
+shell, and exposes only user-initiated open actions. Repository-changing commands
+are intentionally excluded.
+
 ## Planned external loading model
 
 An external manifest will additionally declare its entry assembly and signed
