@@ -29,6 +29,7 @@ src/
 plugins/
   SeanShell.Plugin.DeveloperTools/  First built-in launcher plugin
   SeanShell.Plugin.Git/             Cached Git repository launcher plugin
+  SeanShell.Plugin.Wsl/             Cached WSL distribution launcher plugin
 tests/                        Automated tests
 docs/                         Architecture and contributor documentation
 tools/                        Recovery and development utilities
@@ -131,6 +132,14 @@ Launcher results for opening the folder, VS Code, or Windows Terminal. Branch,
 working-tree change count, and ahead/behind state are read with `git status`.
 The plugin never runs commands that modify a repository. Use **Refresh Git
 repositories** in Launcher after creating, moving, or changing a repository.
+
+The built-in **WSL distributions** plugin reads `wsl.exe --list --verbose` once
+during initialization and again only when the user runs **Refresh WSL
+distributions**. It adds Launcher results for opening each user distribution or
+browsing its `\\wsl.localhost` files. Docker Desktop's internal distributions are
+excluded and remain owned by Docker Desktop. A user-selected open action may start
+a stopped distribution; SeanShell never terminates, unregisters, imports, exports,
+or changes the default distribution.
 
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.

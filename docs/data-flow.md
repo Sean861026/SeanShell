@@ -119,6 +119,22 @@ count, and ahead/behind text. Git output is not persisted or logged. Repository
 mutation, credential access, remote calls, and unbounded filesystem scanning are
 outside this plugin.
 
+## WSL distribution snapshots
+
+```text
+wsl.exe --list --verbose
+  -> UTF-16 text
+  -> WslDistributionParser
+  -> WslDistributionSnapshot[]
+  -> cached plugin ShellCommand records
+  -> Launcher ranking
+```
+
+Snapshots contain only distribution name, default marker, running state, and WSL
+version. They are held in memory and refreshed only by initialization or explicit
+user action. No Linux command, environment value, filesystem content, or
+distribution configuration is read or persisted.
+
 ## Configuration
 
 ```text

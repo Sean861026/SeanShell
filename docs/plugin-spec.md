@@ -66,6 +66,11 @@ uses bounded discovery and cached status snapshots, starts `git` without a comma
 shell, and exposes only user-initiated open actions. Repository-changing commands
 are intentionally excluded.
 
+The built-in WSL plugin follows the same cached-provider model. Enumeration starts
+`wsl.exe` directly and exposes only user-initiated shell and file-open actions.
+Terminate, shutdown, unregister, import, export, default changes, and arbitrary
+Linux command execution are intentionally excluded.
+
 ## Planned external loading model
 
 An external manifest will additionally declare its entry assembly and signed

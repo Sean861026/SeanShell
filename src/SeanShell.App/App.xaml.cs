@@ -10,6 +10,7 @@ using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugin.DeveloperTools;
 using SeanShell.Plugin.Git;
+using SeanShell.Plugin.Wsl;
 using SeanShell.PluginContracts;
 using SeanShell.Plugins;
 using SeanShell.Windows;
@@ -73,6 +74,7 @@ public partial class App : Application
         [
             new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
             new PluginRegistration(GitPlugin.Manifest, new GitPlugin(GetGitRepositoryRoots())),
+            new PluginRegistration(WslPlugin.Manifest, new WslPlugin()),
         ],
         disabledPluginIds: PluginIdList.Parse(SettingsLoad.Settings.DisabledPluginIds));
 
