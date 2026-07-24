@@ -170,11 +170,20 @@ SeanShell startup
   -> collapse to visible edge indicator
   -> pointer enters indicator or keyboard focus returns
   -> restore full dock immediately
+
+Windows sends WM_DISPLAYCHANGE
+  -> restart a one-shot 500 ms debounce timer
+  -> capture ordered monitor handles and work areas
+  -> empty or equivalent topology: keep current Docks
+  -> construct one replacement Dock per new monitor
+  -> construction succeeds: shut down old Docks and activate replacements
+  -> construction fails: close partial replacements and keep old Docks
+  -> update dashboard display count
 ```
 
 Focus within a dock cancels auto-hide. Gaming mode takes precedence and hides all
-docks completely. Monitor hot-plug is not watched yet; restart after changing the
-display topology.
+docks completely. A topology change during Gaming Mode prepares replacement Docks
+without showing them; the existing normal-mode transition displays them later.
 
 ## Gaming mode
 

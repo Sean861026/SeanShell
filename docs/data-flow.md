@@ -94,6 +94,13 @@ EnumDisplayMonitors + monitor work areas
   -> DisplayMonitorSnapshot[]
   -> one DockWindow per monitor
 
+WM_DISPLAYCHANGE
+  -> 500 ms UI-thread debounce
+  -> new DisplayMonitorSnapshot[]
+  -> DisplayTopologyComparer
+  -> changed topology: replacement DockWindow set
+  -> dashboard display count
+
 MonitorFromWindow
   -> DesktopWindowSnapshot.MonitorHandle
   -> monitor-local dock filtering

@@ -18,13 +18,19 @@ namespace SeanShell.App;
 public sealed partial class MainWindow : Window
 {
     private const uint SpaceVirtualKey = 0x20;
+    private readonly DesktopWindowService _desktopWindows;
+    private readonly DisplayMonitorService _displayMonitorService;
+    private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly LauncherWindow _launcherWindow;
-    private readonly IReadOnlyList<DockWindow> _dockWindows;
     private readonly GamingModeManager _gamingMode;
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
+    private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
+    private DisplayChangeObserver? _displayChangeObserver;
+    private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
+    private IReadOnlyList<DockWindow> _dockWindows;
     private bool _refreshingGamingMode;
     private GlobalHotKey? _launcherHotKey;
     private LauncherShortcut? _registeredShortcut;
@@ -48,10 +54,12 @@ public sealed partial class MainWindow : Window
         _gamingMode = app.GamingMode;
         _pluginHost = app.PluginHost;
         _processCatalog = app.Processes;
+        _desktopWindows = app.DesktopWindows;
+        _displayMonitorService = app.Displays;
+        _shellState = app.ShellState;
         _launcherWindow = new LauncherWindow(app.LauncherSearch);
-        _dockWindows = app.Displays.Capture()
-            .Select(monitor => new DockWindow(app.DesktopWindows, app.ShellState, monitor))
-            .ToArray();
+        _monitors = _displayMonitorService.Capture();
+        _dockWindows = CreateDockWindows(_monitors);
 
         if (RootFrame.Content is MainPage mainPage)
         {
@@ -68,8 +76,14 @@ public sealed partial class MainWindow : Window
         _gamingModeTimer.Interval = TimeSpan.FromSeconds(2);
         _gamingModeTimer.Tick += OnGamingModeTimerTick;
 
+        _displayChangeTimer = DispatcherQueue.CreateTimer();
+        _displayChangeTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _displayChangeTimer.IsRepeating = false;
+        _displayChangeTimer.Tick += OnDisplayChangeTimerTick;
+        TryObserveDisplayChanges();
+
         RegisterLauncherHotKey(_settings.LauncherShortcut);
-        app.ShellState.StateChanged += OnShellStateChanged;
+        _shellState.StateChanged += OnShellStateChanged;
         Activated += OnActivated;
         Closed += OnClosed;
     }
@@ -223,6 +237,106 @@ public sealed partial class MainWindow : Window
 
         _settings = _settings with { DockAutoHide = enabled };
         PersistSettings();
+    }
+
+    private void TryObserveDisplayChanges()
+    {
+        try
+        {
+            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            _displayChangeObserver = new DisplayChangeObserver(windowHandle);
+            _displayChangeObserver.Changed += OnDisplaysChanged;
+        }
+        catch (Exception exception)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetDisplayMonitoringUnavailable(exception.Message);
+            }
+        }
+    }
+
+    private void OnDisplaysChanged(object? sender, EventArgs e)
+    {
+        _displayChangeTimer.Stop();
+        _displayChangeTimer.Start();
+    }
+
+    private void OnDisplayChangeTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        _displayChangeTimer.Stop();
+        RebuildDockWindows();
+    }
+
+    private void RebuildDockWindows()
+    {
+        try
+        {
+            var monitors = _displayMonitorService.Capture();
+            if (monitors.Count == 0 ||
+                DisplayTopologyComparer.AreEquivalent(_monitors, monitors))
+            {
+                return;
+            }
+
+            var replacements = CreateDockWindows(monitors);
+            foreach (var dockWindow in replacements)
+            {
+                dockWindow.SetAutoHide(_settings.DockAutoHide);
+            }
+
+            var previous = _dockWindows;
+            _dockWindows = replacements;
+            _monitors = monitors;
+            foreach (var dockWindow in previous)
+            {
+                dockWindow.Shutdown();
+            }
+
+            if (!_gamingMode.Current.IsGaming)
+            {
+                foreach (var dockWindow in _dockWindows)
+                {
+                    dockWindow.ShowDock();
+                }
+            }
+
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetDisplayCount(_monitors.Count);
+            }
+        }
+        catch (Exception exception)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetDisplayMonitoringUnavailable(exception.Message);
+            }
+        }
+    }
+
+    private IReadOnlyList<DockWindow> CreateDockWindows(
+        IReadOnlyList<DisplayMonitorSnapshot> monitors)
+    {
+        var windows = new List<DockWindow>(monitors.Count);
+        try
+        {
+            foreach (var monitor in monitors)
+            {
+                windows.Add(new DockWindow(_desktopWindows, _shellState, monitor));
+            }
+
+            return windows;
+        }
+        catch
+        {
+            foreach (var window in windows)
+            {
+                window.Shutdown();
+            }
+
+            throw;
+        }
     }
 
     private void OnLauncherShortcutChanged(LauncherShortcut shortcut)
@@ -384,9 +498,16 @@ public sealed partial class MainWindow : Window
 
     private async void OnClosed(object sender, WindowEventArgs args)
     {
+        _displayChangeTimer.Stop();
+        if (_displayChangeObserver is not null)
+        {
+            _displayChangeObserver.Changed -= OnDisplaysChanged;
+            _displayChangeObserver.Dispose();
+        }
+
         _gamingModeTimer.Stop();
         _launcherHotKey?.Dispose();
-        ((App)Application.Current).ShellState.StateChanged -= OnShellStateChanged;
+        _shellState.StateChanged -= OnShellStateChanged;
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.Shutdown();
