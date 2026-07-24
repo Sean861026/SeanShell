@@ -89,6 +89,25 @@ Git plugin initialization or explicit Launcher refresh
 Normal Launcher queries never start Git processes. The cache changes only during
 plugin initialization or the explicit **Refresh Git repositories** command.
 
+## WSL distribution refresh and launch
+
+```text
+WSL plugin initialization or explicit Launcher refresh
+  -> start wsl.exe --list --verbose without a command shell
+  -> decode redirected UTF-16 output
+  -> parse default marker, distribution name, state, and WSL version
+  -> atomically replace the cached distribution snapshot
+  -> next Launcher query returns shell and file commands
+
+User selects a distribution
+  -> "<name> WSL shell": start wsl.exe --distribution <exact name>
+  -> "<name> WSL files": open \\wsl.localhost\<exact name>
+  -> Windows/WSL starts the selected distribution if necessary
+```
+
+Normal Launcher queries never invoke `wsl.exe`. Destructive lifecycle and
+registration commands are not represented as `ShellCommand` records.
+
 ## Launcher shortcut change
 
 ```text

@@ -61,6 +61,11 @@ without opening or retaining process handles.
   serving commands.
 - Git integration is read-only. It may open a repository in Explorer, VS Code, or
   Windows Terminal, but never runs pull, commit, checkout, reset, or clean.
+- WSL integration caches the output of `wsl.exe --list --verbose`. Enumeration
+  runs only during initialization or an explicit refresh. The plugin may start a
+  selected distribution by opening its shell or files, but exposes no terminate,
+  unregister, import, export, default-change, or arbitrary command actions.
+  Docker Desktop's internal distributions are filtered from Launcher commands.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.
