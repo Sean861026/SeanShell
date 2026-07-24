@@ -100,8 +100,8 @@ WSL plugin initialization or explicit Launcher refresh
   -> next Launcher query returns shell and file commands
 
 User selects a distribution
-  -> shell command: start wsl.exe --distribution <exact name>
-  -> files command: open \\wsl.localhost\<exact name>
+  -> "<name> WSL shell": start wsl.exe --distribution <exact name>
+  -> "<name> WSL files": open \\wsl.localhost\<exact name>
   -> Windows/WSL starts the selected distribution if necessary
 ```
 

@@ -61,13 +61,13 @@ public sealed class WslPlugin : ISeanShellPlugin
             var stableId = CreateStableId(distribution.Name);
             commands.Add(CreateCommand(
                 $"{stableId}:shell",
-                distribution.Name,
+                $"{distribution.Name} WSL shell",
                 $"{distribution.StatusText} \u00B7 Open Linux shell",
                 ["wsl", "linux", "terminal", distribution.State],
                 _ => LaunchWslAsync(distribution.Name)));
             commands.Add(CreateCommand(
                 $"{stableId}:files",
-                $"{distribution.Name} files",
+                $"{distribution.Name} WSL files",
                 $"{distribution.StatusText} \u00B7 Open Linux files",
                 ["wsl", "linux", "files", "explorer", distribution.State],
                 _ => OpenFilesAsync(distribution.Name)));

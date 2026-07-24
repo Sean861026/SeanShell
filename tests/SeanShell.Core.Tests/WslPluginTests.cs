@@ -54,8 +54,8 @@ public sealed class WslPluginTests
         Assert.HasCount(3, initialCommands);
         Assert.AreEqual(
             "Default \u00B7 Stopped \u00B7 WSL 2 \u00B7 Open Linux shell",
-            initialCommands.Single(command => command.Title == "Ubuntu").Subtitle);
-        Assert.IsTrue(initialCommands.Any(command => command.Title == "Ubuntu files"));
+            initialCommands.Single(command => command.Title == "Ubuntu WSL shell").Subtitle);
+        Assert.IsTrue(initialCommands.Any(command => command.Title == "Ubuntu WSL files"));
         Assert.IsFalse(initialCommands.Any(command => command.Title == "docker-desktop"));
 
         var refresh = initialCommands.Single(
@@ -67,7 +67,7 @@ public sealed class WslPluginTests
 
         Assert.AreEqual(
             "Default \u00B7 Running \u00B7 WSL 2 \u00B7 Open Linux shell",
-            refreshedCommands.Single(command => command.Title == "Ubuntu").Subtitle);
+            refreshedCommands.Single(command => command.Title == "Ubuntu WSL shell").Subtitle);
         Assert.AreEqual(2, provider.CallCount);
     }
 

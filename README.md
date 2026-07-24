@@ -139,7 +139,9 @@ distributions**. It adds Launcher results for opening each user distribution or
 browsing its `\\wsl.localhost` files. Docker Desktop's internal distributions are
 excluded and remain owned by Docker Desktop. A user-selected open action may start
 a stopped distribution; SeanShell never terminates, unregisters, imports, exports,
-or changes the default distribution.
+or changes the default distribution. Plugin results use explicit names such as
+**Ubuntu WSL shell** and **Ubuntu WSL files** so they remain distinguishable from
+the ordinary Ubuntu Start Menu application.
 
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.
