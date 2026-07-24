@@ -1,8 +1,8 @@
 # Plugins
 
 Built-in plugins live here behind host lifecycle timeouts and fault isolation.
-The Developer tools, Git repository, and WSL distribution plugins are
-implemented. Planned first-party providers are Docker and OpenTAP.
+The Developer tools, Git repository, WSL distribution, and Docker container
+plugins are implemented. The next planned first-party provider is OpenTAP.
 
 See [`docs/plugin-spec.md`](../docs/plugin-spec.md) for the draft contract and
 security boundary.

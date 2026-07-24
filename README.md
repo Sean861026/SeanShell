@@ -28,6 +28,7 @@ src/
   SeanShell.Plugins/          Manifest validation, lifecycle, and diagnostics host
 plugins/
   SeanShell.Plugin.DeveloperTools/  First built-in launcher plugin
+  SeanShell.Plugin.Docker/          Cached Docker container launcher plugin
   SeanShell.Plugin.Git/             Cached Git repository launcher plugin
   SeanShell.Plugin.Wsl/             Cached WSL distribution launcher plugin
 tests/                        Automated tests
@@ -142,6 +143,15 @@ a stopped distribution; SeanShell never terminates, unregisters, imports, export
 or changes the default distribution. Plugin results use explicit names such as
 **Ubuntu WSL shell** and **Ubuntu WSL files** so they remain distinguishable from
 the ordinary Ubuntu Start Menu application.
+
+The built-in **Docker containers** plugin reads `docker container ls --all` once
+during initialization and again only when the user runs **Refresh Docker
+containers**. Docker Desktop and the Docker Engine are not started automatically.
+An offline Engine is shown as an available refresh action rather than faulting the
+plugin. Cached containers contribute commands to follow the last 200 log lines;
+running containers also expose published TCP ports on `localhost`. The plugin
+never starts, stops, restarts, executes inside, removes, pulls, or changes a
+container.
 
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.

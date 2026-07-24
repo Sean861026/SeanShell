@@ -25,7 +25,7 @@
 - [ ] Rebuild dock windows after display hot-plug without restarting
 - [x] Cached recent repositories and Git status Launcher provider
 - [x] Cached WSL distribution Launcher provider
-- [ ] Docker provider
+- [x] Cached Docker container provider with offline-Engine handling
 - Target: idle CPU below 0.5% and working set below 200 MB
 - Current local Release sample: 0.31% average CPU and 155 MB working set over
   15 seconds with the dashboard and dock visible; longer hardware coverage remains.
@@ -57,7 +57,8 @@
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin
-- [ ] Built-in Docker and OpenTAP plugins
+- [x] Built-in Docker plugin
+- [ ] Built-in OpenTAP plugin
 
 ## Later: shell modes
 

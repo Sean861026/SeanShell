@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Shapes;
 using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugin.DeveloperTools;
+using SeanShell.Plugin.Docker;
 using SeanShell.Plugin.Git;
 using SeanShell.Plugin.Wsl;
 using SeanShell.PluginContracts;
@@ -73,6 +74,7 @@ public partial class App : Application
         PluginHost = new PluginHost(
         [
             new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
+            new PluginRegistration(DockerPlugin.Manifest, new DockerPlugin()),
             new PluginRegistration(GitPlugin.Manifest, new GitPlugin(GetGitRepositoryRoots())),
             new PluginRegistration(WslPlugin.Manifest, new WslPlugin()),
         ],
