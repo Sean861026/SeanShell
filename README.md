@@ -61,6 +61,14 @@ background work; it does not change process priority, disable Windows security,
 or inject an overlay into games. If the UI becomes unavailable, run
 `tools/restore-explorer.ps1` from PowerShell.
 
+Automatic startup is not enabled yet. The reserved `--startup` launch mode is
+protected by a persistent crash-loop guard: three consecutive launches that do
+not survive the 30-second startup window disable only automatic launch. A normal
+manual launch remains available and clears the guard after it becomes healthy.
+The recovery script also starts Explorer when needed and resets this health
+history. It first requests a normal SeanShell close, then stops only the
+`SeanShell.App` process if WinUI does not close within two seconds.
+
 ## Launcher preview
 
 Press `Alt+Space` or use **Open Launcher** on the dashboard. The M1 launcher

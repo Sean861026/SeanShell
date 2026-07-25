@@ -31,6 +31,10 @@ namespace SeanShell.App;
 /// </summary>
 public partial class App : Application
 {
+    private static readonly TimeSpan StartupHealthyDelay = TimeSpan.FromSeconds(30);
+    private readonly StartupCrashLoopGuard _startupGuard;
+    private readonly CancellationTokenSource _startupHealthCancellation = new();
+    private Guid? _startupSessionId;
     private Window? _window;
 
     public InstalledApplicationProvider InstalledApplications { get; } = new();
@@ -67,6 +71,11 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
             "settings.json");
+        var startupHealthPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "startup-health.json");
+        _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
         GamingMode = new GamingModeManager(ShellState);
@@ -126,9 +135,61 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        var automaticStartup = args.Arguments
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Contains("--startup", StringComparer.OrdinalIgnoreCase);
+        var startup = _startupGuard.BeginSession(automaticStartup);
+        if (!startup.CanStart)
+        {
+            try
+            {
+                ExplorerRecoveryService.EnsureRunning();
+            }
+            catch
+            {
+                // The guard still exits rather than entering another automatic restart loop.
+            }
+
+            Exit();
+            return;
+        }
+
+        if (startup.SessionId is not Guid startupSessionId)
+        {
+            Exit();
+            return;
+        }
+
+        _startupSessionId = startupSessionId;
         _window = new MainWindow();
+        _window.Closed += OnMainWindowClosed;
         _window.Activate();
         _ = WarmInstalledApplicationsAsync();
+        _ = MarkStartupHealthyAsync(startupSessionId);
+    }
+
+    private async Task MarkStartupHealthyAsync(Guid sessionId)
+    {
+        try
+        {
+            await Task.Delay(
+                StartupHealthyDelay,
+                _startupHealthCancellation.Token).ConfigureAwait(false);
+            _startupGuard.MarkHealthy(sessionId);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void OnMainWindowClosed(object sender, WindowEventArgs args)
+    {
+        _startupHealthCancellation.Cancel();
+        if (_startupSessionId is Guid sessionId)
+        {
+            _startupGuard.MarkCleanExit(sessionId);
+            _startupSessionId = null;
+        }
     }
 
     private async Task WarmInstalledApplicationsAsync()
