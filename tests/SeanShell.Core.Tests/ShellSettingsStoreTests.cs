@@ -15,6 +15,7 @@ public sealed class ShellSettingsStoreTests
 
         Assert.IsTrue(result.Settings.DockAutoHide);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
+        Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
         Assert.IsFalse(result.WasRecovered);
         Assert.IsNull(result.Warning);
@@ -29,6 +30,7 @@ public sealed class ShellSettingsStoreTests
         {
             DockAutoHide = false,
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
+            Theme = ShellThemePreference.Dark,
             AutomaticGamingModeEnabled = true,
             GameProcessRules = "eldenring",
             DisabledPluginIds = "seanshell.developer-tools",
@@ -124,6 +126,7 @@ public sealed class ShellSettingsStoreTests
         Assert.IsFalse(result.Settings.AutomaticGamingModeEnabled);
         Assert.AreEqual(string.Empty, result.Settings.GameProcessRules);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
+        Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
     }
 
     [TestMethod]
@@ -150,6 +153,31 @@ public sealed class ShellSettingsStoreTests
         Assert.IsTrue(result.Settings.AutomaticGamingModeEnabled);
         Assert.AreEqual("notepad", result.Settings.GameProcessRules);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
+        Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionThreeSettingsWithSystemThemeByDefault()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 3,
+              "dockAutoHide": true,
+              "launcherShortcut": "altSpace",
+              "disabledPluginIds": "seanshell.wsl"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
+        Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
+        Assert.AreEqual("seanshell.wsl", result.Settings.DisabledPluginIds);
     }
 
     private sealed class TemporaryDirectory : IDisposable

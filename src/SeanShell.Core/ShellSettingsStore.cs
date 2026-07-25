@@ -138,7 +138,7 @@ public sealed class ShellSettingsStore
                 throw new InvalidDataException("The settings document is empty.");
             }
 
-            if (settings.SchemaVersion is 1 or 2)
+            if (settings.SchemaVersion is >= 1 and < ShellSettings.CurrentSchemaVersion)
             {
                 settings = settings with { SchemaVersion = ShellSettings.CurrentSchemaVersion };
             }
@@ -150,6 +150,11 @@ public sealed class ShellSettingsStore
             if (!Enum.IsDefined(settings.LauncherShortcut))
             {
                 throw new InvalidDataException("The launcher shortcut is not supported.");
+            }
+
+            if (!Enum.IsDefined(settings.Theme))
+            {
+                throw new InvalidDataException("The shell theme preference is not supported.");
             }
 
             return true;

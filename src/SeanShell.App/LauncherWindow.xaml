@@ -12,7 +12,7 @@
         <MicaBackdrop Kind="BaseAlt" />
     </Window.SystemBackdrop>
 
-    <Grid KeyDown="OnWindowKeyDown">
+    <Grid x:Name="LauncherRoot" KeyDown="OnWindowKeyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

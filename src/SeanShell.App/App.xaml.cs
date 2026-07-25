@@ -80,6 +80,12 @@ public partial class App : Application
         _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
+        RequestedTheme = SettingsLoad.Settings.Theme switch
+        {
+            ShellThemePreference.Light => ApplicationTheme.Light,
+            ShellThemePreference.Dark => ApplicationTheme.Dark,
+            _ => RequestedTheme,
+        };
         GamingMode = new GamingModeManager(ShellState);
         GamingMode.ConfigureAutomaticDetection(
             SettingsLoad.Settings.AutomaticGamingModeEnabled,

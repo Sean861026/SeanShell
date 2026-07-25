@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
 using Windows.Graphics;
 using Windows.System;
@@ -57,6 +59,16 @@ public sealed partial class LauncherWindow : Window
     {
         _searchCancellation?.Cancel();
         AppWindow.Hide();
+    }
+
+    public void SetReducedEffects(bool enabled)
+    {
+        SystemBackdrop = enabled
+            ? null
+            : new MicaBackdrop { Kind = MicaKind.BaseAlt };
+        LauncherRoot.Background = enabled
+            ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
+            : null;
     }
 
     public void Shutdown()

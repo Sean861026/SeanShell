@@ -40,7 +40,9 @@
                                 Width="48"
                                 Height="48"
                                 HorizontalAlignment="Left"
-                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                Background="Transparent"
+                                BorderBrush="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                BorderThickness="1"
                                 CornerRadius="12">
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons"
@@ -50,20 +52,27 @@
                             </Border>
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
                                 <TextBlock
+                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                                     Style="{StaticResource SeanHeroTitleTextStyle}"
                                     Text="Developer workspace" />
                                 <TextBlock
                                     MaxWidth="720"
                                     HorizontalAlignment="Left"
-                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                                     Text="Your live Windows context, organized for focused development without replacing Explorer." />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SeanSpace8}">
                                 <Border Style="{StaticResource SeanStatusPillStyle}">
-                                    <TextBlock FontSize="12" Text="Explorer compatible" />
+                                    <TextBlock
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                        Text="Explorer compatible" />
                                 </Border>
                                 <Border Style="{StaticResource SeanStatusPillStyle}">
-                                    <TextBlock FontSize="12" Text="No hooks or injection" />
+                                    <TextBlock
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                        Text="No hooks or injection" />
                                 </Border>
                             </StackPanel>
                         </StackPanel>
@@ -74,9 +83,12 @@
                             MinHeight="44"
                             HorizontalAlignment="Left"
                             AutomationProperties.HelpText="Open the keyboard-first application launcher."
+                            Background="Transparent"
+                            BorderBrush="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                             Click="OnOpenLauncherClicked"
                             Content="Open Launcher"
-                            Style="{StaticResource AccentButtonStyle}" />
+                            Style="{StaticResource DefaultButtonStyle}" />
                     </Grid>
                 </Border>
 
@@ -367,6 +379,24 @@
                                 <TextBlock
                                     Style="{StaticResource SeanSecondaryTextStyle}"
                                     Text="The shortcut changes only after Windows confirms that it is available." />
+
+                                <ComboBox
+                                    x:Name="ThemePreferenceComboBox"
+                                    MinWidth="260"
+                                    MaxWidth="360"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.HelpText="Choose whether SeanShell follows Windows or uses a light or dark theme."
+                                    Header="Appearance"
+                                    SelectionChanged="OnThemePreferenceSelectionChanged">
+                                    <ComboBoxItem Content="Use Windows setting" Tag="System" />
+                                    <ComboBoxItem Content="Light" Tag="Light" />
+                                    <ComboBoxItem Content="Dark" Tag="Dark" />
+                                </ComboBox>
+
+                                <TextBlock
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="The selected appearance is applied after SeanShell restarts. High contrast always follows Windows."
+                                    TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 

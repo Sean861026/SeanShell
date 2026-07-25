@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugins;
@@ -68,6 +69,7 @@ public sealed partial class MainWindow : Window
             mainPage.LauncherRequested += OnLauncherRequested;
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
+            mainPage.ThemePreferenceChanged += OnThemePreferenceChanged;
             mainPage.AutomaticGamingModeChanged += OnAutomaticGamingModeChanged;
             mainPage.GameProcessRulesSaved += OnGameProcessRulesSaved;
             mainPage.ManualGamingModeChanged += OnManualGamingModeChanged;
@@ -120,10 +122,12 @@ public sealed partial class MainWindow : Window
             if (state.Mode == ShellMode.Gaming)
             {
                 _dockRefreshTimer.Stop();
+                SetReducedEffects(true);
                 await _pluginHost.SuspendAsync().ConfigureAwait(true);
             }
             else
             {
+                SetReducedEffects(false);
                 _dockRefreshTimer.Start();
                 _ = RefreshDockWindowsAsync();
                 await _pluginHost.ResumeAsync().ConfigureAwait(true);
@@ -248,6 +252,31 @@ public sealed partial class MainWindow : Window
 
         _settings = _settings with { DockAutoHide = enabled };
         PersistSettings();
+    }
+
+    private void OnThemePreferenceChanged(ShellThemePreference theme)
+    {
+        var previousSettings = _settings;
+        _settings = _settings with { Theme = theme };
+        var persisted = PersistSettings();
+        if (!persisted)
+        {
+            _settings = previousSettings;
+        }
+
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetThemePreferenceApplied(persisted ? theme : previousSettings.Theme, persisted);
+        }
+    }
+
+    private void SetReducedEffects(bool enabled)
+    {
+        SystemBackdrop = enabled ? null : new MicaBackdrop();
+        WindowRoot.Background = enabled
+            ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
+            : null;
+        _launcherWindow.SetReducedEffects(enabled);
     }
 
     private void TryObserveDisplayChanges()
