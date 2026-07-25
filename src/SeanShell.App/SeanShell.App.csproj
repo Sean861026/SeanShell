@@ -57,6 +57,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\plugins\SeanShell.Plugin.DeveloperTools\SeanShell.Plugin.DeveloperTools.csproj" />
     <ProjectReference Include="..\..\plugins\SeanShell.Plugin.Docker\SeanShell.Plugin.Docker.csproj" />
+    <ProjectReference Include="..\..\plugins\SeanShell.Plugin.DotNet\SeanShell.Plugin.DotNet.csproj" />
     <ProjectReference Include="..\..\plugins\SeanShell.Plugin.Git\SeanShell.Plugin.Git.csproj" />
     <ProjectReference Include="..\..\plugins\SeanShell.Plugin.Wsl\SeanShell.Plugin.Wsl.csproj" />
     <ProjectReference Include="..\SeanShell.Core\SeanShell.Core.csproj" />

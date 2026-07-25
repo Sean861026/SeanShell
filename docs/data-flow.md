@@ -173,6 +173,31 @@ port mappings. They remain in memory and refresh only during initialization or a
 explicit user action. Docker stderr, configuration, credentials, environment
 values, mounts, labels, and file contents are not retained or shown.
 
+## .NET workspace snapshots
+
+```text
+App-configured developer roots
+  -> bounded DotNetWorkspaceDiscovery
+  -> .sln / .slnx / .csproj paths
+  -> safe project metadata inspection
+  -> DotNetWorkspaceSnapshot[]
+  -> cached plugin ShellCommand records
+  -> Launcher ranking
+```
+
+Snapshots contain a local path, display name, classified project type, target
+framework names, a solution marker, test-project status, run capability, and up
+to eight validated loopback launch-profile URLs. File contents are not retained
+or logged. The cache changes only during initialization or an explicit refresh.
+
+Explicit build, test, and run selections flow from immutable snapshot metadata to
+`ProcessStartInfo.ArgumentList`. SeanShell never constructs a `cmd.exe` or
+PowerShell command string.
+
+`launchSettings.json` URLs pass through absolute-URI, HTTP/HTTPS, and loopback
+checks before entering a snapshot. External hosts and non-web schemes never become
+Launcher commands.
+
 ## Configuration
 
 ```text

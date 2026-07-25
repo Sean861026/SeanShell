@@ -10,6 +10,7 @@ using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugin.DeveloperTools;
 using SeanShell.Plugin.Docker;
+using SeanShell.Plugin.DotNet;
 using SeanShell.Plugin.Git;
 using SeanShell.Plugin.Wsl;
 using SeanShell.PluginContracts;
@@ -73,11 +74,15 @@ public partial class App : Application
             SettingsLoad.Settings.AutomaticGamingModeEnabled,
             GameDetector.ParseRules(SettingsLoad.Settings.GameProcessRules));
 
+        var developerWorkspaceRoots = GetDeveloperWorkspaceRoots();
         PluginHost = new PluginHost(
         [
             new PluginRegistration(DeveloperToolsPlugin.Manifest, new DeveloperToolsPlugin()),
             new PluginRegistration(DockerPlugin.Manifest, new DockerPlugin()),
-            new PluginRegistration(GitPlugin.Manifest, new GitPlugin(GetGitRepositoryRoots())),
+            new PluginRegistration(
+                DotNetWorkspacePlugin.Manifest,
+                new DotNetWorkspacePlugin(developerWorkspaceRoots)),
+            new PluginRegistration(GitPlugin.Manifest, new GitPlugin(developerWorkspaceRoots)),
             new PluginRegistration(WslPlugin.Manifest, new WslPlugin()),
         ],
         disabledPluginIds: PluginIdList.Parse(SettingsLoad.Settings.DisabledPluginIds));
@@ -92,7 +97,7 @@ public partial class App : Application
         InitializeComponent();
     }
 
-    private static IReadOnlyList<string> GetGitRepositoryRoots()
+    private static IReadOnlyList<string> GetDeveloperWorkspaceRoots()
     {
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);

@@ -42,6 +42,18 @@ Documents directory. Repository metadata is read by a
 cancellable `git status` child process during initialization or an explicit
 Launcher refresh. Launcher queries use the cached immutable snapshots.
 
+The built-in .NET workspace plugin receives the same bounded developer roots. A
+breadth-first scan is capped at depth four and 24 solution/project files, skips
+build, dependency, reparse-point, and inaccessible directories, and never scans
+the entire disk. Project inspection uses an XML reader with DTD processing and
+external resolution disabled. Only the project SDK, target frameworks, selected
+references, and the presence of nearby Razor component files are used to classify
+the in-memory snapshot. Launcher queries never touch the filesystem.
+`launchSettings.json` is optional and parsed with comments/trailing commas
+enabled to match common .NET templates. Only absolute HTTP/HTTPS loopback URLs
+are cached, capped at eight per project; external hosts and non-web schemes are
+discarded.
+
 The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
 service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
 and memory sampling follows the same boundary and publishes a
@@ -82,6 +94,13 @@ without opening or retaining process handles.
   a running container's published localhost TCP port or follow logs in a separate
   console, but expose no start, stop, restart, exec, remove, pull, or Compose
   mutations.
+- .NET workspace integration only opens a cached solution/project path, its
+  containing folder in VS Code, or Windows Terminal, or starts an exact visible
+  `dotnet build`, `dotnet test`, or `dotnet run --project` command after the user
+  selects it. Runnable projects may also start `dotnet watch run` for hot reload
+  or open a validated loopback launch-profile URL. Arguments are passed directly
+  without a command shell. Package restore and project mutation commands are not
+  exposed.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.
