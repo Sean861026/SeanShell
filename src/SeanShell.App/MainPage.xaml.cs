@@ -220,6 +220,7 @@ public sealed partial class MainPage : Page
         ApplyGamingModeStatus(_gamingMode.Current);
         ApplyPluginDiagnostics();
         ApplyLauncherPerformance();
+        ApplyAdaptiveLayout(ActualWidth);
         if (_shellState.Current.Mode == ShellMode.Normal)
         {
             _refreshTimer.Start();
@@ -234,6 +235,49 @@ public sealed partial class MainPage : Page
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
+    }
+
+    private void OnPageSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        ApplyAdaptiveLayout(e.NewSize.Width);
+    }
+
+    private void ApplyAdaptiveLayout(double width)
+    {
+        var medium = width >= 760;
+        var wide = width >= 1280;
+        var star = new GridLength(1, GridUnitType.Star);
+        var hidden = new GridLength(0);
+
+        HeaderActionColumn.Width = medium ? GridLength.Auto : hidden;
+        Grid.SetRow(HeaderAction, medium ? 0 : 1);
+        Grid.SetColumn(HeaderAction, medium ? 1 : 0);
+        HeaderAction.HorizontalAlignment = medium
+            ? HorizontalAlignment.Right
+            : HorizontalAlignment.Left;
+
+        MetricsColumn1.Width = medium ? star : hidden;
+        MetricsColumn2.Width = wide ? star : hidden;
+        MetricsColumn3.Width = wide ? star : hidden;
+        Grid.SetRow(MemoryCard, medium ? 0 : 1);
+        Grid.SetColumn(MemoryCard, medium ? 1 : 0);
+        Grid.SetRow(WindowsCard, wide ? 0 : medium ? 1 : 2);
+        Grid.SetColumn(WindowsCard, wide ? 2 : 0);
+        Grid.SetRow(ModeCard, wide ? 0 : medium ? 1 : 3);
+        Grid.SetColumn(ModeCard, wide ? 3 : medium ? 1 : 0);
+
+        WorkspaceColumn1.Width = medium ? star : hidden;
+        Grid.SetRow(LauncherCard, medium ? 0 : 1);
+        Grid.SetColumn(LauncherCard, medium ? 1 : 0);
+
+        ConfigurationColumn0.Width = wide
+            ? new GridLength(5, GridUnitType.Star)
+            : star;
+        ConfigurationColumn1.Width = wide
+            ? new GridLength(7, GridUnitType.Star)
+            : hidden;
+        Grid.SetRow(PluginCard, wide ? 0 : 1);
+        Grid.SetColumn(PluginCard, wide ? 1 : 0);
     }
 
     private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
