@@ -173,6 +173,22 @@ port mappings. They remain in memory and refresh only during initialization or a
 explicit user action. Docker stderr, configuration, credentials, environment
 values, mounts, labels, and file contents are not retained or shown.
 
+## .NET workspace snapshots
+
+```text
+App-configured developer roots
+  -> bounded DotNetWorkspaceDiscovery
+  -> .sln / .slnx / .csproj paths
+  -> safe project metadata inspection
+  -> DotNetWorkspaceSnapshot[]
+  -> cached plugin ShellCommand records
+  -> Launcher ranking
+```
+
+Snapshots contain a local path, display name, classified project type, target
+framework names, and a solution marker. File contents are not retained or logged.
+The cache changes only during initialization or an explicit refresh.
+
 ## Configuration
 
 ```text

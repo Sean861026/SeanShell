@@ -160,6 +160,14 @@ running containers also expose published TCP ports on `localhost`. The plugin
 never starts, stops, restarts, executes inside, removes, pulls, or changes a
 container.
 
+The built-in **.NET workspaces** plugin scans the same bounded developer roots for
+up to 24 `.sln`, `.slnx`, and `.csproj` files. It safely reads project SDK and
+target-framework metadata and distinguishes C#, ASP.NET Core, Blazor WebAssembly,
+Razor-component web apps, .NET Worker, and .NET MAUI projects. Cached Launcher
+commands open a workspace in its default IDE, VS Code, or Windows Terminal.
+Use **Refresh .NET workspaces** after creating or moving a project. This first
+slice never runs `dotnet build`, `dotnet test`, or `dotnet run`.
+
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.
 

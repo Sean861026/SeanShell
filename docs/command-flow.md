@@ -133,6 +133,22 @@ Normal Launcher queries never invoke Docker. Log arguments are passed directly t
 `docker.exe`, not through `cmd.exe` or PowerShell. Start, stop, restart, exec,
 remove, pull, and Compose commands are not represented as `ShellCommand` records.
 
+## .NET workspace refresh and open
+
+```text
+.NET plugin initialization or explicit Launcher refresh
+  -> inspect configured developer roots to a bounded depth
+  -> skip build, dependency, reparse-point, and inaccessible directories
+  -> cap discovery at 24 .sln, .slnx, and .csproj files
+  -> parse project XML with DTD and external resolution disabled
+  -> classify project type and target frameworks
+  -> atomically replace the cached workspace snapshot
+  -> next Launcher query returns default IDE, VS Code, and terminal commands
+```
+
+Normal Launcher queries never read project files. The first slice does not create
+build, test, run, restore, or project-mutation commands.
+
 ## Launcher shortcut change
 
 ```text
