@@ -47,6 +47,8 @@ public sealed partial class MainPage : Page
                 app.SettingsLoad.Warning,
                 InfoBarSeverity.Warning);
         }
+
+        ApplyStartupStatus(app.StartupSession);
     }
 
     public event EventHandler? LauncherRequested;
@@ -62,6 +64,43 @@ public sealed partial class MainPage : Page
     public event Action<bool>? ManualGamingModeChanged;
 
     public event Action<string, bool>? PluginEnabledChanged;
+
+    private void ApplyStartupStatus(StartupSessionResult? startup)
+    {
+        if (startup is null ||
+            (startup.ConsecutiveFailures == 0 &&
+             !startup.AutomaticStartupDisabled &&
+             startup.Warning is null))
+        {
+            return;
+        }
+
+        var messages = new List<string>();
+        if (startup.ConsecutiveFailures > 0)
+        {
+            messages.Add(
+                $"Detected {startup.ConsecutiveFailures} incomplete startup " +
+                $"attempt{(startup.ConsecutiveFailures == 1 ? string.Empty : "s")}.");
+        }
+
+        if (startup.AutomaticStartupDisabled)
+        {
+            messages.Add(
+                "Automatic startup is disabled until this manual session becomes healthy.");
+        }
+
+        if (startup.Warning is not null)
+        {
+            messages.Add(startup.Warning);
+        }
+
+        StartupStatus.Title = startup.AutomaticStartupDisabled
+            ? "Manual startup recovery"
+            : "Startup recovery active";
+        StartupStatus.Message = string.Join(" ", messages);
+        StartupStatus.Severity = InfoBarSeverity.Warning;
+        StartupStatus.IsOpen = true;
+    }
 
     public void SetShortcutApplied(LauncherShortcut shortcut, bool persisted = true)
     {

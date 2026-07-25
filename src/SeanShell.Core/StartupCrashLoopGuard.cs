@@ -68,12 +68,14 @@ public sealed class StartupCrashLoopGuard
             return StartupSessionResult.Allowed(
                 sessionId,
                 consecutiveFailures,
+                state.AutomaticStartupDisabled,
                 CombineWarnings(load.Warning, error));
         }
 
         return StartupSessionResult.Allowed(
             sessionId,
             consecutiveFailures,
+            state.AutomaticStartupDisabled,
             load.Warning);
     }
 
@@ -212,8 +214,9 @@ public sealed record StartupSessionResult(
     internal static StartupSessionResult Allowed(
         Guid sessionId,
         int consecutiveFailures,
+        bool automaticStartupDisabled,
         string? warning) =>
-        new(true, sessionId, consecutiveFailures, false, warning);
+        new(true, sessionId, consecutiveFailures, automaticStartupDisabled, warning);
 
     internal static StartupSessionResult Blocked(
         int consecutiveFailures,

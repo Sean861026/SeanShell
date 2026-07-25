@@ -238,6 +238,10 @@
                     </StackPanel>
                 </Expander>
                 <InfoBar
+                    x:Name="StartupStatus"
+                    IsOpen="False"
+                    IsClosable="True" />
+                <InfoBar
                     x:Name="SettingsStatus"
                     IsOpen="False"
                     IsClosable="True" />

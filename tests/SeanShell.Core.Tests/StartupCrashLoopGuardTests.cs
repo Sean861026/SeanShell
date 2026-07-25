@@ -51,10 +51,12 @@ public sealed class StartupCrashLoopGuardTests
 
         var manual = guard.BeginSession(automaticStartup: false);
         Assert.IsTrue(manual.CanStart);
+        Assert.IsTrue(manual.AutomaticStartupDisabled);
         Assert.IsTrue(guard.MarkHealthy(manual.SessionId!.Value));
 
         var automatic = guard.BeginSession(automaticStartup: true);
         Assert.IsTrue(automatic.CanStart);
+        Assert.IsFalse(automatic.AutomaticStartupDisabled);
         Assert.AreEqual(0, automatic.ConsecutiveFailures);
     }
 

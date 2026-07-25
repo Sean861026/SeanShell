@@ -49,6 +49,8 @@ public partial class App : Application
 
     public SettingsLoadResult SettingsLoad { get; }
 
+    public StartupSessionResult? StartupSession { get; private set; }
+
     public ShellStateStore ShellState { get; } = new();
 
     public GamingModeManager GamingMode { get; }
@@ -139,6 +141,7 @@ public partial class App : Application
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Contains("--startup", StringComparer.OrdinalIgnoreCase);
         var startup = _startupGuard.BeginSession(automaticStartup);
+        StartupSession = startup;
         if (!startup.CanStart)
         {
             try
