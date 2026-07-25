@@ -188,6 +188,7 @@ and stronger process isolation must ship before external plugins are accepted.
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Design system](docs/design-system.md)
 - [Command flow](docs/command-flow.md)
 - [Data flow](docs/data-flow.md)
 - [Gaming compatibility](docs/gaming-compatibility.md)

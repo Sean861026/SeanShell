@@ -22,7 +22,7 @@
             x:Name="LauncherTitleBar"
             Title="SeanShell Launcher" />
 
-        <Grid Grid.Row="1" Padding="24,16,24,20" RowSpacing="16">
+        <Grid Grid.Row="1" Padding="24,16,24,20" RowSpacing="{StaticResource SeanSpace16}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -46,12 +46,7 @@
                     ItemClick="OnResultClicked"
                     SelectionMode="Single">
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="MinHeight" Value="64" />
-                            <Setter Property="Margin" Value="0,0,0,4" />
-                            <Setter Property="Padding" Value="12,8" />
-                        </Style>
+                        <StaticResource ResourceKey="SeanLauncherResultItemStyle" />
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
@@ -65,7 +60,7 @@
                                     Width="40"
                                     Height="40"
                                     Background="{ThemeResource AccentFillColorSecondaryBrush}"
-                                    CornerRadius="8">
+                                    CornerRadius="{StaticResource SeanCompactCornerRadius}">
                                     <FontIcon
                                         FontFamily="Segoe Fluent Icons"
                                         FontSize="18"
@@ -82,13 +77,9 @@
                                 </StackPanel>
                                 <Border
                                     Grid.Column="2"
-                                    Padding="8,3"
-                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                    CornerRadius="10"
-                                    VerticalAlignment="Center">
+                                    Style="{StaticResource SeanStatusPillStyle}">
                                     <TextBlock
-                                        FontSize="12"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource SeanCaptionTextStyle}"
                                         Text="{Binding KindLabel}" />
                                 </Border>
                             </Grid>
@@ -108,10 +99,10 @@
                         Glyph="&#xE721;" />
                     <TextBlock
                         HorizontalAlignment="Center"
-                        Style="{StaticResource SubtitleTextBlockStyle}"
+                        Style="{StaticResource SeanSectionTitleTextStyle}"
                         Text="No matching commands" />
                     <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource SeanSecondaryTextStyle}"
                         Text="Try an application name or a shorter search."
                         TextAlignment="Center" />
                 </StackPanel>
@@ -133,12 +124,12 @@
                 <TextBlock
                     x:Name="ResultStatus"
                     AutomationProperties.LiveSetting="Polite"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource SeanSecondaryTextStyle}"
                     Text="Loading commands…" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="↑↓ Navigate" />
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Enter Open" />
-                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Esc Close" />
+                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="↑↓ Navigate" />
+                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="Enter Open" />
+                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="Esc Close" />
                 </StackPanel>
             </Grid>
 

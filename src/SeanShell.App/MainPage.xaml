@@ -11,7 +11,7 @@
     mc:Ignorable="d">
 
     <ScrollViewer>
-        <Grid Padding="32" RowSpacing="24">
+        <Grid Padding="{StaticResource SeanPagePadding}" RowSpacing="{StaticResource SeanSpace24}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -24,12 +24,11 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Spacing="8">
-                    <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Developer workspace" />
+                <StackPanel Spacing="{StaticResource SeanSpace8}">
+                    <TextBlock Style="{StaticResource SeanPageTitleTextStyle}" Text="Developer workspace" />
                     <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Live Windows context without replacing Explorer."
-                        TextWrapping="Wrap" />
+                        Style="{StaticResource SeanSecondaryTextStyle}"
+                        Text="Live Windows context without replacing Explorer." />
                 </StackPanel>
                 <Button
                     Grid.Column="1"
@@ -48,35 +47,35 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Style="{StaticResource SeanMetricCardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="CPU" />
-                        <TextBlock x:Name="CpuValue" FontSize="24" FontWeight="SemiBold" Text="Sampling…" />
+                        <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="CPU" />
+                        <TextBlock x:Name="CpuValue" Style="{StaticResource SeanMetricValueTextStyle}" Text="Sampling…" />
                         <ProgressBar x:Name="CpuProgress" Maximum="100" AutomationProperties.Name="CPU usage" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Grid.Column="1" Style="{StaticResource SeanMetricCardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Memory" />
-                        <TextBlock x:Name="MemoryValue" FontSize="24" FontWeight="SemiBold" Text="Loading…" />
+                        <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Memory" />
+                        <TextBlock x:Name="MemoryValue" Style="{StaticResource SeanMetricValueTextStyle}" Text="Loading…" />
                         <ProgressBar x:Name="MemoryProgress" Maximum="100" AutomationProperties.Name="Memory usage" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Grid.Column="2" Style="{StaticResource SeanMetricCardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Open windows" />
-                        <TextBlock x:Name="WindowCountValue" FontSize="24" FontWeight="SemiBold" Text="Loading…" />
-                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Shown in the dock" />
+                        <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Open windows" />
+                        <TextBlock x:Name="WindowCountValue" Style="{StaticResource SeanMetricValueTextStyle}" Text="Loading…" />
+                        <TextBlock Style="{StaticResource SeanSecondaryTextStyle}" Text="Shown in the dock" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="3" Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Grid.Column="3" Style="{StaticResource SeanMetricCardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Shell mode" />
-                        <TextBlock x:Name="ModeText" FontSize="24" FontWeight="SemiBold" Text="Normal" />
-                        <TextBlock x:Name="ProviderStatus" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Providers active" />
+                        <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Shell mode" />
+                        <TextBlock x:Name="ModeText" Style="{StaticResource SeanMetricValueTextStyle}" Text="Normal" />
+                        <TextBlock x:Name="ProviderStatus" Style="{StaticResource SeanSecondaryTextStyle}" Text="Providers active" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -87,39 +86,35 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Style="{StaticResource SeanCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Window dock" />
+                        <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Window dock" />
                         <TextBlock
                             Text="The lightweight dock lists normal application windows and switches focus without injection."
                             TextWrapping="Wrap" />
                         <TextBlock
                             x:Name="DockStatus"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="Visible above the primary taskbar"
-                            TextWrapping="Wrap" />
+                            Style="{StaticResource SeanSecondaryTextStyle}"
+                            Text="Visible above the primary taskbar" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+                <Border Grid.Column="1" Style="{StaticResource SeanCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Launcher" />
+                        <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Launcher" />
                         <TextBlock Text="Search installed apps and safe system commands." TextWrapping="Wrap" />
                         <TextBlock
                             x:Name="ShortcutStatus"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="Keyboard shortcut: Alt + Space"
-                            TextWrapping="Wrap" />
+                            Style="{StaticResource SeanSecondaryTextStyle}"
+                            Text="Keyboard shortcut: Alt + Space" />
                         <TextBlock
                             x:Name="LauncherFirstUsablePerformance"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="First usable: Not measured · target &lt; 300 ms"
-                            TextWrapping="Wrap" />
+                            Style="{StaticResource SeanSecondaryTextStyle}"
+                            Text="First usable: Not measured · target &lt; 300 ms" />
                         <TextBlock
                             x:Name="LauncherSearchPerformance"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="Cached search P95: Not measured · target &lt; 50 ms"
-                            TextWrapping="Wrap" />
+                            Style="{StaticResource SeanSecondaryTextStyle}"
+                            Text="Cached search P95: Not measured · target &lt; 50 ms" />
                     </StackPanel>
                 </Border>
             </Grid>

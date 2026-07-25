@@ -75,6 +75,15 @@
     command before execution
   - [x] Add Blazor/ASP.NET Core hot reload and validated local launch-profile URLs
 
+## UI polish
+
+- [x] Shared Fluent spacing, shape, typography, surface, and list styles
+- [ ] Adaptive dashboard information architecture
+- [ ] Launcher result grouping and stable feedback states
+- [ ] Dock active, minimized, hover, and keyboard-focus states
+- [ ] Light, dark, high-contrast, text-scaling, and multi-display visual checks
+- [ ] Compact display density and reduced-effects Gaming Mode
+
 ## Later: shell modes
 
 - Companion shell experiment with Explorer retained for shell services
