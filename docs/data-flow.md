@@ -43,6 +43,20 @@ Ranking prefers exact title, title prefix, word prefix, substring, keywords, and
 finally ordered-character subsequences. A failed provider contributes no results
 and does not prevent healthy providers from serving the launcher.
 
+## Launcher performance
+
+```text
+successful show/search Stopwatch duration
+  -> LauncherPerformanceMonitor
+  -> first usable duration + latest 50 successful search durations
+  -> last duration + nearest-rank P95 snapshot
+  -> Launcher dashboard card
+```
+
+Cancelled and failed operations are excluded. Only durations and a bounded sample
+count are retained in process memory; query text and command results never enter
+this flow.
+
 ## Plugin lifecycle and diagnostics
 
 ```text

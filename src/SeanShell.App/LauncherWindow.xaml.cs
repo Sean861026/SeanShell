@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -13,13 +14,17 @@ public sealed partial class LauncherWindow : Window
 {
     private const int WindowWidth = 720;
     private const int WindowHeight = 560;
+    private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
     private CancellationTokenSource? _searchCancellation;
     private bool _allowClose;
 
-    public LauncherWindow(LauncherSearchService searchService)
+    public LauncherWindow(
+        LauncherSearchService searchService,
+        LauncherPerformanceMonitor performanceMonitor)
     {
         _searchService = searchService;
+        _performanceMonitor = performanceMonitor;
         InitializeComponent();
 
         ResultsList.ItemsSource = Results;
@@ -35,6 +40,7 @@ public sealed partial class LauncherWindow : Window
 
     public async Task ShowLauncherAsync()
     {
+        var firstUsableStopwatch = Stopwatch.StartNew();
         CenterOnCurrentDisplay();
         AppWindow.Show();
         Activate();
@@ -43,6 +49,8 @@ public sealed partial class LauncherWindow : Window
         SearchBox.Focus(FocusState.Programmatic);
         SearchBox.SelectAll();
         await RefreshResultsAsync(string.Empty).ConfigureAwait(true);
+        firstUsableStopwatch.Stop();
+        _performanceMonitor.RecordFirstUsable(firstUsableStopwatch.Elapsed);
     }
 
     public void HideLauncher()
@@ -100,8 +108,11 @@ public sealed partial class LauncherWindow : Window
 
         try
         {
+            var searchStopwatch = Stopwatch.StartNew();
             var commands = await _searchService.SearchAsync(query, 8, cancellationToken).ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
+            searchStopwatch.Stop();
+            _performanceMonitor.RecordSuccessfulSearch(searchStopwatch.Elapsed);
 
             Results.Clear();
             foreach (var command in commands)

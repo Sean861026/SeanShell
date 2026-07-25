@@ -47,6 +47,12 @@ service. The UI never calls `EnumWindows` or activation APIs directly. System CP
 and memory sampling follows the same boundary and publishes a
 `SystemMetricsSnapshot` to the dashboard.
 
+`LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
+records the first successful show-to-usable duration once and keeps a bounded
+window of the 50 most recent successful provider/ranking durations. Cancelled and
+failed searches are not samples. The monitor retains durations only, never query
+text, command results, or user identifiers, and does not write telemetry to disk.
+
 `DisplayMonitorService` captures Win32 work areas as immutable monitor snapshots.
 The App composition root creates one dock window per snapshot. A window subclass
 observes `WM_DISPLAYCHANGE` and schedules a debounced topology capture on the UI

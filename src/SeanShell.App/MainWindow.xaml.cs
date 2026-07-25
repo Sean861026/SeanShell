@@ -57,7 +57,7 @@ public sealed partial class MainWindow : Window
         _desktopWindows = app.DesktopWindows;
         _displayMonitorService = app.Displays;
         _shellState = app.ShellState;
-        _launcherWindow = new LauncherWindow(app.LauncherSearch);
+        _launcherWindow = new LauncherWindow(app.LauncherSearch, app.LauncherPerformance);
         _monitors = _displayMonitorService.Capture();
         _dockWindows = CreateDockWindows(_monitors);
 

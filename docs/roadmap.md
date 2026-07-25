@@ -12,8 +12,12 @@
 - [x] Global hotkey using `RegisterHotKey` without input hooks
 - [x] Installed application and system setting providers
 - [x] Ranked, cached, keyboard-first results
-- [ ] Measure cold-window and cached-query performance on representative hardware
+- [x] In-app first-usable and bounded cached-query P95 diagnostics
+- [x] Validate cold-window and cached-query targets on representative hardware
 - Target: cached results under 50 ms; first window under 300 ms
+- Current local Release sample: 42 ms first usable and 8 ms cached-query P95
+  across five repeated empty-query Launcher openings on the primary development
+  machine.
 
 ## M2: Dock and dashboard
 
@@ -58,7 +62,13 @@
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin
 - [x] Built-in Docker plugin
-- [ ] Built-in OpenTAP plugin
+- [ ] Built-in .NET workspace plugin for C#, ASP.NET Core, and Blazor
+  - Discover `.sln`, `.slnx`, and `.csproj` from configured roots without a
+    whole-disk scan
+  - Cache project type, target frameworks, and solution membership
+  - Add Launcher commands for Visual Studio, VS Code, and terminal
+  - Keep build, test, and run actions explicit and show the exact `dotnet`
+    command before execution
 
 ## Later: shell modes
 

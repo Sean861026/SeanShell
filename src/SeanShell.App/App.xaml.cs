@@ -36,6 +36,8 @@ public partial class App : Application
 
     public LauncherSearchService LauncherSearch { get; }
 
+    public LauncherPerformanceMonitor LauncherPerformance { get; } = new();
+
     public PluginHost PluginHost { get; }
 
     public ShellSettingsStore SettingsStore { get; }

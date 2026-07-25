@@ -74,6 +74,11 @@ keyboard hook or intercept input sent to games. The dashboard can switch between
 the requested shortcut, SeanShell restores the previous shortcut and explains the
 conflict; the dashboard button always remains available.
 
+The Launcher card measures the first successful window presentation and the most
+recent 50 successful provider/ranking operations. It shows the latest search and
+nearest-rank P95 beside the M1 targets. Measurements remain in memory for the
+current session; query text is never retained or written to disk.
+
 ## Dock and live dashboard preview
 
 The M2 preview adds a compact always-on-top dock above each connected display's
