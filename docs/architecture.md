@@ -57,7 +57,10 @@ discarded.
 The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
 service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
 and memory sampling follows the same boundary and publishes a
-`SystemMetricsSnapshot` to the dashboard.
+`SystemMetricsSnapshot` to the dashboard. MainWindow owns one two-second Dock
+refresh loop, captures one immutable window snapshot, and distributes it to every
+monitor-local Dock. Docks filter that shared snapshot by monitor and never start
+their own enumeration task.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded

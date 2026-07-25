@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly DesktopWindowService _desktopWindows;
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
+    private readonly DispatcherQueueTimer _dockRefreshTimer;
     private readonly LauncherWindow _launcherWindow;
     private readonly GamingModeManager _gamingMode;
     private readonly DispatcherQueueTimer _gamingModeTimer;
@@ -31,6 +32,7 @@ public sealed partial class MainWindow : Window
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
     private IReadOnlyList<DockWindow> _dockWindows;
+    private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private GlobalHotKey? _launcherHotKey;
     private LauncherShortcut? _registeredShortcut;
@@ -76,6 +78,10 @@ public sealed partial class MainWindow : Window
         _gamingModeTimer.Interval = TimeSpan.FromSeconds(2);
         _gamingModeTimer.Tick += OnGamingModeTimerTick;
 
+        _dockRefreshTimer = DispatcherQueue.CreateTimer();
+        _dockRefreshTimer.Interval = TimeSpan.FromSeconds(2);
+        _dockRefreshTimer.Tick += OnDockRefreshTimerTick;
+
         _displayChangeTimer = DispatcherQueue.CreateTimer();
         _displayChangeTimer.Interval = TimeSpan.FromMilliseconds(500);
         _displayChangeTimer.IsRepeating = false;
@@ -97,6 +103,8 @@ public sealed partial class MainWindow : Window
             dockWindow.SetAutoHide(_settings.DockAutoHide);
         }
 
+        _dockRefreshTimer.Start();
+        _ = RefreshDockWindowsAsync();
         UpdateGamingModeMonitor();
         await _pluginHost.InitializeAsync().ConfigureAwait(true);
         if (_gamingMode.Current.IsGaming)
@@ -111,10 +119,13 @@ public sealed partial class MainWindow : Window
         {
             if (state.Mode == ShellMode.Gaming)
             {
+                _dockRefreshTimer.Stop();
                 await _pluginHost.SuspendAsync().ConfigureAwait(true);
             }
             else
             {
+                _dockRefreshTimer.Start();
+                _ = RefreshDockWindowsAsync();
                 await _pluginHost.ResumeAsync().ConfigureAwait(true);
             }
         }
@@ -299,6 +310,8 @@ public sealed partial class MainWindow : Window
                 {
                     dockWindow.ShowDock();
                 }
+
+                _ = RefreshDockWindowsAsync();
             }
 
             if (RootFrame.Content is MainPage mainPage)
@@ -336,6 +349,40 @@ public sealed partial class MainWindow : Window
             }
 
             throw;
+        }
+    }
+
+    private async void OnDockRefreshTimerTick(DispatcherQueueTimer sender, object args)
+    {
+        await RefreshDockWindowsAsync().ConfigureAwait(true);
+    }
+
+    private async Task RefreshDockWindowsAsync()
+    {
+        if (_refreshingDockWindows || _gamingMode.Current.IsGaming)
+        {
+            return;
+        }
+
+        _refreshingDockWindows = true;
+        try
+        {
+            var snapshot = await Task.Run(_desktopWindows.Capture).ConfigureAwait(true);
+            foreach (var dockWindow in _dockWindows)
+            {
+                dockWindow.ApplyWindowSnapshot(snapshot);
+            }
+        }
+        catch (Exception exception)
+        {
+            foreach (var dockWindow in _dockWindows)
+            {
+                dockWindow.SetWindowSnapshotUnavailable(exception.Message);
+            }
+        }
+        finally
+        {
+            _refreshingDockWindows = false;
         }
     }
 
@@ -499,6 +546,7 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _displayChangeTimer.Stop();
+        _dockRefreshTimer.Stop();
         if (_displayChangeObserver is not null)
         {
             _displayChangeObserver.Changed -= OnDisplaysChanged;

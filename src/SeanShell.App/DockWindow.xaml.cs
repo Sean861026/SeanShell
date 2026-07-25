@@ -19,14 +19,12 @@ public sealed partial class DockWindow : Window
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
-    private readonly DispatcherQueueTimer _refreshTimer;
     private readonly DispatcherQueueTimer _autoHideTimer;
     private bool _allowClose;
     private bool _autoHide = true;
     private bool _collapsed;
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
-    private bool _refreshing;
 
     public DockWindow(
         DesktopWindowService windowService,
@@ -41,10 +39,6 @@ public sealed partial class DockWindow : Window
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ConfigurePresenter();
-
-        _refreshTimer = DispatcherQueue.CreateTimer();
-        _refreshTimer.Interval = TimeSpan.FromSeconds(2);
-        _refreshTimer.Tick += OnRefreshTimerTick;
 
         _autoHideTimer = DispatcherQueue.CreateTimer();
         _autoHideTimer.Interval = TimeSpan.FromMilliseconds(900);
@@ -62,8 +56,6 @@ public sealed partial class DockWindow : Window
         SetCollapsed(false);
         EmptyState.Visibility = Visibility.Visible;
         AppWindow.Show();
-        _refreshTimer.Start();
-        _ = RefreshWindowsAsync();
         ScheduleAutoHide();
     }
 
@@ -82,7 +74,6 @@ public sealed partial class DockWindow : Window
 
     public void Shutdown()
     {
-        _refreshTimer.Stop();
         _autoHideTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
         _allowClose = true;
@@ -128,56 +119,41 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Start();
     }
 
-    private async Task RefreshWindowsAsync()
+    public void ApplyWindowSnapshot(IReadOnlyList<DesktopWindowSnapshot> snapshot)
     {
-        if (_refreshing)
+        if (_allowClose)
         {
             return;
         }
 
-        _refreshing = true;
-        try
+        var windows = DesktopWindowFilter.ForMonitor(snapshot, _monitor.Handle);
+        if (windows.Count == Items.Count && windows
+            .Select(static window => (window.Handle, window.Title, window.ProcessName))
+            .SequenceEqual(Items.Select(static item => (item.Handle, item.Title, item.ProcessName))))
         {
-            var windows = await Task.Run(() => _windowService.Capture()
-                .Where(window => window.MonitorHandle == _monitor.Handle)
-                .Take(12)
-                .ToArray()).ConfigureAwait(true);
-            if (_allowClose)
-            {
-                return;
-            }
-
-            if (windows.Length == Items.Count && windows
-                .Select(static window => (window.Handle, window.Title, window.ProcessName))
-                .SequenceEqual(Items.Select(static item => (item.Handle, item.Title, item.ProcessName))))
-            {
-                return;
-            }
-
-            Items.Clear();
-            foreach (var window in windows)
-            {
-                Items.Add(new DockItemViewModel(window));
-            }
-
-            EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
-            EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            return;
         }
-        catch (Exception exception)
+
+        Items.Clear();
+        foreach (var window in windows)
         {
-            Items.Clear();
-            EmptyStateText.Text = $"Dock unavailable: {exception.Message}";
-            EmptyState.Visibility = Visibility.Visible;
+            Items.Add(new DockItemViewModel(window));
         }
-        finally
-        {
-            _refreshing = false;
-        }
+
+        EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
+        EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private async void OnRefreshTimerTick(DispatcherQueueTimer sender, object args)
+    public void SetWindowSnapshotUnavailable(string message)
     {
-        await RefreshWindowsAsync().ConfigureAwait(true);
+        if (_allowClose)
+        {
+            return;
+        }
+
+        Items.Clear();
+        EmptyStateText.Text = $"Dock unavailable: {message}";
+        EmptyState.Visibility = Visibility.Visible;
     }
 
     private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
@@ -233,7 +209,6 @@ public sealed partial class DockWindow : Window
     {
         if (state.Mode == ShellMode.Gaming)
         {
-            _refreshTimer.Stop();
             _autoHideTimer.Stop();
             AppWindow.Hide();
             return;
@@ -241,8 +216,6 @@ public sealed partial class DockWindow : Window
 
         SetCollapsed(false);
         AppWindow.Show();
-        _refreshTimer.Start();
-        _ = RefreshWindowsAsync();
         ScheduleAutoHide();
     }
 
