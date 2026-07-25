@@ -69,6 +69,7 @@
   - [x] Add Launcher commands for the default IDE, VS Code, and terminal
   - [x] Keep build, test, and run actions explicit and show the exact `dotnet`
     command before execution
+  - [x] Add Blazor/ASP.NET Core hot reload and validated local launch-profile URLs
 
 ## Later: shell modes
 

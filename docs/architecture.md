@@ -49,6 +49,10 @@ the entire disk. Project inspection uses an XML reader with DTD processing and
 external resolution disabled. Only the project SDK, target frameworks, selected
 references, and the presence of nearby Razor component files are used to classify
 the in-memory snapshot. Launcher queries never touch the filesystem.
+`launchSettings.json` is optional and parsed with comments/trailing commas
+enabled to match common .NET templates. Only absolute HTTP/HTTPS loopback URLs
+are cached, capped at eight per project; external hosts and non-web schemes are
+discarded.
 
 The M2 dock receives immutable `DesktopWindowSnapshot` records from a Windows-only
 service. The UI never calls `EnumWindows` or activation APIs directly. System CPU
@@ -93,8 +97,10 @@ without opening or retaining process handles.
 - .NET workspace integration only opens a cached solution/project path, its
   containing folder in VS Code, or Windows Terminal, or starts an exact visible
   `dotnet build`, `dotnet test`, or `dotnet run --project` command after the user
-  selects it. Arguments are passed directly without a command shell. Package
-  restore and project mutation commands are not exposed.
+  selects it. Runnable projects may also start `dotnet watch run` for hot reload
+  or open a validated loopback launch-profile URL. Arguments are passed directly
+  without a command shell. Package restore and project mutation commands are not
+  exposed.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.

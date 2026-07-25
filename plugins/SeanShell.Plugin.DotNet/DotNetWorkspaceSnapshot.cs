@@ -7,7 +7,8 @@ public sealed record DotNetWorkspaceSnapshot(
     IReadOnlyList<string> TargetFrameworks,
     bool IsSolution,
     bool IsTestProject,
-    bool IsRunnable)
+    bool IsRunnable,
+    IReadOnlyList<string> LocalApplicationUrls)
 {
     public string DirectoryPath => System.IO.Path.GetDirectoryName(Path) ?? Path;
 

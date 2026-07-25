@@ -169,7 +169,10 @@ Use **Refresh .NET workspaces** after creating or moving a project. Explicit
 Launcher actions can build any cached workspace, test solutions and recognized
 test projects, or run recognized executable and web projects. Each result shows
 the exact `dotnet` command before selection and passes arguments directly to a new
-Windows Terminal session without `cmd.exe` or PowerShell.
+Windows Terminal session without `cmd.exe` or PowerShell. Runnable projects also
+receive a `dotnet watch run` hot-reload action. Local HTTP/HTTPS endpoints from
+`Properties/launchSettings.json` can be opened directly; external and non-web
+URLs are ignored.
 
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.

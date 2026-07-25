@@ -125,6 +125,25 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
                     "run",
                     "--project",
                     workspace.Path));
+                commands.Add(CreateDotNetCommand(
+                    $"{stableId}:watch",
+                    $"Watch {displayName}",
+                    workspace,
+                    keywords.Concat(["watch", "hot reload"]).ToArray(),
+                    "watch",
+                    "run",
+                    "--project",
+                    workspace.Path));
+            }
+
+            foreach (var url in workspace.LocalApplicationUrls)
+            {
+                commands.Add(CreateCommand(
+                    $"{stableId}:url:{CreateValueId(url)}",
+                    $"Open {workspace.Name} at {url}",
+                    "Local launch profile \u00B7 Open in default browser",
+                    keywords.Concat(["localhost", "browser", "launch profile", url]).ToArray(),
+                    _ => OpenAsync(url)));
             }
         }
 
@@ -200,8 +219,13 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
 
     private static string CreateStableId(string path)
     {
+        return CreateValueId(Path.GetFullPath(path));
+    }
+
+    private static string CreateValueId(string value)
+    {
         var bytes = SHA256.HashData(
-            Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToUpperInvariant()));
+            Encoding.UTF8.GetBytes(value.ToUpperInvariant()));
         return Convert.ToHexString(bytes.AsSpan(0, 8)).ToLowerInvariant();
     }
 

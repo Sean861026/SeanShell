@@ -107,6 +107,45 @@ public sealed class DotNetWorkspacePluginTests
     }
 
     [TestMethod]
+    public void LaunchSettingsReaderKeepsOnlyLoopbackHttpUrls()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var properties = Directory.CreateDirectory(Path.Combine(root, "Properties"));
+            File.WriteAllText(
+                Path.Combine(properties.FullName, "launchSettings.json"),
+                """
+                {
+                  // External and non-HTTP URLs must not become Launcher commands.
+                  "profiles": {
+                    "https": {
+                      "applicationUrl": "https://localhost:7043;http://127.0.0.1:5043;https://example.com;file:///C:/temp/",
+                    },
+                    "duplicate": {
+                      "applicationUrl": "https://localhost:7043/"
+                    }
+                  }
+                }
+                """);
+
+            var urls = DotNetLaunchSettingsReader.ReadLocalApplicationUrls(root);
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "https://localhost:7043",
+                    "http://127.0.0.1:5043",
+                },
+                urls.ToArray());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void InspectorRecognizesTestProjectAndDoesNotMarkItRunnable()
     {
         var root = CreateTemporaryDirectory();
@@ -199,7 +238,7 @@ public sealed class DotNetWorkspacePluginTests
                 string.Empty,
                 CancellationToken.None);
 
-            Assert.HasCount(6, initialCommands);
+            Assert.HasCount(7, initialCommands);
             Assert.AreEqual(
                 "ASP.NET Core \u00B7 net10.0 \u00B7 Open in default IDE",
                 initialCommands.Single(command => command.Title == "Dashboard").Subtitle);
@@ -213,6 +252,9 @@ public sealed class DotNetWorkspacePluginTests
             Assert.AreEqual(
                 $"dotnet run --project \"{project}\"",
                 initialCommands.Single(command => command.Title == "Run Dashboard").Subtitle);
+            Assert.AreEqual(
+                $"dotnet watch run --project \"{project}\"",
+                initialCommands.Single(command => command.Title == "Watch Dashboard").Subtitle);
             Assert.IsFalse(initialCommands.Any(command =>
                 command.Title == "Test Dashboard"));
 
@@ -224,7 +266,7 @@ public sealed class DotNetWorkspacePluginTests
                 string.Empty,
                 CancellationToken.None);
 
-            Assert.HasCount(11, refreshedCommands);
+            Assert.HasCount(12, refreshedCommands);
             Assert.IsTrue(refreshedCommands.Any(command =>
                 command.Title == "Dashboard solution"));
             Assert.IsTrue(refreshedCommands.Any(command =>

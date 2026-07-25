@@ -35,7 +35,8 @@ public static class DotNetWorkspaceInspector
                 [],
                 true,
                 false,
-                false);
+                false,
+                []);
         }
 
         if (!string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
@@ -82,6 +83,8 @@ public static class DotNetWorkspaceInspector
                      outputType.Equals("WinExe", StringComparison.OrdinalIgnoreCase)) ||
                  projectType is "ASP.NET Core" or "ASP.NET Core / Blazor" or
                      "Blazor WebAssembly" or ".NET Worker" or ".NET MAUI");
+            var localApplicationUrls =
+                DotNetLaunchSettingsReader.ReadLocalApplicationUrls(projectDirectory);
 
             return new(
                 fullPath,
@@ -90,7 +93,8 @@ public static class DotNetWorkspaceInspector
                 targetFrameworks,
                 false,
                 isTestProject,
-                isRunnable);
+                isRunnable,
+                localApplicationUrls);
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or XmlException)
