@@ -132,9 +132,9 @@
 
     <Style x:Key="SeanLauncherResultItemStyle" TargetType="ListViewItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="MinHeight" Value="64" />
+        <Setter Property="MinHeight" Value="68" />
         <Setter Property="Margin" Value="0,0,0,4" />
-        <Setter Property="Padding" Value="{StaticResource SeanCompactCardPadding}" />
+        <Setter Property="Padding" Value="12,10" />
     </Style>
 
     <Style x:Key="SeanDockItemStyle" TargetType="ListViewItem">

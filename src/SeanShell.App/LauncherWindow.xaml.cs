@@ -12,8 +12,8 @@ namespace SeanShell.App;
 
 public sealed partial class LauncherWindow : Window
 {
-    private const int WindowWidth = 720;
-    private const int WindowHeight = 560;
+    private const int WindowWidth = 760;
+    private const int WindowHeight = 620;
     private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
     private CancellationTokenSource? _searchCancellation;
