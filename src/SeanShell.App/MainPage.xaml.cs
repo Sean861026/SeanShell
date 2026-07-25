@@ -15,6 +15,7 @@ public sealed partial class MainPage : Page
     private readonly SystemMetricsProvider _systemMetrics;
     private int _displayCount;
     private readonly GamingModeManager _gamingMode;
+    private readonly LauncherPerformanceMonitor _launcherPerformance;
     private readonly PluginHost _pluginHost;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherQueueTimer _refreshTimer;
@@ -31,6 +32,7 @@ public sealed partial class MainPage : Page
         _desktopWindows = app.DesktopWindows;
         _systemMetrics = app.SystemMetrics;
         _gamingMode = app.GamingMode;
+        _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
         _displayCount = app.Displays.Capture().Count;
 
@@ -173,9 +175,12 @@ public sealed partial class MainPage : Page
         _gamingMode.StatusChanged += OnGamingModeStatusChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _pluginHost.DiagnosticsChanged += OnPluginDiagnosticsChanged;
+        _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
+        _launcherPerformance.Changed += OnLauncherPerformanceChanged;
         ApplyShellState(_shellState.Current);
         ApplyGamingModeStatus(_gamingMode.Current);
         ApplyPluginDiagnostics();
+        ApplyLauncherPerformance();
         if (_shellState.Current.Mode == ShellMode.Normal)
         {
             _refreshTimer.Start();
@@ -189,6 +194,7 @@ public sealed partial class MainPage : Page
         _shellState.StateChanged -= OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
+        _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
     }
 
     private void OnOpenLauncherClicked(object sender, RoutedEventArgs e)
@@ -340,6 +346,24 @@ public sealed partial class MainPage : Page
             : $"{diagnostics.Count} registered · {active} active · {suspended} suspended · {disabled} disabled · {faulted} faulted";
         PluginEmptyState.Visibility = diagnostics.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         PluginDiagnosticsList.Visibility = diagnostics.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnLauncherPerformanceChanged(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(ApplyLauncherPerformance);
+    }
+
+    private void ApplyLauncherPerformance()
+    {
+        var snapshot = _launcherPerformance.Current;
+        LauncherFirstUsablePerformance.Text = snapshot.FirstUsableDuration is null
+            ? "First usable: Not measured · target < 300 ms"
+            : $"First usable: {snapshot.FirstUsableDuration.Value.TotalMilliseconds:F0} ms · target < 300 ms";
+        LauncherSearchPerformance.Text = snapshot.LastSearchDuration is null
+            ? "Cached search P95: Not measured · target < 50 ms"
+            : $"Cached search: {snapshot.LastSearchDuration.Value.TotalMilliseconds:F0} ms last · " +
+              $"{snapshot.P95SearchDuration!.Value.TotalMilliseconds:F0} ms P95 " +
+              $"({snapshot.SuccessfulSearchCount} samples) · target < 50 ms";
     }
 
     private void UpdateDockStatus(bool gaming)

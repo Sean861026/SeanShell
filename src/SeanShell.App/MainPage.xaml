@@ -110,6 +110,16 @@
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Text="Keyboard shortcut: Alt + Space"
                             TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="LauncherFirstUsablePerformance"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="First usable: Not measured · target &lt; 300 ms"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="LauncherSearchPerformance"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Cached search P95: Not measured · target &lt; 50 ms"
+                            TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>

@@ -12,7 +12,8 @@
 - [x] Global hotkey using `RegisterHotKey` without input hooks
 - [x] Installed application and system setting providers
 - [x] Ranked, cached, keyboard-first results
-- [ ] Measure cold-window and cached-query performance on representative hardware
+- [x] In-app first-usable and bounded cached-query P95 diagnostics
+- [ ] Validate cold-window and cached-query targets on representative hardware
 - Target: cached results under 50 ms; first window under 300 ms
 
 ## M2: Dock and dashboard

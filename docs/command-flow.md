@@ -26,6 +26,8 @@ User opens launcher
   -> built-in providers run in parallel
   -> enabled plugins return ShellCommand records
   -> results are merged, ranked, and de-duplicated
+  -> successful provider/ranking duration enters the bounded in-memory sample
+  -> first successful show records the one-time show-to-usable duration
   -> user selects a command
   -> command executes with cancellation and audit logging
   -> launcher closes or displays a recoverable error
@@ -34,6 +36,9 @@ User opens launcher
 Start Menu shortcuts are indexed once per process and warmed after the dashboard
 starts. The first launcher opening remains functional if indexing fails because
 system commands are provided independently.
+
+The 60 ms input debounce is intentionally excluded from search duration. Cancelled
+and failed searches do not enter the sample, and no query text is retained.
 
 Commands carry behavior rather than raw shell strings. Providers that intentionally
 invoke a terminal must show the exact command and working directory before any
