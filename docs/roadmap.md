@@ -59,6 +59,13 @@
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin
 - [x] Built-in Docker plugin
+- [ ] Built-in .NET workspace plugin for C#, ASP.NET Core, and Blazor
+  - Discover `.sln`, `.slnx`, and `.csproj` from configured roots without a
+    whole-disk scan
+  - Cache project type, target frameworks, and solution membership
+  - Add Launcher commands for Visual Studio, VS Code, and terminal
+  - Keep build, test, and run actions explicit and show the exact `dotnet`
+    command before execution
 
 ## Later: shell modes
 
