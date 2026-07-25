@@ -20,9 +20,9 @@
 
         <TitleBar
             x:Name="LauncherTitleBar"
-            Title="SeanShell Launcher" />
+            Title="SeanShell · Command palette" />
 
-        <Grid Grid.Row="1" Padding="24,16,24,20" RowSpacing="{StaticResource SeanSpace16}">
+        <Grid Grid.Row="1" Padding="24,12,24,20" RowSpacing="{StaticResource SeanSpace12}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -30,106 +30,238 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBox
-                x:Name="SearchBox"
-                AutomationProperties.HelpText="Search installed applications and safe system commands."
-                Header="Search apps and commands"
-                KeyDown="OnSearchBoxKeyDown"
-                PlaceholderText="Try Terminal, Settings, or Task Manager"
-                TextChanged="OnSearchTextChanged" />
+            <Border
+                Padding="16,16,16,16"
+                Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource SeanCardCornerRadius}">
+                <StackPanel Spacing="{StaticResource SeanSpace12}">
+                    <Grid ColumnSpacing="{StaticResource SeanSpace16}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="{StaticResource SeanSpace4}">
+                            <TextBlock
+                                FontSize="11"
+                                FontWeight="SemiBold"
+                                Text="COMMAND PALETTE" />
+                            <TextBlock
+                                Style="{StaticResource SeanSectionTitleTextStyle}"
+                                Text="What do you want to open?" />
+                        </StackPanel>
+                        <Border
+                            Grid.Column="1"
+                            Style="{StaticResource SeanStatusPillStyle}">
+                            <TextBlock
+                                Style="{StaticResource SeanCaptionTextStyle}"
+                                Text="Ctrl + Alt + Space" />
+                        </Border>
+                    </Grid>
 
-            <Grid Grid.Row="1">
-                <ListView
-                    x:Name="ResultsList"
-                    AutomationProperties.LiveSetting="Polite"
-                    IsItemClickEnabled="True"
-                    ItemClick="OnResultClicked"
-                    SelectionMode="Single">
-                    <ListView.ItemContainerStyle>
-                        <StaticResource ResourceKey="SeanLauncherResultItemStyle" />
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="40" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Border
-                                    Width="40"
-                                    Height="40"
-                                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
-                                    CornerRadius="{StaticResource SeanCompactCornerRadius}">
-                                    <FontIcon
-                                        FontFamily="Segoe Fluent Icons"
-                                        FontSize="18"
-                                        Glyph="{Binding Glyph}"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center" />
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Text="{Binding Subtitle}"
-                                        TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                                <Border
-                                    Grid.Column="2"
-                                    Style="{StaticResource SeanStatusPillStyle}">
-                                    <TextBlock
-                                        Style="{StaticResource SeanCaptionTextStyle}"
-                                        Text="{Binding KindLabel}" />
-                                </Border>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-
-                <StackPanel
-                    x:Name="EmptyState"
-                    HorizontalAlignment="Center"
-                    Spacing="8"
-                    VerticalAlignment="Center"
-                    Visibility="Collapsed">
-                    <FontIcon
-                        FontFamily="Segoe Fluent Icons"
-                        FontSize="32"
-                        Glyph="&#xE721;" />
-                    <TextBlock
-                        HorizontalAlignment="Center"
-                        Style="{StaticResource SeanSectionTitleTextStyle}"
-                        Text="No matching commands" />
-                    <TextBlock
-                        Style="{StaticResource SeanSecondaryTextStyle}"
-                        Text="Try an application name or a shorter search."
-                        TextAlignment="Center" />
+                    <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Width="44"
+                            Height="44"
+                            HorizontalAlignment="Left"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            CornerRadius="{StaticResource SeanIconCornerRadius}">
+                            <FontIcon
+                                FontFamily="Segoe Fluent Icons"
+                                FontSize="19"
+                                Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                Glyph="&#xE721;" />
+                        </Border>
+                        <TextBox
+                            x:Name="SearchBox"
+                            Grid.Column="1"
+                            MinHeight="44"
+                            AutomationProperties.HelpText="Search installed applications and safe system commands."
+                            KeyDown="OnSearchBoxKeyDown"
+                            PlaceholderText="Try Terminal, Settings, or Task Manager"
+                            TextChanged="OnSearchTextChanged" />
+                    </Grid>
                 </StackPanel>
+            </Border>
 
-                <ProgressRing
-                    x:Name="SearchProgress"
-                    Width="32"
-                    Height="32"
-                    HorizontalAlignment="Center"
-                    IsActive="False"
-                    VerticalAlignment="Center" />
-            </Grid>
+            <Border
+                Grid.Row="1"
+                Padding="8,8,8,8"
+                Style="{StaticResource SeanCardStyle}">
+                <Grid RowSpacing="{StaticResource SeanSpace4}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-            <Grid Grid.Row="2" ColumnSpacing="16">
+                    <Grid Padding="8,2,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Style="{StaticResource SeanMetricLabelTextStyle}"
+                            Text="Best matches" />
+                        <Border
+                            Grid.Column="1"
+                            Style="{StaticResource SeanAccentStatusPillStyle}">
+                            <TextBlock
+                                x:Name="ResultStatus"
+                                AutomationProperties.LiveSetting="Polite"
+                                Style="{StaticResource SeanCaptionTextStyle}"
+                                Text="Loading commands…" />
+                        </Border>
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <ListView
+                            x:Name="ResultsList"
+                            AutomationProperties.LiveSetting="Polite"
+                            IsItemClickEnabled="True"
+                            ItemClick="OnResultClicked"
+                            SelectionMode="Single">
+                            <ListView.ItemContainerStyle>
+                                <StaticResource ResourceKey="SeanLauncherResultItemStyle" />
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border
+                                            Width="40"
+                                            Height="40"
+                                            Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                            CornerRadius="{StaticResource SeanCompactCornerRadius}">
+                                            <FontIcon
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontFamily="Segoe Fluent Icons"
+                                                FontSize="18"
+                                                Glyph="{Binding Glyph}" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock
+                                                FontWeight="SemiBold"
+                                                Text="{Binding Title}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{Binding Subtitle}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <Border
+                                            Grid.Column="2"
+                                            Style="{StaticResource SeanStatusPillStyle}">
+                                            <TextBlock
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="{Binding KindLabel}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <StackPanel
+                            x:Name="EmptyState"
+                            HorizontalAlignment="Center"
+                            Spacing="{StaticResource SeanSpace8}"
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed">
+                            <Border
+                                Width="48"
+                                Height="48"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource SeanIconTileStyle}">
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons"
+                                    FontSize="22"
+                                    Glyph="&#xE721;" />
+                            </Border>
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource SeanSectionTitleTextStyle}"
+                                Text="No matching commands" />
+                            <TextBlock
+                                Style="{StaticResource SeanSecondaryTextStyle}"
+                                Text="Try an application name or a shorter search."
+                                TextAlignment="Center" />
+                        </StackPanel>
+
+                        <ProgressRing
+                            x:Name="SearchProgress"
+                            Width="32"
+                            Height="32"
+                            HorizontalAlignment="Center"
+                            IsActive="False"
+                            VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="2" ColumnSpacing="{StaticResource SeanSpace16}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock
-                    x:Name="ResultStatus"
-                    AutomationProperties.LiveSetting="Polite"
+                    VerticalAlignment="Center"
                     Style="{StaticResource SeanSecondaryTextStyle}"
-                    Text="Loading commands…" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="↑↓ Navigate" />
-                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="Enter Open" />
-                    <TextBlock Style="{StaticResource SeanCaptionTextStyle}" Text="Esc Close" />
+                    Text="Keyboard-first · no input hooks" />
+                <StackPanel
+                    Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="{StaticResource SeanSpace8}">
+                    <Border
+                        MinWidth="30"
+                        MinHeight="24"
+                        Padding="7,2"
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            Style="{StaticResource SeanCaptionTextStyle}"
+                            Text="&#x2191; &#x2193;" />
+                    </Border>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource SeanCaptionTextStyle}" Text="Navigate" />
+                    <Border
+                        MinWidth="30"
+                        MinHeight="24"
+                        Padding="7,2"
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            Style="{StaticResource SeanCaptionTextStyle}"
+                            Text="Enter" />
+                    </Border>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource SeanCaptionTextStyle}" Text="Open" />
+                    <Border
+                        MinWidth="30"
+                        MinHeight="24"
+                        Padding="7,2"
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            Style="{StaticResource SeanCaptionTextStyle}"
+                            Text="Esc" />
+                    </Border>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource SeanCaptionTextStyle}" Text="Close" />
                 </StackPanel>
             </Grid>
 
