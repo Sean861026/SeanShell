@@ -221,3 +221,21 @@ User changes a setting
 Secrets and OAuth tokens are not valid configuration values; plugins must use
 Windows Credential Manager or an equivalent protected store. Logs must omit
 command arguments, file contents, and credentials by default.
+
+## Startup health
+
+```text
+App launch mode + local startup-health.json
+  -> StartupCrashLoopGuard
+  -> previous pending session increments consecutive failures
+  -> manual launch: create pending session
+  -> automatic launch below threshold: create pending session
+  -> automatic launch at threshold: ensure Explorer, then exit
+  -> 30 seconds alive or clean close: clear pending/failures/disabled state
+```
+
+The schema-1 document contains only a generated session ID, pending flag,
+consecutive failure count, and automatic-start disabled flag. It contains no
+command line, user identifier, path history, or crash contents. Writes use a
+sibling temporary file with write-through semantics. An unavailable health store
+blocks automatic launch but does not block manual recovery.

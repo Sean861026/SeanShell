@@ -6,6 +6,11 @@
 Windows sign-in
   -> Explorer starts normally
   -> User or startup task launches SeanShell
+  -> load startup-health.json
+  -> previous pending startup: increment consecutive failure count
+  -> --startup and three failures: ensure Explorer is running, then exit
+  -> manual launch: always allow a recovery attempt
+  -> write a new pending startup session
   -> App loads validated configuration
   -> Core state store is created
   -> Windows services and built-in providers start
@@ -13,7 +18,13 @@ Windows sign-in
   -> initialize each plugin with an independent timeout
   -> failed plugin: record diagnostics and continue startup
   -> Dashboard and dock become visible
+  -> 30 seconds alive: mark startup healthy and clear failure count
 ```
+
+A normal main-window close clears the pending session immediately. Unexpected
+termination during the first 30 seconds leaves it pending for the next launch.
+SeanShell does not register an automatic-start entry yet; `--startup` is the
+guarded contract for that later feature.
 
 ## Launcher query
 
@@ -247,4 +258,6 @@ game executables to avoid keeping gaming mode active indefinitely.
 User runs tools/restore-explorer.ps1
   -> start explorer.exe when it is not running
   -> request a graceful SeanShell shutdown
+  -> still running after two seconds: stop only SeanShell.App
+  -> remove startup-health.json to reset automatic-start protection
 ```

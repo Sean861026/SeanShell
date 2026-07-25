@@ -74,6 +74,6 @@
 ## Later: shell modes
 
 - Companion shell experiment with Explorer retained for shell services
-- Recovery drills and crash-loop protection
+- [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement

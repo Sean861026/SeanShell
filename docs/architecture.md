@@ -109,7 +109,9 @@ without opening or retaining process handles.
   injects code, hooks rendering, or intercepts game input.
 - The dock lists ordinary visible top-level application windows, excludes
   SeanShell itself, and uses `SetForegroundWindow` only after a user selection.
-- A crash loop guard is required before any automatic startup feature ships.
+- Automatic startup is not registered by SeanShell yet. The reserved `--startup`
+  mode uses a persistent crash-loop guard and exits after three consecutive
+  incomplete startup windows. Manual launches remain available for recovery.
 
 ## Configuration
 
@@ -133,6 +135,24 @@ and removes its Launcher commands; disabling before startup skips initialization
 Enabling while Gaming Mode is active initializes or resumes the plugin and then
 keeps it suspended until normal mode returns. A failed settings write rolls the
 runtime state back so persisted and visible state remain consistent.
+
+`StartupCrashLoopGuard` owns a small schema-1 `startup-health.json` document under
+the App's local SeanShell data directory. In an MSIX launch, Windows redirects
+this to the package's `LocalCache\Local\SeanShell` directory; unpackaged launches
+use `%LOCALAPPDATA%\SeanShell`. A new session is pending until the main window
+closes normally or the process remains alive for 30 seconds. A later automatic
+launch treats an earlier pending session as one startup failure. After three
+consecutive failures, only `--startup` launches are blocked; manual launch is
+always allowed and a healthy manual session resets the counter. If health state
+cannot be persisted, automatic launch fails closed while manual recovery remains
+available.
+
+When an automatic launch is blocked, the Windows boundary ensures Explorer is
+running before SeanShell exits. `tools/restore-explorer.ps1` provides the same
+recovery path, requests a graceful close, stops only a still-running
+`SeanShell.App` process after two seconds, and removes both packaged and
+unpackaged health-document locations. The guard does not change Winlogon,
+Scheduled Tasks, registry Run keys, or the configured Windows shell.
 
 `GamingModeManager` combines two independent sources: a session-only manual
 override and the active process matches produced by automatic detection. Effective
