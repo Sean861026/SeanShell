@@ -14,13 +14,14 @@
     <ScrollViewer
         HorizontalContentAlignment="Stretch"
         HorizontalScrollBarVisibility="Disabled">
-        <Grid
-            x:Name="DashboardRoot"
-            MaxWidth="1600"
-            Padding="{StaticResource SeanPagePadding}"
-            HorizontalAlignment="Stretch">
+        <Grid HorizontalAlignment="Stretch">
+            <Grid
+                x:Name="DashboardRoot"
+                MaxWidth="1600"
+                Padding="{StaticResource SeanPagePadding}"
+                HorizontalAlignment="Center">
 
-            <StackPanel Spacing="{StaticResource SeanSpace32}">
+                <StackPanel Spacing="{StaticResource SeanSpace32}">
                 <Border Style="{StaticResource SeanHeroCardStyle}">
                     <Grid
                         ColumnSpacing="{StaticResource SeanSpace24}"
@@ -520,7 +521,8 @@
                         Severity="Informational"
                         Title="Compatibility-first" />
                 </StackPanel>
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </Grid>
     </ScrollViewer>
 </Page>
