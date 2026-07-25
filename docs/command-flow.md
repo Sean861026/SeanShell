@@ -206,7 +206,8 @@ them with thread input attachment or injection.
 SeanShell startup
   -> enumerate monitor work areas
   -> create one dock per monitor
-  -> filter windows by MonitorFromWindow result
+  -> MainWindow captures one shared window snapshot every two seconds
+  -> each Dock filters the shared snapshot by MonitorFromWindow result
   -> position dock above that monitor's taskbar
   -> pointer/focus leaves dock
   -> wait 900 ms
@@ -225,8 +226,9 @@ Windows sends WM_DISPLAYCHANGE
 ```
 
 Focus within a dock cancels auto-hide. Gaming mode takes precedence and hides all
-docks completely. A topology change during Gaming Mode prepares replacement Docks
-without showing them; the existing normal-mode transition displays them later.
+docks completely and stops the shared refresh loop. A topology change during
+Gaming Mode prepares replacement Docks without showing them; the existing
+normal-mode transition displays them later.
 
 ## Gaming mode
 

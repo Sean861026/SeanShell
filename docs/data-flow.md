@@ -89,8 +89,9 @@ command arguments, environment values, file contents, or credentials.
 ```text
 EnumWindows + DWM visibility
   -> DesktopWindowSnapshot[]
-  -> dock view models
-  -> horizontal dock list
+  -> one MainWindow-owned shared snapshot
+  -> monitor filter per Dock
+  -> dock view models and horizontal Dock lists
   -> user selection
   -> SetForegroundWindow
 
@@ -99,9 +100,9 @@ GetSystemTimes + GlobalMemoryStatusEx
   -> dashboard CPU/RAM cards
 ```
 
-Both surfaces refresh every two seconds in normal mode. Gaming mode stops their
-timers and hides the dock. No process handles are retained, and no data is written
-to disk.
+The dashboard and one App-owned Dock loop refresh every two seconds in normal
+mode. Gaming mode stops their timers and hides every Dock. No process handles are
+retained, and no data is written to disk.
 
 ```text
 EnumDisplayMonitors + monitor work areas

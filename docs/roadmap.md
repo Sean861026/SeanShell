@@ -37,6 +37,10 @@
   201 MB working set, and 151 MB private memory over 15 seconds. The additional
   WinUI composition surface slightly exceeds the original working-set target and
   remains an optimization item.
+- Shared-snapshot Release sample with two auto-hidden Docks and all current
+  built-in plugins: 0.261% average CPU, 212.2 MB average working set, and
+  166.5 MB average private memory over 15 seconds. Per-monitor enumeration tasks
+  are removed, but the WinUI surface working-set target remains open.
 
 ## M3: Gaming compatibility
 
