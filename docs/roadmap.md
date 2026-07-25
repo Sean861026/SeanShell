@@ -59,7 +59,6 @@
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin
 - [x] Built-in Docker plugin
-- [ ] Built-in OpenTAP plugin
 
 ## Later: shell modes
 
