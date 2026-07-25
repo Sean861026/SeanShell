@@ -12,6 +12,17 @@ dotnet build SeanShell.sln -c Debug
 dotnet test SeanShell.sln -c Debug --no-build
 ```
 
+Pull-request CI runs on Windows with .NET 10 and x64 Release settings. It verifies
+formatting, parses the Explorer recovery script without executing it, builds the
+full WinUI solution, and runs the automated tests. New changes should pass the
+equivalent local checks before being pushed:
+
+```powershell
+dotnet format SeanShell.sln --no-restore --verify-no-changes --verbosity minimal
+dotnet build SeanShell.sln -c Release -p:Platform=x64 --no-restore
+dotnet test SeanShell.sln -c Release -p:Platform=x64 --no-build
+```
+
 ## Change guidelines
 
 1. Create a focused branch and explain the user impact in the pull request.
