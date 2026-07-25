@@ -79,6 +79,7 @@
 
 - [x] Shared Fluent spacing, shape, typography, surface, and list styles
 - [x] Adaptive dashboard information architecture
+- [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [ ] Launcher result grouping and stable feedback states
 - [ ] Dock active, minimized, hover, and keyboard-focus states
 - [ ] Light, dark, high-contrast, text-scaling, and multi-display visual checks
