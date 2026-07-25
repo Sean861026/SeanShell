@@ -78,7 +78,7 @@
 ## UI polish
 
 - [x] Shared Fluent spacing, shape, typography, surface, and list styles
-- [ ] Adaptive dashboard information architecture
+- [x] Adaptive dashboard information architecture
 - [ ] Launcher result grouping and stable feedback states
 - [ ] Dock active, minimized, hover, and keyboard-focus states
 - [ ] Light, dark, high-contrast, text-scaling, and multi-display visual checks
