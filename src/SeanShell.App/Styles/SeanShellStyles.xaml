@@ -138,11 +138,11 @@
     </Style>
 
     <Style x:Key="SeanDockItemStyle" TargetType="ListViewItem">
-        <Setter Property="MinWidth" Value="112" />
-        <Setter Property="MaxWidth" Value="176" />
-        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="MinWidth" Value="136" />
+        <Setter Property="MaxWidth" Value="204" />
+        <Setter Property="MinHeight" Value="64" />
         <Setter Property="Margin" Value="0,0,4,0" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Padding" Value="8,6" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     </Style>
 </ResourceDictionary>

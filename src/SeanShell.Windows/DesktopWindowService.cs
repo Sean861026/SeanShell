@@ -39,6 +39,7 @@ public sealed class DesktopWindowService
     {
         var windows = new List<DesktopWindowSnapshot>();
         var shellWindow = GetShellWindow();
+        var foregroundWindow = GetForegroundWindow();
 
         EnumWindows((handle, _) =>
         {
@@ -65,7 +66,8 @@ public sealed class DesktopWindowService
                 GetProcessName(processId),
                 title,
                 IsIconic(handle),
-                MonitorFromWindow(handle, MonitorDefaultToNearest)));
+                MonitorFromWindow(handle, MonitorDefaultToNearest),
+                handle == foregroundWindow));
 
             return true;
         }, 0);
@@ -186,6 +188,9 @@ public sealed class DesktopWindowService
 
     [DllImport("user32.dll")]
     private static extern nint GetShellWindow();
+
+    [DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
 
     [DllImport("user32.dll")]
     private static extern nint GetWindow(nint handle, uint command);

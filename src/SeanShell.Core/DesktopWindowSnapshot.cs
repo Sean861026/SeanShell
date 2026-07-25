@@ -6,4 +6,5 @@ public sealed record DesktopWindowSnapshot(
     string ProcessName,
     string Title,
     bool IsMinimized,
-    nint MonitorHandle);
+    nint MonitorHandle,
+    bool IsForeground = false);

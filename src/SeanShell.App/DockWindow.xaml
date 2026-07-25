@@ -21,83 +21,140 @@
         PointerExited="OnDockPointerExited">
         <Border
             x:Name="ExpandedDock"
-            Padding="8"
+            Padding="6,6,6,6"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderBrush="{ThemeResource AccentFillColorSecondaryBrush}"
             BorderThickness="1"
             CornerRadius="{StaticResource SeanCardCornerRadius}">
-            <Grid>
-                <ListView
-                    x:Name="WindowList"
-                    AutomationProperties.Name="Open windows on this display"
-                    IsItemClickEnabled="True"
-                    ItemClick="OnWindowClicked"
-                    SelectionMode="None"
-                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                    ScrollViewer.HorizontalScrollMode="Enabled"
-                    ScrollViewer.VerticalScrollMode="Disabled">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsStackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.ItemContainerStyle>
-                        <StaticResource ResourceKey="SeanDockItemStyle" />
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid
-                                AutomationProperties.Name="{Binding AccessibleName}"
-                                ColumnSpacing="8"
-                                ToolTipService.ToolTip="{Binding Title}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="28" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <FontIcon
-                                    FontFamily="Segoe Fluent Icons"
-                                    FontSize="16"
-                                    Glyph="&#xE8A7;"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" />
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock
-                                        FontWeight="SemiBold"
-                                        Text="{Binding Title}"
-                                        TextTrimming="CharacterEllipsis" />
-                                    <TextBlock
-                                        Style="{StaticResource SeanCaptionTextStyle}"
-                                        Text="{Binding ProcessName}"
-                                        TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+            <Grid ColumnSpacing="{StaticResource SeanSpace8}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <StackPanel
-                    x:Name="EmptyState"
-                    HorizontalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    VerticalAlignment="Center"
-                    Visibility="Collapsed">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
-                    <TextBlock x:Name="EmptyStateText" Text="Loading open windows…" />
-                </StackPanel>
+                <Border
+                    Width="40"
+                    Height="40"
+                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                    CornerRadius="{StaticResource SeanIconCornerRadius}"
+                    VerticalAlignment="Center">
+                    <FontIcon
+                        AutomationProperties.Name="SeanShell window dock"
+                        FontFamily="Segoe Fluent Icons"
+                        FontSize="18"
+                        Glyph="&#xE8A7;" />
+                </Border>
+
+                <Grid Grid.Column="1">
+                    <ListView
+                        x:Name="WindowList"
+                        AutomationProperties.Name="Open windows on this display"
+                        IsItemClickEnabled="True"
+                        ItemClick="OnWindowClicked"
+                        SelectionMode="Single"
+                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        ScrollViewer.HorizontalScrollMode="Enabled"
+                        ScrollViewer.VerticalScrollMode="Disabled">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemContainerStyle>
+                            <StaticResource ResourceKey="SeanDockItemStyle" />
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid
+                                    AutomationProperties.Name="{Binding AccessibleName}"
+                                    ColumnSpacing="{StaticResource SeanSpace8}"
+                                    Opacity="{Binding ContentOpacity}"
+                                    ToolTipService.ToolTip="{Binding Title}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border
+                                        Width="36"
+                                        Height="36"
+                                        Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                        CornerRadius="{StaticResource SeanCompactCornerRadius}"
+                                        VerticalAlignment="Center">
+                                        <FontIcon
+                                            FontFamily="Segoe Fluent Icons"
+                                            FontSize="16"
+                                            Glyph="&#xE8A7;" />
+                                    </Border>
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Spacing="2">
+                                        <TextBlock
+                                            FontWeight="SemiBold"
+                                            Text="{Binding Title}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SeanSpace4}">
+                                            <TextBlock
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="{Binding ProcessName}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="&#x2022;" />
+                                            <TextBlock
+                                                FontWeight="SemiBold"
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="{Binding StateText}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <StackPanel
+                        x:Name="EmptyState"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="{StaticResource SeanSpace8}"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
+                        <TextBlock x:Name="EmptyStateText" Text="Loading open windows…" />
+                    </StackPanel>
+                </Grid>
+
+                <Border
+                    Grid.Column="2"
+                    Style="{StaticResource SeanStatusPillStyle}"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        x:Name="DockCountText"
+                        Style="{StaticResource SeanCaptionTextStyle}"
+                        Text="Loading" />
+                </Border>
             </Grid>
         </Border>
 
         <Border
             x:Name="PeekIndicator"
-            Width="96"
-            Height="4"
+            Width="120"
+            Height="8"
             AutomationProperties.HelpText="Move the pointer here to expand the SeanShell dock."
             AutomationProperties.Name="SeanShell dock is collapsed"
-            Background="{ThemeResource AccentFillColorDefaultBrush}"
-            CornerRadius="2"
+            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Visibility="Collapsed" />
+            Visibility="Collapsed">
+            <Border
+                Width="72"
+                Height="4"
+                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                CornerRadius="2" />
+        </Border>
     </Grid>
 </Window>

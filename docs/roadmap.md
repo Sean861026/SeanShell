@@ -81,7 +81,7 @@
 - [x] Adaptive dashboard information architecture
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
-- [ ] Dock active, minimized, hover, and keyboard-focus states
+- [x] Dock active, minimized, hover, and keyboard-focus states
 - [ ] Light, dark, high-contrast, text-scaling, and multi-display visual checks
 - [ ] Compact display density and reduced-effects Gaming Mode
 

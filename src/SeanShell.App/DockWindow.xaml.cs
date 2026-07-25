@@ -12,10 +12,10 @@ namespace SeanShell.App;
 
 public sealed partial class DockWindow : Window
 {
-    private const int DockWidth = 760;
-    private const int DockHeight = 80;
-    private const int PeekWidth = 160;
-    private const int PeekHeight = 10;
+    private const int DockWidth = 840;
+    private const int DockHeight = 92;
+    private const int PeekWidth = 180;
+    private const int PeekHeight = 12;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
@@ -128,8 +128,18 @@ public sealed partial class DockWindow : Window
 
         var windows = DesktopWindowFilter.ForMonitor(snapshot, _monitor.Handle);
         if (windows.Count == Items.Count && windows
-            .Select(static window => (window.Handle, window.Title, window.ProcessName))
-            .SequenceEqual(Items.Select(static item => (item.Handle, item.Title, item.ProcessName))))
+            .Select(static window => (
+                window.Handle,
+                window.Title,
+                window.ProcessName,
+                window.IsMinimized,
+                window.IsForeground))
+            .SequenceEqual(Items.Select(static item => (
+                item.Handle,
+                item.Title,
+                item.ProcessName,
+                item.IsMinimized,
+                item.IsForeground))))
         {
             return;
         }
@@ -140,6 +150,8 @@ public sealed partial class DockWindow : Window
             Items.Add(new DockItemViewModel(window));
         }
 
+        WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
+        DockCountText.Text = Items.Count == 1 ? "1 window" : $"{Items.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -152,6 +164,8 @@ public sealed partial class DockWindow : Window
         }
 
         Items.Clear();
+        WindowList.SelectedItem = null;
+        DockCountText.Text = "Unavailable";
         EmptyStateText.Text = $"Dock unavailable: {message}";
         EmptyState.Visibility = Visibility.Visible;
     }
