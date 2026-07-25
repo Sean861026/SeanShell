@@ -67,7 +67,7 @@
     whole-disk scan
   - [x] Cache project type, target frameworks, and solution files
   - [x] Add Launcher commands for the default IDE, VS Code, and terminal
-  - [ ] Keep build, test, and run actions explicit and show the exact `dotnet`
+  - [x] Keep build, test, and run actions explicit and show the exact `dotnet`
     command before execution
 
 ## Later: shell modes

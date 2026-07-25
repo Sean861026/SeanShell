@@ -91,8 +91,10 @@ without opening or retaining process handles.
   console, but expose no start, stop, restart, exec, remove, pull, or Compose
   mutations.
 - .NET workspace integration only opens a cached solution/project path, its
-  containing folder in VS Code, or Windows Terminal. Build, test, run, package
-  restore, and project mutation commands are not exposed in the first slice.
+  containing folder in VS Code, or Windows Terminal, or starts an exact visible
+  `dotnet build`, `dotnet test`, or `dotnet run --project` command after the user
+  selects it. Arguments are passed directly without a command shell. Package
+  restore and project mutation commands are not exposed.
 - Only built-in instances registered by the App composition root are accepted.
   Third-party discovery remains blocked until signing, user consent, revocation,
   and out-of-process isolation are implemented.

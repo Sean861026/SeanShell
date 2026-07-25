@@ -97,6 +97,35 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
                 $"{workspace.StatusText} \u00B7 Open Windows Terminal",
                 keywords.Concat(["terminal"]).ToArray(),
                 _ => LaunchAsync("wt.exe", "-d", workspace.DirectoryPath)));
+            commands.Add(CreateDotNetCommand(
+                $"{stableId}:build",
+                $"Build {displayName}",
+                workspace,
+                keywords.Concat(["build"]).ToArray(),
+                "build",
+                workspace.Path));
+            if (workspace.IsSolution || workspace.IsTestProject)
+            {
+                commands.Add(CreateDotNetCommand(
+                    $"{stableId}:test",
+                    $"Test {displayName}",
+                    workspace,
+                    keywords.Concat(["test"]).ToArray(),
+                    "test",
+                    workspace.Path));
+            }
+
+            if (workspace.IsRunnable)
+            {
+                commands.Add(CreateDotNetCommand(
+                    $"{stableId}:run",
+                    $"Run {displayName}",
+                    workspace,
+                    keywords.Concat(["run"]).ToArray(),
+                    "run",
+                    "--project",
+                    workspace.Path));
+            }
         }
 
         return ValueTask.FromResult<IReadOnlyList<ShellCommand>>(commands);
@@ -156,6 +185,19 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
             Keywords = keywords,
         };
 
+    private static ShellCommand CreateDotNetCommand(
+        string id,
+        string title,
+        DotNetWorkspaceSnapshot workspace,
+        IReadOnlyList<string> keywords,
+        params string[] dotnetArguments) =>
+        CreateCommand(
+            id,
+            title,
+            DotNetCommandStartInfoFactory.Format(dotnetArguments),
+            keywords,
+            _ => LaunchDotNetAsync(workspace.DirectoryPath, dotnetArguments));
+
     private static string CreateStableId(string path)
     {
         var bytes = SHA256.HashData(
@@ -178,6 +220,16 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
         }
 
         Process.Start(startInfo);
+        return ValueTask.CompletedTask;
+    }
+
+    private static ValueTask LaunchDotNetAsync(
+        string workingDirectory,
+        params string[] dotnetArguments)
+    {
+        Process.Start(DotNetCommandStartInfoFactory.Create(
+            workingDirectory,
+            dotnetArguments));
         return ValueTask.CompletedTask;
     }
 }

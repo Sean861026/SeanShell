@@ -5,7 +5,9 @@ public sealed record DotNetWorkspaceSnapshot(
     string Name,
     string ProjectType,
     IReadOnlyList<string> TargetFrameworks,
-    bool IsSolution)
+    bool IsSolution,
+    bool IsTestProject,
+    bool IsRunnable)
 {
     public string DirectoryPath => System.IO.Path.GetDirectoryName(Path) ?? Path;
 

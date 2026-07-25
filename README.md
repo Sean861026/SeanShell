@@ -165,8 +165,11 @@ up to 24 `.sln`, `.slnx`, and `.csproj` files. It safely reads project SDK and
 target-framework metadata and distinguishes C#, ASP.NET Core, Blazor WebAssembly,
 Razor-component web apps, .NET Worker, and .NET MAUI projects. Cached Launcher
 commands open a workspace in its default IDE, VS Code, or Windows Terminal.
-Use **Refresh .NET workspaces** after creating or moving a project. This first
-slice never runs `dotnet build`, `dotnet test`, or `dotnet run`.
+Use **Refresh .NET workspaces** after creating or moving a project. Explicit
+Launcher actions can build any cached workspace, test solutions and recognized
+test projects, or run recognized executable and web projects. Each result shows
+the exact `dotnet` command before selection and passes arguments directly to a new
+Windows Terminal session without `cmd.exe` or PowerShell.
 
 Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
 and stronger process isolation must ship before external plugins are accepted.

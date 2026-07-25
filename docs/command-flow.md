@@ -141,13 +141,21 @@ remove, pull, and Compose commands are not represented as `ShellCommand` records
   -> skip build, dependency, reparse-point, and inaccessible directories
   -> cap discovery at 24 .sln, .slnx, and .csproj files
   -> parse project XML with DTD and external resolution disabled
-  -> classify project type and target frameworks
+  -> classify project type, target frameworks, test status, and run capability
   -> atomically replace the cached workspace snapshot
-  -> next Launcher query returns default IDE, VS Code, and terminal commands
+  -> next Launcher query returns open, build, eligible test, and eligible run commands
+
+User selects an explicit .NET action
+  -> Launcher subtitle has already shown the complete dotnet command
+  -> create Windows Terminal arguments without a command shell
+  -> build: dotnet build <exact workspace path>
+  -> test: dotnet test <exact solution/test-project path>
+  -> run: dotnet run --project <exact runnable-project path>
 ```
 
-Normal Launcher queries never read project files. The first slice does not create
-build, test, run, restore, or project-mutation commands.
+Normal Launcher queries never read project files. Build, test, and run occur only
+after user selection. Restore and project-mutation commands are not represented as
+`ShellCommand` records.
 
 ## Launcher shortcut change
 

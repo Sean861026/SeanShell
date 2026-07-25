@@ -186,8 +186,13 @@ App-configured developer roots
 ```
 
 Snapshots contain a local path, display name, classified project type, target
-framework names, and a solution marker. File contents are not retained or logged.
-The cache changes only during initialization or an explicit refresh.
+framework names, a solution marker, test-project status, and run capability. File
+contents are not retained or logged. The cache changes only during initialization
+or an explicit refresh.
+
+Explicit build, test, and run selections flow from immutable snapshot metadata to
+`ProcessStartInfo.ArgumentList`. SeanShell never constructs a `cmd.exe` or
+PowerShell command string.
 
 ## Configuration
 

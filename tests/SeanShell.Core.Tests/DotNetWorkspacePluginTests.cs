@@ -61,6 +61,8 @@ public sealed class DotNetWorkspacePluginTests
 
             Assert.IsNotNull(snapshot);
             Assert.AreEqual("Blazor WebAssembly", snapshot.ProjectType);
+            Assert.IsFalse(snapshot.IsTestProject);
+            Assert.IsTrue(snapshot.IsRunnable);
             CollectionAssert.AreEqual(
                 new[] { "net9.0", "net10.0" },
                 snapshot.TargetFrameworks.ToArray());
@@ -105,6 +107,76 @@ public sealed class DotNetWorkspacePluginTests
     }
 
     [TestMethod]
+    public void InspectorRecognizesTestProjectAndDoesNotMarkItRunnable()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var project = Path.Combine(root, "Dashboard.Tests.csproj");
+            File.WriteAllText(
+                project,
+                """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net10.0</TargetFramework>
+                    <IsTestProject>true</IsTestProject>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var snapshot = DotNetWorkspaceInspector.Inspect(project);
+
+            Assert.IsNotNull(snapshot);
+            Assert.IsTrue(snapshot.IsTestProject);
+            Assert.IsFalse(snapshot.IsRunnable);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void DotNetStartInfoPassesExactArgumentsWithoutCommandShell()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var project = Path.Combine(root, "My Web App.csproj");
+
+            var startInfo = DotNetCommandStartInfoFactory.Create(
+                root,
+                "run",
+                "--project",
+                project);
+
+            Assert.AreEqual("wt.exe", startInfo.FileName);
+            Assert.IsTrue(startInfo.UseShellExecute);
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "-d",
+                    Path.GetFullPath(root),
+                    "dotnet",
+                    "run",
+                    "--project",
+                    project,
+                },
+                startInfo.ArgumentList.ToArray());
+            Assert.AreEqual(
+                $"dotnet run --project \"{project}\"",
+                DotNetCommandStartInfoFactory.Format("run", "--project", project));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task PluginReturnsCachedWorkspaceCommandsAndRefreshesOnRequest()
     {
         var root = CreateTemporaryDirectory();
@@ -127,7 +199,7 @@ public sealed class DotNetWorkspacePluginTests
                 string.Empty,
                 CancellationToken.None);
 
-            Assert.HasCount(4, initialCommands);
+            Assert.HasCount(6, initialCommands);
             Assert.AreEqual(
                 "ASP.NET Core \u00B7 net10.0 \u00B7 Open in default IDE",
                 initialCommands.Single(command => command.Title == "Dashboard").Subtitle);
@@ -135,6 +207,14 @@ public sealed class DotNetWorkspacePluginTests
                 command.Title == "Dashboard in VS Code"));
             Assert.IsTrue(initialCommands.Any(command =>
                 command.Title == "Dashboard terminal"));
+            Assert.AreEqual(
+                $"dotnet build \"{project}\"",
+                initialCommands.Single(command => command.Title == "Build Dashboard").Subtitle);
+            Assert.AreEqual(
+                $"dotnet run --project \"{project}\"",
+                initialCommands.Single(command => command.Title == "Run Dashboard").Subtitle);
+            Assert.IsFalse(initialCommands.Any(command =>
+                command.Title == "Test Dashboard"));
 
             File.WriteAllText(Path.Combine(root, "Dashboard.sln"), string.Empty);
             var refresh = initialCommands.Single(
@@ -144,9 +224,13 @@ public sealed class DotNetWorkspacePluginTests
                 string.Empty,
                 CancellationToken.None);
 
-            Assert.HasCount(7, refreshedCommands);
+            Assert.HasCount(11, refreshedCommands);
             Assert.IsTrue(refreshedCommands.Any(command =>
                 command.Title == "Dashboard solution"));
+            Assert.IsTrue(refreshedCommands.Any(command =>
+                command.Title == "Build Dashboard solution"));
+            Assert.IsTrue(refreshedCommands.Any(command =>
+                command.Title == "Test Dashboard solution"));
         }
         finally
         {

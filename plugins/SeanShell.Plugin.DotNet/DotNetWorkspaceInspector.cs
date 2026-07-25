@@ -33,7 +33,9 @@ public static class DotNetWorkspaceInspector
                 Path.GetFileNameWithoutExtension(fullPath),
                 ".NET solution",
                 [],
-                true);
+                true,
+                false,
+                false);
         }
 
         if (!string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase))
@@ -69,13 +71,26 @@ public static class DotNetWorkspaceInspector
                 packageReferences,
                 frameworkReferences,
                 projectDirectory);
+            var isTestProject =
+                HasBooleanProperty(document, "IsTestProject") ||
+                packageReferences.Any(static package =>
+                    Contains(package, "Microsoft.NET.Test.Sdk"));
+            var outputType = ReadProperty(document, "OutputType");
+            var isRunnable = !isTestProject &&
+                (outputType is not null &&
+                    (outputType.Equals("Exe", StringComparison.OrdinalIgnoreCase) ||
+                     outputType.Equals("WinExe", StringComparison.OrdinalIgnoreCase)) ||
+                 projectType is "ASP.NET Core" or "ASP.NET Core / Blazor" or
+                     "Blazor WebAssembly" or ".NET Worker" or ".NET MAUI");
 
             return new(
                 fullPath,
                 Path.GetFileNameWithoutExtension(fullPath),
                 projectType,
                 targetFrameworks,
-                false);
+                false,
+                isTestProject,
+                isRunnable);
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or XmlException)
@@ -152,6 +167,12 @@ public static class DotNetWorkspaceInspector
                 element.Name.LocalName == propertyName &&
                 bool.TryParse(element.Value, out var value) &&
                 value);
+
+    private static string? ReadProperty(XDocument document, string propertyName) =>
+        document.Descendants()
+            .FirstOrDefault(element => element.Name.LocalName == propertyName)
+            ?.Value
+            .Trim();
 
     private static bool ContainsRazorFile(string root)
     {
