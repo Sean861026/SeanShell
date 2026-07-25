@@ -11,43 +11,74 @@
     Unloaded="OnUnloaded"
     mc:Ignorable="d">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid
-            x:Name="DashboardRoot"
-            MaxWidth="1600"
-            Padding="{StaticResource SeanPagePadding}"
-            HorizontalAlignment="Stretch">
+    <ScrollViewer
+        HorizontalContentAlignment="Stretch"
+        HorizontalScrollBarVisibility="Disabled">
+        <Grid HorizontalAlignment="Stretch">
+            <Grid
+                x:Name="DashboardRoot"
+                MaxWidth="1600"
+                Padding="{StaticResource SeanPagePadding}"
+                HorizontalAlignment="Center">
 
-            <StackPanel Spacing="{StaticResource SeanSpace32}">
-                <Grid RowSpacing="{StaticResource SeanSpace16}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition x:Name="HeaderActionColumn" Width="0" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel Spacing="{StaticResource SeanSpace32}">
+                <Border Style="{StaticResource SeanHeroCardStyle}">
+                    <Grid
+                        ColumnSpacing="{StaticResource SeanSpace24}"
+                        RowSpacing="{StaticResource SeanSpace20}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition x:Name="HeaderActionColumn" Width="0" />
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Spacing="{StaticResource SeanSpace8}">
-                        <TextBlock
-                            Style="{StaticResource SeanPageTitleTextStyle}"
-                            Text="Developer workspace" />
-                        <TextBlock
-                            Style="{StaticResource SeanSecondaryTextStyle}"
-                            Text="Live Windows context without replacing Explorer." />
-                    </StackPanel>
+                        <StackPanel Spacing="{StaticResource SeanSpace16}">
+                            <Border
+                                Width="48"
+                                Height="48"
+                                HorizontalAlignment="Left"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="12">
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons"
+                                    FontSize="22"
+                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                    Glyph="&#xE8A7;" />
+                            </Border>
+                            <StackPanel Spacing="{StaticResource SeanSpace8}">
+                                <TextBlock
+                                    Style="{StaticResource SeanHeroTitleTextStyle}"
+                                    Text="Developer workspace" />
+                                <TextBlock
+                                    MaxWidth="720"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Your live Windows context, organized for focused development without replacing Explorer." />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SeanSpace8}">
+                                <Border Style="{StaticResource SeanStatusPillStyle}">
+                                    <TextBlock FontSize="12" Text="Explorer compatible" />
+                                </Border>
+                                <Border Style="{StaticResource SeanStatusPillStyle}">
+                                    <TextBlock FontSize="12" Text="No hooks or injection" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
 
-                    <Button
-                        x:Name="HeaderAction"
-                        Grid.Row="1"
-                        MinHeight="44"
-                        HorizontalAlignment="Left"
-                        AutomationProperties.HelpText="Open the keyboard-first application launcher."
-                        Click="OnOpenLauncherClicked"
-                        Content="Open Launcher"
-                        Style="{StaticResource AccentButtonStyle}" />
-                </Grid>
+                        <Button
+                            x:Name="HeaderAction"
+                            Grid.Row="1"
+                            MinHeight="44"
+                            HorizontalAlignment="Left"
+                            AutomationProperties.HelpText="Open the keyboard-first application launcher."
+                            Click="OnOpenLauncherClicked"
+                            Content="Open Launcher"
+                            Style="{StaticResource AccentButtonStyle}" />
+                    </Grid>
+                </Border>
 
                 <StackPanel Spacing="{StaticResource SeanSpace12}">
                     <TextBlock
@@ -73,7 +104,20 @@
 
                         <Border x:Name="CpuCard" Style="{StaticResource SeanMetricCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="CPU" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE950;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanMetricLabelTextStyle}"
+                                        Text="CPU" />
+                                </Grid>
                                 <TextBlock
                                     x:Name="CpuValue"
                                     Style="{StaticResource SeanMetricValueTextStyle}"
@@ -90,7 +134,20 @@
                             Grid.Row="1"
                             Style="{StaticResource SeanMetricCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Memory" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE950;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanMetricLabelTextStyle}"
+                                        Text="Memory" />
+                                </Grid>
                                 <TextBlock
                                     x:Name="MemoryValue"
                                     Style="{StaticResource SeanMetricValueTextStyle}"
@@ -107,7 +164,20 @@
                             Grid.Row="2"
                             Style="{StaticResource SeanMetricCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Open windows" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE8A7;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanMetricLabelTextStyle}"
+                                        Text="Open windows" />
+                                </Grid>
                                 <TextBlock
                                     x:Name="WindowCountValue"
                                     Style="{StaticResource SeanMetricValueTextStyle}"
@@ -121,11 +191,29 @@
                             Grid.Row="3"
                             Style="{StaticResource SeanMetricCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanMetricLabelTextStyle}" Text="Shell mode" />
-                                <TextBlock
-                                    x:Name="ModeText"
-                                    Style="{StaticResource SeanMetricValueTextStyle}"
-                                    Text="Normal" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE713;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanMetricLabelTextStyle}"
+                                        Text="Shell mode" />
+                                </Grid>
+                                <Border
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource SeanAccentStatusPillStyle}">
+                                    <TextBlock
+                                        x:Name="ModeText"
+                                        FontSize="18"
+                                        FontWeight="SemiBold"
+                                        Text="Normal" />
+                                </Border>
                                 <TextBlock
                                     x:Name="ProviderStatus"
                                     Style="{StaticResource SeanSecondaryTextStyle}"
@@ -153,9 +241,22 @@
                             <ColumnDefinition x:Name="WorkspaceColumn1" Width="0" />
                         </Grid.ColumnDefinitions>
 
-                        <Border Style="{StaticResource SeanCardStyle}">
+                        <Border Style="{StaticResource SeanFeatureCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Window dock" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE8A7;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanSectionTitleTextStyle}"
+                                        Text="Window dock" />
+                                </Grid>
                                 <TextBlock
                                     Text="Switch between normal application windows without hooks or injection."
                                     TextWrapping="Wrap" />
@@ -169,9 +270,22 @@
                         <Border
                             x:Name="LauncherCard"
                             Grid.Row="1"
-                            Style="{StaticResource SeanCardStyle}">
+                            Style="{StaticResource SeanFeatureCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
-                                <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Launcher" />
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE721;" />
+                                    </Border>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SeanSectionTitleTextStyle}"
+                                        Text="Launcher" />
+                                </Grid>
                                 <TextBlock
                                     Text="Search installed apps and safe system commands."
                                     TextWrapping="Wrap" />
@@ -214,12 +328,21 @@
 
                         <Border Style="{StaticResource SeanCardStyle}">
                             <StackPanel Spacing="{StaticResource SeanSpace16}">
-                                <StackPanel Spacing="{StaticResource SeanSpace4}">
-                                    <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Shell preferences" />
-                                    <TextBlock
-                                        Style="{StaticResource SeanSecondaryTextStyle}"
-                                        Text="Tune the Dock and keyboard-first Launcher." />
-                                </StackPanel>
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE713;" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="{StaticResource SeanSpace4}">
+                                        <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Shell preferences" />
+                                        <TextBlock
+                                            Style="{StaticResource SeanSecondaryTextStyle}"
+                                            Text="Tune the Dock and keyboard-first Launcher." />
+                                    </StackPanel>
+                                </Grid>
 
                                 <ToggleSwitch
                                     x:Name="DockAutoHideToggle"
@@ -251,106 +374,134 @@
                             x:Name="PluginCard"
                             Grid.Row="1"
                             Style="{StaticResource SeanCardStyle}">
-                            <Expander
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Top"
-                                Header="Plugins">
-                                <StackPanel Padding="0,12,0,4" Spacing="{StaticResource SeanSpace12}">
-                                    <TextBlock
-                                        Text="Built-in plugins use capability checks and bounded operation timeouts."
-                                        TextWrapping="Wrap" />
-                                    <TextBlock
-                                        x:Name="PluginStatusSummary"
-                                        Style="{StaticResource SeanSecondaryTextStyle}"
-                                        Text="Loading plugin status" />
-                                    <TextBlock
-                                        x:Name="PluginEmptyState"
-                                        Style="{StaticResource SeanSecondaryTextStyle}"
-                                        Text="No built-in plugins are registered."
-                                        Visibility="Collapsed" />
-                                    <ItemsControl
-                                        x:Name="PluginDiagnosticsList"
-                                        AutomationProperties.Name="Plugin diagnostics">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="local:PluginDiagnosticViewModel">
-                                                <Grid Padding="4,10" ColumnSpacing="{StaticResource SeanSpace16}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="2*" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Spacing="{StaticResource SeanSpace4}">
-                                                        <TextBlock FontWeight="SemiBold" Text="{x:Bind Name}" />
-                                                        <TextBlock
-                                                            Style="{StaticResource SeanSecondaryTextStyle}"
-                                                            Text="{x:Bind Identity}" />
-                                                        <TextBlock
-                                                            Style="{StaticResource SeanSecondaryTextStyle}"
-                                                            Text="{x:Bind Detail}" />
-                                                    </StackPanel>
-                                                    <StackPanel
-                                                        Grid.Column="1"
-                                                        HorizontalAlignment="Right"
-                                                        Spacing="{StaticResource SeanSpace4}">
-                                                        <ToggleSwitch
-                                                            MinHeight="44"
-                                                            AutomationProperties.Name="{x:Bind ToggleName}"
-                                                            Header="Enabled"
-                                                            IsEnabled="{x:Bind CanToggle}"
-                                                            IsOn="{x:Bind IsEnabled}"
-                                                            Tag="{x:Bind Id}"
-                                                            Toggled="OnPluginEnabledToggled" />
-                                                        <TextBlock FontWeight="SemiBold" Text="{x:Bind State}" />
-                                                        <TextBlock
-                                                            Style="{StaticResource SeanSecondaryTextStyle}"
-                                                            Text="{x:Bind CapabilityText}" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Expander>
+                            <StackPanel Spacing="{StaticResource SeanSpace12}">
+                                <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SeanIconTileStyle}">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE74C;" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="{StaticResource SeanSpace4}">
+                                        <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Plugins" />
+                                        <TextBlock
+                                            x:Name="PluginStatusSummary"
+                                            Style="{StaticResource SeanSecondaryTextStyle}"
+                                            Text="Loading plugin status" />
+                                    </StackPanel>
+                                </Grid>
+                                <Expander
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Top"
+                                    Header="Manage plugins">
+                                    <StackPanel Padding="0,12,0,4" Spacing="{StaticResource SeanSpace12}">
+                                        <TextBlock
+                                            Text="Built-in plugins use capability checks and bounded operation timeouts."
+                                            TextWrapping="Wrap" />
+                                        <TextBlock
+                                            x:Name="PluginEmptyState"
+                                            Style="{StaticResource SeanSecondaryTextStyle}"
+                                            Text="No built-in plugins are registered."
+                                            Visibility="Collapsed" />
+                                        <ItemsControl
+                                            x:Name="PluginDiagnosticsList"
+                                            AutomationProperties.Name="Plugin diagnostics">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="local:PluginDiagnosticViewModel">
+                                                    <Grid Padding="4,10" ColumnSpacing="{StaticResource SeanSpace16}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="2*" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Spacing="{StaticResource SeanSpace4}">
+                                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind Name}" />
+                                                            <TextBlock
+                                                                Style="{StaticResource SeanSecondaryTextStyle}"
+                                                                Text="{x:Bind Identity}" />
+                                                            <TextBlock
+                                                                Style="{StaticResource SeanSecondaryTextStyle}"
+                                                                Text="{x:Bind Detail}" />
+                                                        </StackPanel>
+                                                        <StackPanel
+                                                            Grid.Column="1"
+                                                            HorizontalAlignment="Right"
+                                                            Spacing="{StaticResource SeanSpace4}">
+                                                            <ToggleSwitch
+                                                                MinHeight="44"
+                                                                AutomationProperties.Name="{x:Bind ToggleName}"
+                                                                Header="Enabled"
+                                                                IsEnabled="{x:Bind CanToggle}"
+                                                                IsOn="{x:Bind IsEnabled}"
+                                                                Tag="{x:Bind Id}"
+                                                                Toggled="OnPluginEnabledToggled" />
+                                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind State}" />
+                                                            <TextBlock
+                                                                Style="{StaticResource SeanSecondaryTextStyle}"
+                                                                Text="{x:Bind CapabilityText}" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </StackPanel>
 
                 <Border Style="{StaticResource SeanCardStyle}">
-                    <Expander Header="Gaming mode">
-                        <StackPanel Padding="0,12,0,4" Spacing="{StaticResource SeanSpace12}">
-                            <TextBlock
-                                Style="{StaticResource SeanSecondaryTextStyle}"
-                                Text="Reduce background work while a configured game is running." />
-                            <ToggleSwitch
-                                x:Name="GamingModeToggle"
-                                Header="Manual gaming mode"
-                                OffContent="Automatic detection controls the effective mode"
-                                OnContent="Keep gaming mode active until manually disabled"
-                                Toggled="OnGamingModeToggled" />
-                            <ToggleSwitch
-                                x:Name="AutomaticGamingModeToggle"
-                                Header="Automatic game detection"
-                                OffContent="Configured processes are not monitored"
-                                OnContent="Enter gaming mode while a configured process is running"
-                                Toggled="OnAutomaticGamingModeToggled" />
-                            <TextBox
-                                x:Name="GameProcessRulesTextBox"
-                                MinHeight="88"
-                                AcceptsReturn="True"
-                                AutomationProperties.HelpText="Enter one game executable name per line. File paths and executable extensions are optional."
-                                Header="Game process names"
-                                PlaceholderText="eldenring.exe"
-                                TextWrapping="Wrap" />
-                            <Button
-                                MinHeight="44"
-                                HorizontalAlignment="Left"
-                                Click="OnSaveGameRulesClicked"
-                                Content="Save game rules" />
-                            <TextBlock
-                                x:Name="GamingDetectionStatus"
-                                Style="{StaticResource SeanSecondaryTextStyle}"
-                                Text="Automatic detection is off" />
-                        </StackPanel>
-                    </Expander>
+                    <StackPanel Spacing="{StaticResource SeanSpace12}">
+                        <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource SeanIconTileStyle}">
+                                <FontIcon FontFamily="Segoe Fluent Icons" FontSize="18" Glyph="&#xE7FC;" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="{StaticResource SeanSpace4}">
+                                <TextBlock Style="{StaticResource SeanSectionTitleTextStyle}" Text="Gaming mode" />
+                                <TextBlock
+                                    x:Name="GamingDetectionStatus"
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Automatic detection is off" />
+                            </StackPanel>
+                        </Grid>
+                        <Expander Header="Configure gaming mode">
+                            <StackPanel Padding="0,12,0,4" Spacing="{StaticResource SeanSpace12}">
+                                <TextBlock
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Reduce background work while a configured game is running." />
+                                <ToggleSwitch
+                                    x:Name="GamingModeToggle"
+                                    Header="Manual gaming mode"
+                                    OffContent="Automatic detection controls the effective mode"
+                                    OnContent="Keep gaming mode active until manually disabled"
+                                    Toggled="OnGamingModeToggled" />
+                                <ToggleSwitch
+                                    x:Name="AutomaticGamingModeToggle"
+                                    Header="Automatic game detection"
+                                    OffContent="Configured processes are not monitored"
+                                    OnContent="Enter gaming mode while a configured process is running"
+                                    Toggled="OnAutomaticGamingModeToggled" />
+                                <TextBox
+                                    x:Name="GameProcessRulesTextBox"
+                                    MinHeight="88"
+                                    AcceptsReturn="True"
+                                    AutomationProperties.HelpText="Enter one game executable name per line. File paths and executable extensions are optional."
+                                    Header="Game process names"
+                                    PlaceholderText="eldenring.exe"
+                                    TextWrapping="Wrap" />
+                                <Button
+                                    MinHeight="44"
+                                    HorizontalAlignment="Left"
+                                    Click="OnSaveGameRulesClicked"
+                                    Content="Save game rules" />
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
                 </Border>
 
                 <StackPanel Spacing="{StaticResource SeanSpace8}">
@@ -370,7 +521,8 @@
                         Severity="Informational"
                         Title="Compatibility-first" />
                 </StackPanel>
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </Grid>
     </ScrollViewer>
 </Page>

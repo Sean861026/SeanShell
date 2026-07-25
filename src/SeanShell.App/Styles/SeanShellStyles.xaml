@@ -19,6 +19,7 @@
     <CornerRadius x:Key="SeanCardCornerRadius">12</CornerRadius>
     <CornerRadius x:Key="SeanCompactCornerRadius">8</CornerRadius>
     <CornerRadius x:Key="SeanPillCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="SeanIconCornerRadius">10</CornerRadius>
 
     <!-- Typography roles use the native Segoe UI Variable type system. -->
     <Style
@@ -28,6 +29,13 @@
         <Setter Property="FontSize" Value="28" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style
+        x:Key="SeanHeroTitleTextStyle"
+        BasedOn="{StaticResource SeanPageTitleTextStyle}"
+        TargetType="TextBlock">
+        <Setter Property="FontSize" Value="32" />
     </Style>
 
     <Style
@@ -78,7 +86,32 @@
         BasedOn="{StaticResource SeanCardStyle}"
         TargetType="Border">
         <Setter Property="Padding" Value="{StaticResource SeanMetricCardPadding}" />
-        <Setter Property="MinHeight" Value="112" />
+        <Setter Property="MinHeight" Value="136" />
+    </Style>
+
+    <Style
+        x:Key="SeanHeroCardStyle"
+        BasedOn="{StaticResource SeanCardStyle}"
+        TargetType="Border">
+        <Setter Property="Padding" Value="{StaticResource SeanSpace24}" />
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+    </Style>
+
+    <Style
+        x:Key="SeanFeatureCardStyle"
+        BasedOn="{StaticResource SeanCardStyle}"
+        TargetType="Border">
+        <Setter Property="MinHeight" Value="156" />
+    </Style>
+
+    <Style x:Key="SeanIconTileStyle" TargetType="Border">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanIconCornerRadius}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style x:Key="SeanStatusPillStyle" TargetType="Border">
@@ -86,6 +119,15 @@
         <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanPillCornerRadius}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style
+        x:Key="SeanAccentStatusPillStyle"
+        BasedOn="{StaticResource SeanStatusPillStyle}"
+        TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
     </Style>
 
     <Style x:Key="SeanLauncherResultItemStyle" TargetType="ListViewItem">
