@@ -84,8 +84,10 @@ seconds. Gaming mode stops this polling and hides the dock.
 
 Dock auto-hide leaves a visible edge indicator instead of disappearing completely.
 Pointer entry or keyboard focus expands it, and a dashboard toggle keeps all docks
-expanded for users who do not want auto-hide. Display topology is captured at
-startup; restart SeanShell after connecting or disconnecting a monitor.
+expanded for users who do not want auto-hide. SeanShell observes Windows display
+topology changes and rebuilds monitor-local Dock windows after a short debounce.
+If display monitoring or a rebuild fails, the existing Dock windows remain active
+and the dashboard explains that a restart is required.
 
 Dock auto-hide and the selected Launcher shortcut persist in a versioned JSON file
 under `%LOCALAPPDATA%\SeanShell`. Writes use a temporary file and last-known-good

@@ -22,7 +22,7 @@
 - [x] Live CPU and memory cards with two-second sampling
 - [x] One monitor-local dock per startup display snapshot
 - [x] Edge-peek auto-hide with pointer and keyboard-focus safeguards
-- [ ] Rebuild dock windows after display hot-plug without restarting
+- [x] Rebuild dock windows after display hot-plug without restarting
 - [x] Cached recent repositories and Git status Launcher provider
 - [x] Cached WSL distribution Launcher provider
 - [x] Cached Docker container provider with offline-Engine handling

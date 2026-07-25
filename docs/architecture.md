@@ -48,7 +48,11 @@ and memory sampling follows the same boundary and publishes a
 `SystemMetricsSnapshot` to the dashboard.
 
 `DisplayMonitorService` captures Win32 work areas as immutable monitor snapshots.
-The App composition root creates one dock window per startup snapshot. Window
+The App composition root creates one dock window per snapshot. A window subclass
+observes `WM_DISPLAYCHANGE` and schedules a debounced topology capture on the UI
+dispatcher. Equivalent snapshots are ignored. When handles, work areas, or monitor
+membership change, the App constructs every replacement Dock before shutting down
+the previous set. A failed or empty capture leaves the existing set active. Window
 snapshots carry the nearest monitor handle, allowing each dock to filter locally
 without opening or retaining process handles.
 

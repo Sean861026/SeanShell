@@ -13,7 +13,7 @@ public sealed partial class MainPage : Page
     private readonly ShellStateStore _shellState;
     private readonly DesktopWindowService _desktopWindows;
     private readonly SystemMetricsProvider _systemMetrics;
-    private readonly int _displayCount;
+    private int _displayCount;
     private readonly GamingModeManager _gamingMode;
     private readonly PluginHost _pluginHost;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
@@ -125,6 +125,24 @@ public sealed partial class MainPage : Page
         SetSettingsStatus(
             "Game detection paused",
             $"SeanShell could not read the current process snapshot and will retry automatically. {message}",
+            InfoBarSeverity.Warning);
+    }
+
+    public void SetDisplayCount(int count)
+    {
+        _displayCount = count;
+        UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+        SetSettingsStatus(
+            "Display layout updated",
+            $"Dock windows now match {count} connected display{(count == 1 ? string.Empty : "s")}.",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetDisplayMonitoringUnavailable(string message)
+    {
+        SetSettingsStatus(
+            "Display monitoring unavailable",
+            $"Existing Dock windows remain active. Restart SeanShell after changing displays. {message}",
             InfoBarSeverity.Warning);
     }
 
