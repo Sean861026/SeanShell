@@ -5,7 +5,7 @@ namespace SeanShell.PluginBroker.Protocol;
 
 public static class PluginBrokerProtocol
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
     public const int MaximumFrameCharacters = 64 * 1024;
     public const long MaximumEntryAssemblyBytes = 256 * 1024 * 1024;
     public const int KnownCapabilityMask = 3;

@@ -72,6 +72,7 @@
 - [x] Short-lived capability-bound broker metadata probe without code execution
 - [x] One-process Job Object limits and fail-closed broker process mitigations
 - [x] Suspended broker creation with restricted handle inheritance before resume
+- [x] Per-process HMAC-authenticated, single-use broker request/response channel
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

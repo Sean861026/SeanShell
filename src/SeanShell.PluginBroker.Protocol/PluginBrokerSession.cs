@@ -9,11 +9,18 @@ public static class PluginBrokerSession
         TextReader input,
         TextWriter output,
         int processId,
+        ReadOnlyMemory<byte> sessionKey,
         CancellationToken cancellationToken = default,
         DateTimeOffset? currentTimeUtc = null)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
+        if (sessionKey.Length != PluginBrokerAuthentication.SessionKeyBytes)
+        {
+            throw new ArgumentException(
+                "The broker session key has an invalid length.",
+                nameof(sessionKey));
+        }
 
         PluginBrokerResponse response;
         try
@@ -21,11 +28,13 @@ public static class PluginBrokerSession
             var frame = await PluginBrokerProtocol.ReadFrameAsync(input, cancellationToken)
                 .ConfigureAwait(false);
             var request = PluginBrokerProtocol.DeserializeRequest(frame);
-            response = await HandleAsync(
-                request,
-                processId,
-                currentTimeUtc ?? DateTimeOffset.UtcNow,
-                cancellationToken).ConfigureAwait(false);
+            response = PluginBrokerAuthentication.VerifyRequest(request, sessionKey.Span)
+                ? await HandleAsync(
+                    request,
+                    processId,
+                    currentTimeUtc ?? DateTimeOffset.UtcNow,
+                    cancellationToken).ConfigureAwait(false)
+                : Reject(request, processId, "Request authentication failed.");
         }
         catch (Exception exception) when (
             exception is JsonException or
@@ -44,6 +53,7 @@ public static class PluginBrokerSession
                 processId);
         }
 
+        response = PluginBrokerAuthentication.SignResponse(response, sessionKey.Span);
         await output.WriteLineAsync(PluginBrokerProtocol.Serialize(response)).ConfigureAwait(false);
         await output.FlushAsync(cancellationToken).ConfigureAwait(false);
         return response;
@@ -79,7 +89,9 @@ public static class PluginBrokerSession
                     request.RequestId,
                     true,
                     "Broker sandbox active; external activation is disabled.",
-                    processId)
+                    processId,
+                    SessionId: request.SessionId,
+                    Nonce: request.Nonce)
                 : Reject(request, processId, "Health requests may not include a capability grant.");
         }
 
@@ -136,7 +148,9 @@ public static class PluginBrokerSession
                 grant.PluginId,
                 observedHash,
                 grant.PublisherCertificateSha256.ToUpperInvariant(),
-                grant.GrantedCapabilities));
+                grant.GrantedCapabilities),
+            request.SessionId,
+            request.Nonce);
     }
 
     private static string? ValidateGrant(PluginBrokerGrant? grant, DateTimeOffset currentTimeUtc)
@@ -241,5 +255,7 @@ public static class PluginBrokerSession
                 : string.Empty,
             false,
             status,
-            processId);
+            processId,
+            SessionId: request.SessionId,
+            Nonce: request.Nonce);
 }

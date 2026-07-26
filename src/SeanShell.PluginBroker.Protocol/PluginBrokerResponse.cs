@@ -6,4 +6,7 @@ public sealed record PluginBrokerResponse(
     bool Accepted,
     string Status,
     int BrokerProcessId,
-    PluginBrokerMetadata? Metadata = null);
+    PluginBrokerMetadata? Metadata = null,
+    string SessionId = "",
+    string Nonce = "",
+    string? AuthenticationTag = null);

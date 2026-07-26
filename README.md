@@ -201,18 +201,19 @@ and requested capabilities. A changed signer or expanded capability set requires
 new consent, and the dashboard can revoke a candidate or clear every stored
 decision even after a package is removed. No external DLL is loaded or executed.
 
-Dependency containment, an authenticated single-use activation channel, and
+Dependency containment, bounded activation DTOs, broker packaging/signing, and
 crash quarantine must still ship before external plugins can be accepted for
 execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
 An independent `SeanShell.PluginBroker` executable now proves a fail-closed
-process boundary. Protocol v2 accepts bounded `health` and read-only
-`probe-metadata` requests; the host verifies the response PID/request ID within
-two seconds. Every broker receives a one-process, 256 MiB, kill-on-close Windows
-Job Object before its suspended primary thread is resumed. Only the three
-redirected standard-stream handles are inherited. The broker then disables
+process boundary. Protocol v3 accepts bounded `health` and read-only
+`probe-metadata` requests over a per-process HMAC-authenticated channel; the host
+verifies the response envelope, PID, and request ID within two seconds. Every
+broker receives a one-process, 256 MiB, kill-on-close Windows Job Object before
+its suspended primary thread is resumed. Only the three redirected streams and
+a one-use session-key pipe are inherited. The broker then disables
 legacy extension points, unsafe image sources, and child-process creation before
 reading a request. The broker still never loads or activates a plugin, and the
 App does not use it to run external code. See the
