@@ -518,6 +518,11 @@
                                     x:Name="GamingDetectionPerformance"
                                     Style="{StaticResource SeanCaptionTextStyle}"
                                     Text="Detector performance: Not measured" />
+                                <TextBlock
+                                    x:Name="GamingSessionHistory"
+                                    Style="{StaticResource SeanCaptionTextStyle}"
+                                    Text="Compatibility evidence: No detected session recorded yet"
+                                    TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
                         <Expander Header="Configure gaming mode">

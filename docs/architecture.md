@@ -169,6 +169,13 @@ keeps at most 60 samples and exposes scan P95 plus estimated detector CPU use to
 the dashboard. The estimate is diagnostic evidence for representative sessions,
 not a system-wide profiler.
 
+`GamingSessionRecorder` observes detected-process transitions independently from
+the manual Gaming Mode override. It starts a session only when at least one
+configured executable is detected, completes it after the final match exits, and
+retains the 20 newest records through an atomic, backup-backed schema-1 JSON
+store. Records remain local and contain process names and compatibility metadata,
+not game content or process handles.
+
 ## Deployment
 
 The initial app uses single-project MSIX packaging and a debug identity generated

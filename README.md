@@ -126,6 +126,12 @@ matched unless the user explicitly adds them. No process handles are retained.
 The Gaming mode card keeps a bounded 60-sample diagnostic window with the latest
 scan time, scan P95, and estimated detector CPU percentage.
 
+Detected sessions are recorded locally after the last matching process exits.
+SeanShell retains the 20 most recent summaries in
+`LocalApplicationData/SeanShell/gaming-sessions.json`, including executable names,
+start/end times, Windows and SeanShell versions, and detector metrics. Session
+history is never uploaded.
+
 ## Plugin platform preview
 
 The first M4 slice adds a bounded host for explicitly registered built-in plugins.
