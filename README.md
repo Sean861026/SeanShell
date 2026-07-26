@@ -51,8 +51,9 @@ dotnet run --project src/SeanShell.App/SeanShell.App.csproj
 ```
 
 The packaged WinUI application uses the generated debug identity when launched
-from the command line. Packaging and signing for distribution will be added after
-the MVP interaction model is stable.
+from the command line. Its manifest enables Windows package-content integrity
+enforcement. A production certificate and release-signing pipeline will be added
+after the MVP interaction model is stable.
 
 ## Safety boundary
 
@@ -201,13 +202,17 @@ and requested capabilities. A changed signer or expanded capability set requires
 new consent, and the dashboard can revoke a candidate or clear every stored
 decision even after a package is removed. No external DLL is loaded or executed.
 
-Dependency containment, bounded activation DTOs, and broker packaging/signing
+Dependency containment, bounded activation DTOs, and production release signing
 must still ship before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
-An independent `SeanShell.PluginBroker` executable now proves a fail-closed
-process boundary. Protocol v3 accepts bounded `health` and read-only
+Protocol v3 now runs in a fail-closed child process of the exact packaged
+`SeanShell.App.exe`. A custom entry point selects broker mode before WinUI or
+WinRT initialization; normal launches continue into the desktop UI. The
+standalone `SeanShell.PluginBroker` executable remains only as a test harness,
+and both hosts share `SeanShell.PluginBroker.Runtime`. The protocol accepts
+bounded `health` and read-only
 `probe-metadata` requests over a per-process HMAC-authenticated channel; the host
 verifies the response envelope, PID, and request ID within two seconds. Every
 broker receives a one-process, 256 MiB, kill-on-close Windows Job Object before

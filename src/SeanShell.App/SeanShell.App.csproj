@@ -13,6 +13,15 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!--
+      Broker mode must reach our custom Main before any WinRT activation. Packaged
+      UI launch already resolves the Windows App SDK framework through the package
+      dependency, so the generated deployment-manager module initializer is neither
+      needed nor safe for the identity-free broker child.
+    -->
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <WindowsAppSdkAutoInitialize>false</WindowsAppSdkAutoInitialize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -63,6 +72,7 @@
     <ProjectReference Include="..\SeanShell.Core\SeanShell.Core.csproj" />
     <ProjectReference Include="..\SeanShell.Gaming\SeanShell.Gaming.csproj" />
     <ProjectReference Include="..\SeanShell.PluginContracts\SeanShell.PluginContracts.csproj" />
+    <ProjectReference Include="..\SeanShell.PluginBroker.Runtime\SeanShell.PluginBroker.Runtime.csproj" />
     <ProjectReference Include="..\SeanShell.Plugins\SeanShell.Plugins.csproj" />
     <ProjectReference Include="..\SeanShell.Windows\SeanShell.Windows.csproj" />
   </ItemGroup>

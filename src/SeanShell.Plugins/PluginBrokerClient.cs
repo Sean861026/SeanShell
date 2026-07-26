@@ -101,8 +101,24 @@ public sealed class PluginBrokerClient : IPluginBrokerProbeClient
                 var frameTask = PluginBrokerProtocol.ReadFrameAsync(
                     process.Output,
                     linkedCancellation.Token);
-                var frame = await frameTask.WaitAsync(linkedCancellation.Token)
-                    .ConfigureAwait(false);
+                string frame;
+                try
+                {
+                    frame = await frameTask.WaitAsync(linkedCancellation.Token)
+                        .ConfigureAwait(false);
+                }
+                catch (EndOfStreamException exception)
+                {
+                    await process.WaitForExitAsync(linkedCancellation.Token)
+                        .ConfigureAwait(false);
+                    var error = await process.Error.ReadToEndAsync(linkedCancellation.Token)
+                        .ConfigureAwait(false);
+                    throw new InvalidDataException(
+                        $"The plugin broker exited before responding (exit code " +
+                        $"{process.ExitCode}). {error.Trim()}",
+                        exception);
+                }
+
                 var response = PluginBrokerProtocol.DeserializeResponse(frame);
                 await process.WaitForExitAsync(linkedCancellation.Token).ConfigureAwait(false);
 

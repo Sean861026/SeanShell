@@ -124,7 +124,8 @@ User revokes one candidate or all stored consent
 
 ```text
 Host creates a protocol-v3 health request + random 256-bit session key
-  -> CreateProcessW starts SeanShell.PluginBroker with CREATE_SUSPENDED
+  -> production composition resolves exact packaged SeanShell.App.exe
+  -> CreateProcessW starts it with --plugin-broker and CREATE_SUSPENDED
   -> inherit only stdin / stdout / stderr + private key-pipe handles
   -> assign broker to one-process / 256 MiB / kill-on-close Job Object
   -> write key through private pipe and close host key handle
@@ -139,6 +140,11 @@ Host creates a protocol-v3 health request + random 256-bit session key
   -> both processes clear key buffers; broker handles no second frame
   -> timeout/cancellation/mismatch: close Job Object and fail closed
 ```
+
+Normal packaged launch enters the custom `Main`, does not match
+`--plugin-broker`, initializes WinUI, and creates `App`. Broker launch matches
+the exact mode before any WinUI/WinRT initialization and delegates to the shared
+identity-free runtime.
 
 ```text
 User-approved plugin ID

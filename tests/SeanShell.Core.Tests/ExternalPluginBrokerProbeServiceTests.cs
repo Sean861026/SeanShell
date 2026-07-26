@@ -307,6 +307,17 @@ public sealed class ExternalPluginBrokerProbeServiceTests
 
     private static string FindBrokerExecutable()
     {
+        var packagedExecutable =
+            Environment.GetEnvironmentVariable("SEANSHELL_BROKER_TEST_EXECUTABLE");
+        if (!string.IsNullOrWhiteSpace(packagedExecutable))
+        {
+            var resolved = Path.GetFullPath(packagedExecutable);
+            Assert.IsTrue(
+                File.Exists(resolved),
+                $"Packaged broker executable not found: {resolved}");
+            return resolved;
+        }
+
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         var configuration = directory
             .AncestorsAndSelf()

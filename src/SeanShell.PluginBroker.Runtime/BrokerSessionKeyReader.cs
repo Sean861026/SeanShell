@@ -9,17 +9,21 @@ internal static class BrokerSessionKeyReader
 
     public static byte[] Read(string[] arguments)
     {
-        if (arguments.Length != 1 ||
-            !arguments[0].StartsWith(HandleArgumentPrefix, StringComparison.Ordinal) ||
+        if (arguments.Length != 2 ||
+            !string.Equals(
+                arguments[0],
+                PluginBrokerEntryPoint.BrokerModeArgument,
+                StringComparison.Ordinal) ||
+            !arguments[1].StartsWith(HandleArgumentPrefix, StringComparison.Ordinal) ||
             !long.TryParse(
-                arguments[0].AsSpan(HandleArgumentPrefix.Length),
+                arguments[1].AsSpan(HandleArgumentPrefix.Length),
                 NumberStyles.None,
                 CultureInfo.InvariantCulture,
                 out var rawHandle) ||
             rawHandle <= 0)
         {
             throw new InvalidDataException(
-                "The broker requires exactly one inherited session-key handle.");
+                "The broker requires its exact mode and inherited session-key handle.");
         }
 
         using var handle = new SafeFileHandle(new IntPtr(rawHandle), ownsHandle: true);

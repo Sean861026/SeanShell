@@ -142,7 +142,8 @@ host.
 ```text
 PluginBrokerClient
   -> create protocol-v3 request + random request/session IDs, nonce, session key
-  -> CreateProcessW exact broker path + CREATE_SUSPENDED
+  -> App composition supplies Environment.ProcessPath from the packaged App
+  -> CreateProcessW exact SeanShell.App.exe path + --plugin-broker + CREATE_SUSPENDED
   -> STARTUPINFOEX inherits stdin / stdout / stderr + private key pipe only
   -> assign PID to one-process / 256 MiB / kill-on-close Windows Job Object
   -> write exactly 32 key bytes and close the host key-pipe end
@@ -182,6 +183,10 @@ file content, persisted consent document, type, method, launcher query, or
 activation operation. No response returns a local path and nothing connects the
 probe to `PluginHost`. No broker instruction or runtime initialization executes
 before Job assignment.
+
+The broker child uses `SeanShell.PluginBroker.Runtime` and never initializes
+WinUI. The standalone console broker used by tests delegates to the same runtime,
+so process-boundary tests exercise the same protocol and mitigation code.
 
 ## Dock and dashboard
 

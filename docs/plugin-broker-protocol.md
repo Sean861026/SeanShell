@@ -37,9 +37,10 @@ establish any part of this profile fails closed.
   cancellation.
 
 The inherited pipe proves that a response came from the one process given the
-per-launch key; it does not replace executable packaging and signing. A
-same-user attacker able to replace the configured broker binary remains outside
-this stage's guarantee.
+per-launch key. Production composition starts the exact current packaged
+`SeanShell.App.exe`; there is no configurable broker binary. The manifest enables
+Windows package-content integrity enforcement. A production certificate and
+release-signing pipeline are still required before external execution ships.
 
 The JSON protocol carries no key, file contents, environment values, launcher
 query text, arbitrary command strings, or persisted consent documents.
@@ -137,5 +138,5 @@ Before code execution is added, the broker still needs:
 
 - dependency and native-library containment;
 - bounded command/result DTOs with no delegate or shell string;
-- packaging and signing rules for the broker executable; and
+- production certificate management and release-signing policy; and
 - adversarial tests against managed and native dependency escape.

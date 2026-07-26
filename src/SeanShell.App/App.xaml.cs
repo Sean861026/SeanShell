@@ -49,6 +49,10 @@ public partial class App : Application
 
     public ExternalPluginTrustManager ExternalPluginTrust { get; }
 
+    public PluginBrokerQuarantineManager ExternalPluginBrokerQuarantine { get; }
+
+    public ExternalPluginBrokerProbeService ExternalPluginProbe { get; }
+
     public ShellSettingsStore SettingsStore { get; }
 
     public SettingsLoadResult SettingsLoad { get; }
@@ -97,6 +101,10 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
             "plugin-trust.json");
+        var externalPluginBrokerHealthPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "plugin-broker-health.json");
         _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
@@ -136,6 +144,19 @@ public partial class App : Application
         ExternalPluginTrust = new ExternalPluginTrustManager(
             externalPluginTrustStore,
             externalPluginTrustStore.Load());
+        var quarantineStore = new PluginBrokerQuarantineStore(
+            externalPluginBrokerHealthPath);
+        ExternalPluginBrokerQuarantine = new PluginBrokerQuarantineManager(
+            quarantineStore,
+            quarantineStore.Load());
+        ExternalPluginProbe = new ExternalPluginBrokerProbeService(
+            ExternalPlugins,
+            ExternalPluginTrust,
+            new PluginBrokerClient(
+                Environment.ProcessPath ??
+                throw new InvalidOperationException(
+                    "The packaged SeanShell executable path is unavailable.")),
+            ExternalPluginBrokerQuarantine);
 
         LauncherSearch = new LauncherSearchService(
         [
