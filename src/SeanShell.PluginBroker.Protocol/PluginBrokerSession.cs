@@ -78,7 +78,7 @@ public static class PluginBrokerSession
                     PluginBrokerProtocol.CurrentVersion,
                     request.RequestId,
                     true,
-                    "Broker handshake ready; external activation is disabled.",
+                    "Broker sandbox active; external activation is disabled.",
                     processId)
                 : Reject(request, processId, "Health requests may not include a capability grant.");
         }

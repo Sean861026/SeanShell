@@ -8,14 +8,23 @@ that a freshly trusted and approved package still has the exact bytes and
 capabilities authorized by the host. It does not load an assembly, inspect
 managed types, activate a plugin, or execute a command.
 
+The transport version remains 2 because this stage changes process containment,
+not the JSON schema. Before sending a request, the host assigns the broker to a
+Windows Job Object limited to one active process and 256 MiB committed memory.
+Closing the last job handle terminates the broker. Before reading a request, the
+broker disables legacy extension points, remote and low-integrity image loading,
+and child-process creation. Failure to establish either side of this profile
+fails closed.
+
 ## Transport
 
 - One UTF-8 JSON object per line over redirected standard input/output.
 - One request and one response per broker process.
 - Maximum decoded frame length: 65,536 characters.
 - The host closes standard input after sending its request.
-- The host applies a two-second timeout and terminates the process tree when the
-  exchange fails or is cancelled.
+- The host applies a two-second timeout. A Job Object closes on completion,
+  failure, or cancellation and lets Windows terminate any broker process still
+  alive.
 - The broker exits `0` only for an accepted request and `2` for a rejected frame.
 - Responses are accepted only when protocol version, request ID, process ID,
   operation-specific metadata, and exit code all match.
@@ -95,8 +104,8 @@ timeout, nonzero exit, or unexpected process ID fails closed.
 safe to send to arbitrary broker instances. Before code execution is added, the
 broker still needs:
 
-- Windows process mitigations and resource limits;
 - dependency and native-library containment;
+- creation of the broker suspended so no startup work precedes Job assignment;
 - a broker-authenticated, single-use activation channel;
 - bounded command/result DTOs with no delegate or shell string;
 - broker crash accounting and automatic quarantine;

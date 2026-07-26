@@ -132,6 +132,41 @@ public sealed class PluginBrokerTests
 
         Assert.IsTrue(response.Accepted);
         Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
+        StringAssert.Contains(response.Status, "sandbox active");
+    }
+
+    [TestMethod]
+    public async Task ClosingBrokerJobTerminatesBlockedProcess()
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo(FindBrokerExecutable())
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+            },
+        };
+        Assert.IsTrue(process.Start());
+        try
+        {
+            using (var sandbox = BrokerProcessSandbox.Create())
+            {
+                sandbox.Assign(process);
+            }
+
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await process.WaitForExitAsync(cancellation.Token);
+            Assert.IsTrue(process.HasExited);
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
     }
 
     [TestMethod]
