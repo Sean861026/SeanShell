@@ -336,6 +336,32 @@ docks completely and stops the shared refresh loop. A topology change during
 Gaming Mode prepares replacement Docks without showing them; the existing
 normal-mode transition displays them later.
 
+## Companion Taskbar
+
+```text
+User enables Replace Windows taskbar
+  -> persist the opt-in schema-v6 preference
+  -> launch the exact packaged SeanShell executable in recovery-guard mode
+  -> guard opens the main-process handle and confirms readiness over stdout
+  -> enumerate Shell_TrayWnd and Shell_SecondaryTrayWnd windows
+  -> hide every discovered taskbar and verify visibility
+  -> start a two-second re-hide check for Explorer restarts
+
+User disables replacement or closes SeanShell normally
+  -> stop the re-hide check
+  -> show and verify every Windows taskbar
+  -> persist the disabled preference
+
+SeanShell main process crashes or is forcibly terminated
+  -> recovery guard observes the owner-process handle becoming signaled
+  -> retry restoration up to five times
+  -> exit without restarting SeanShell or Explorer
+```
+
+The guard must acknowledge readiness before any taskbar is hidden. Failure to
+start the guard, discover a taskbar, or verify the requested visibility fails
+safe by showing all taskbars and clearing the persisted replacement preference.
+
 ## Gaming mode
 
 ```text
@@ -369,5 +395,6 @@ User runs tools/restore-explorer.ps1
   -> start explorer.exe when it is not running
   -> request a graceful SeanShell shutdown
   -> still running after two seconds: stop only SeanShell.App
+  -> explicitly show primary and secondary Windows taskbars
   -> remove startup-health.json to reset automatic-start protection
 ```

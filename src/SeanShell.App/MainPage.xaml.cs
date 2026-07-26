@@ -74,6 +74,8 @@ public sealed partial class MainPage : Page
 
     public event Action<bool>? DockAutoHideChanged;
 
+    public event Action<bool>? TaskbarReplacementChanged;
+
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
 
     public event Action<ShellThemePreference>? ThemePreferenceChanged;
@@ -190,6 +192,49 @@ public sealed partial class MainPage : Page
                 ? $"{shortcut.GetDisplayName()} now opens the Launcher."
                 : $"{shortcut.GetDisplayName()} works now, but the settings file could not be updated.",
             persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+    }
+
+    public void SetTaskbarReplacementApplied(bool enabled, int taskbarCount)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        TaskbarReplacementToggle.IsOn = enabled;
+        _applyingSettings = wasApplyingSettings;
+        UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+        SetSettingsStatus(
+            enabled ? "Windows taskbar replaced" : "Windows taskbar restored",
+            enabled
+                ? $"SeanShell Dock is replacing {taskbarCount} Windows taskbar window(s). Explorer remains active."
+                : $"Restored {taskbarCount} Windows taskbar window(s).",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetTaskbarReplacementFailed(string message)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        TaskbarReplacementToggle.IsOn = false;
+        _applyingSettings = wasApplyingSettings;
+        UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+        SetSettingsStatus(
+            "Taskbar replacement unavailable",
+            $"Windows taskbars remain visible. {message}",
+            InfoBarSeverity.Warning);
+    }
+
+    public void SetTaskbarReplacementPreferenceUnchanged(
+        bool enabled,
+        string message)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        TaskbarReplacementToggle.IsOn = enabled;
+        _applyingSettings = wasApplyingSettings;
+        UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+        SetSettingsStatus(
+            "Taskbar preference not changed",
+            message,
+            InfoBarSeverity.Warning);
     }
 
     public void SetShortcutUnavailable(LauncherShortcut requested, LauncherShortcut? restored, string reason)
@@ -446,6 +491,16 @@ public sealed partial class MainPage : Page
 
         DockAutoHideChanged?.Invoke(DockAutoHideToggle.IsOn);
         UpdateDockStatus(_shellState.Current.Mode == ShellMode.Gaming);
+    }
+
+    private void OnTaskbarReplacementToggled(object sender, RoutedEventArgs e)
+    {
+        if (_applyingSettings)
+        {
+            return;
+        }
+
+        TaskbarReplacementChanged?.Invoke(TaskbarReplacementToggle.IsOn);
     }
 
     private void OnLauncherShortcutSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -808,6 +863,8 @@ public sealed partial class MainPage : Page
     {
         DockStatus.Text = gaming
             ? $"Hidden during gaming mode on {_displayCount} display(s)"
+            : TaskbarReplacementToggle.IsOn
+                ? $"Replacing Windows taskbar on {_displayCount} display(s)"
             : DockAutoHideToggle.IsOn
                 ? $"Auto-hide active on {_displayCount} display(s)"
                 : $"Expanded on {_displayCount} display(s)";
@@ -862,6 +919,7 @@ public sealed partial class MainPage : Page
     {
         _applyingSettings = true;
         DockAutoHideToggle.IsOn = settings.DockAutoHide;
+        TaskbarReplacementToggle.IsOn = settings.ReplaceWindowsTaskbar;
         AutomaticGamingModeToggle.IsOn = settings.AutomaticGamingModeEnabled;
         GameProcessRulesTextBox.Text = settings.GameProcessRules;
         SelectShortcut(settings.LauncherShortcut);

@@ -245,6 +245,27 @@ MonitorFromWindow
 Auto-hide is a persistent UI preference. A collapsed dock retains a visible edge
 indicator; pointer entry or routed keyboard focus expands it.
 
+## Companion Taskbar visibility
+
+```text
+ShellSettings.ReplaceWindowsTaskbar
+  -> TaskbarReplacementSession
+  -> TaskbarRecoveryGuard readiness
+  -> WindowsTaskbarController
+  -> Shell_TrayWnd + Shell_SecondaryTrayWnd visibility
+  -> verified TaskbarOperationResult
+  -> dashboard status and two-second re-hide timer
+
+Main SeanShell process handle
+  -> independent guard wait
+  -> owner exit
+  -> WindowsTaskbarController.ShowAll
+```
+
+Only taskbar window handles, the owner process ID, and bounded success/error
+status cross this boundary. No process injection, shell registry mutation, input
+hook, or game-process access is involved.
+
 ## Git repository snapshots
 
 ```text
@@ -329,7 +350,8 @@ SeanShell startup
   -> invalid primary: load settings.json.bak
   -> invalid backup: use safe defaults and show warning
   -> apply Dock auto-hide and register Launcher shortcut
-  -> migrate schema v1 or v2 to v3 in memory
+  -> migrate schema v1 through v5 to v6 in memory
+  -> start the recovery guard before applying persisted taskbar replacement
   -> construct PluginHost with persisted disabled plugin IDs
   -> configure automatic game detection and normalized process rules
 

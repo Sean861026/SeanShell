@@ -35,8 +35,10 @@ dotnet test SeanShell.sln -c Release -p:Platform=x64 --no-build
 
 Changes that inject into other processes, install kernel drivers, hook graphics or
 global input, weaken Windows security, or remove recovery paths are out of scope.
-Do not add code that changes the configured Windows shell until a reviewed recovery
-design and crash-loop guard exist.
+Companion Taskbar changes must keep Explorer running, start an independent
+recovery guard before hiding any taskbar, and verify graceful and forced-exit
+restoration on every connected display. Do not change the configured Winlogon
+shell until a separate reviewed recovery design and compatibility gate exist.
 
 External package contributions must remain data-only until the brokered loading
 milestone. Do not add reflection, `Assembly.Load`, dependency resolution, or type

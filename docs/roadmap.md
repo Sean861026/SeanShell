@@ -110,7 +110,18 @@
 
 ## Later: shell modes
 
-- Companion shell experiment with Explorer retained for shell services
+- [x] Opt-in Companion Taskbar with Explorer retained for shell services
+- [x] Hide and restore primary and secondary Windows taskbars
+- [x] Independent owner-process recovery guard with readiness handshake
+- [x] Persisted preference with safe schema v6 migration
+- [x] Multi-display, restart, graceful-exit, and forced-exit recovery checks
+- [ ] Pinned applications and Launcher/Start affordance in every Dock
+- [ ] User-facing clock and safe access to retained Windows tray/notification surfaces
+- [ ] Reserve/recalculate monitor work area without depending on a visible Windows taskbar
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
+
+Replacement functionality takes priority over additional visual polish. New
+effects, animation refinements, and production iconography resume after the
+Companion Taskbar supplies the essential pinned-app and system affordances.

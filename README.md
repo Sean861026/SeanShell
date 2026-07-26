@@ -2,11 +2,13 @@
 
 A modular Windows developer shell focused on performance, productivity, and gaming compatibility.
 
-SeanShell starts as a safe companion to Windows Explorer. It does **not** replace
-`explorer.exe`, modify Winlogon, inject into other processes, or hook graphics and
-input APIs. The first milestone validates a launcher, developer dashboard, dock,
-plugin boundary, and gaming mode while preserving a direct path back to the
-standard Windows desktop.
+SeanShell starts as a safe companion to Windows Explorer. Its opt-in
+**Companion Taskbar** mode hides the Windows taskbars and lets the SeanShell
+docks carry window switching on every display, while Explorer continues to own
+desktop and shell services. SeanShell does **not** replace `explorer.exe`, modify
+Winlogon, inject into other processes, or hook graphics and input APIs. A
+separate recovery guard and the recovery script preserve a direct path back to
+the standard Windows desktop.
 
 ## Technology baseline
 
@@ -57,10 +59,15 @@ after the MVP interaction model is stable.
 
 ## Safety boundary
 
-The MVP runs in **Overlay mode** beside Explorer. Gaming mode pauses optional
-background work; it does not change process priority, disable Windows security,
-or inject an overlay into games. If the UI becomes unavailable, run
-`tools/restore-explorer.ps1` from PowerShell.
+The default remains **Overlay mode** beside Explorer. Users can opt into
+**Companion Taskbar mode** from Shell preferences. SeanShell starts a recovery
+guard before hiding any primary or secondary Windows taskbar and restores all
+taskbars when the option is disabled or SeanShell closes. If the main process is
+forced to exit, the independent guard restores them. If the UI and guard both
+become unavailable, run `tools/restore-explorer.ps1` from PowerShell.
+
+Gaming mode pauses optional background work; it does not change process priority,
+disable Windows security, or inject an overlay into games.
 
 Automatic startup is not enabled yet. The reserved `--startup` launch mode is
 protected by a persistent crash-loop guard: three consecutive launches that do
@@ -90,11 +97,13 @@ current session; query text is never retained or written to disk.
 
 ## Dock and live dashboard preview
 
-The M2 preview adds a compact always-on-top dock above each connected display's
-taskbar. Each dock lists ordinary visible application windows on that display and
-switches to a selected window. The
-dashboard samples CPU, physical memory, and the current window count every two
-seconds. Gaming mode stops this polling and hides the dock.
+The M2 preview adds a compact always-on-top dock on each connected display. Each
+dock lists ordinary visible application windows on that display and switches to
+a selected window. In Overlay mode it sits above the Windows taskbar. In the
+opt-in Companion Taskbar mode, it hides every Windows taskbar and becomes the
+visible window-switching surface. The dashboard samples CPU, physical memory,
+and the current window count every two seconds. Gaming mode stops this polling
+and hides the dock.
 
 Dock auto-hide leaves a visible edge indicator instead of disappearing completely.
 Pointer entry or keyboard focus expands it, and a dashboard toggle keeps all docks
@@ -103,13 +112,19 @@ topology changes and rebuilds monitor-local Dock windows after a short debounce.
 If display monitoring or a rebuild fails, the existing Dock windows remain active
 and the dashboard explains that a restart is required.
 
-Dock auto-hide and the selected Launcher shortcut persist in a versioned JSON file
-under `%LOCALAPPDATA%\SeanShell`. Writes use a temporary file and last-known-good
-backup. A damaged settings file falls back to the backup or safe defaults without
-preventing SeanShell from starting.
+Dock auto-hide, Companion Taskbar mode, and the selected Launcher shortcut
+persist in a versioned JSON file under `%LOCALAPPDATA%\SeanShell`. Writes use a
+temporary file and last-known-good backup. A damaged settings file falls back to
+the backup or safe defaults without preventing SeanShell from starting.
 
 The dock does not retain process handles, inject code, attach input queues, or
 bypass Windows foreground restrictions.
+
+Companion Taskbar mode currently covers running-window switching and Launcher
+access. Explorer remains running for notifications, system tray services, input
+methods, file associations, and recovery. Pinned applications and user-facing
+tray/clock affordances are the next replacement-first milestones; visual effects
+and production icon work follow those functional surfaces.
 
 ## Gaming mode preview
 

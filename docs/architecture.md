@@ -2,16 +2,19 @@
 
 ## Purpose
 
-SeanShell is a modular developer workspace for Windows. The first releases run
-beside Explorer and use supported Windows APIs. Full shell replacement is an
-optional, late-stage deployment mode, not an MVP requirement.
+SeanShell is a modular developer workspace for Windows. The first releases use
+supported Windows APIs and retain Explorer as the shell-service owner. The
+replacement priority is a recoverable Companion Taskbar before any full shell
+deployment mode.
 
 ## Operating modes
 
-1. **Overlay mode (MVP):** Explorer owns the desktop, taskbar, tray, and shell
-   services. SeanShell supplies its own launcher, dock, and dashboard windows.
-2. **Companion shell mode:** Explorer remains available for shell services while
-   selected Explorer surfaces are hidden.
+1. **Overlay mode:** Explorer owns the desktop, taskbar, tray, and shell services.
+   SeanShell supplies its own launcher, dock, and dashboard windows.
+2. **Companion Taskbar mode:** Explorer remains available for shell services
+   while every Windows taskbar is hidden and SeanShell's monitor-local docks
+   become the visible window-switching surface. An independent recovery guard
+   restores the taskbars if the main process exits.
 3. **Full shell mode:** SeanShell becomes the configured shell only on supported
    Windows editions and only after recovery and compatibility gates pass.
 
@@ -88,9 +91,20 @@ the previous set. A failed or empty capture leaves the existing set active. Wind
 snapshots carry the nearest monitor handle, allowing each dock to filter locally
 without opening or retaining process handles.
 
+`TaskbarReplacementSession` owns the fail-safe Companion Taskbar transition. It
+requires `ITaskbarRecoveryGuard` readiness before calling the Windows-only
+`ITaskbarController`. `WindowsTaskbarController` discovers the primary
+`Shell_TrayWnd` and all `Shell_SecondaryTrayWnd` windows, applies visibility, and
+verifies the result. The exact packaged SeanShell executable runs the guard mode
+with only the owner process ID; after acknowledging readiness, the guard waits
+for that process to exit and restores every taskbar. The App repeats the hide
+check every two seconds while replacement is enabled so an Explorer restart
+cannot silently bring the Windows taskbar back over the dock.
+
 ## Reliability boundaries
 
-- Explorer remains the fallback throughout the MVP.
+- Explorer remains the shell-service and recovery fallback in Overlay and
+  Companion Taskbar modes.
 - Plugin operations are asynchronous and cancellable. Initialization, command
   queries, suspend, resume, and disposal are bounded by host timeouts. A failed
   plugin transitions to a session-local faulted state while healthy plugins keep
@@ -181,10 +195,11 @@ flushes it to disk, and replaces the primary document while retaining
 shortcut values never reach the UI: the store loads the backup or safe defaults
 and returns a warning for the dashboard.
 
-Schema version 3 persists Dock auto-hide, one of three reviewed Launcher
-shortcuts, opt-in automatic game detection, newline-delimited game process rules,
-and normalized disabled plugin IDs. Version 1 and 2 settings migrate in memory
-without losing existing preferences.
+Schema version 6 persists Dock auto-hide, the opt-in Companion Taskbar preference,
+one of three reviewed Launcher shortcuts, opt-in automatic game detection,
+newline-delimited game process rules, normalized disabled plugin IDs, appearance,
+and display density. Versions 1 through 5 migrate in memory without losing
+existing preferences; taskbar replacement always defaults off when migrating.
 Arbitrary key capture is intentionally excluded so SeanShell never needs a
 keyboard hook. A shortcut change is committed only after `RegisterHotKey`
 succeeds; failed registration restores the previously active shortcut.

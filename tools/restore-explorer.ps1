@@ -27,6 +27,70 @@ if ($null -ne $seanShell) {
     }
 }
 
+if (-not ("SeanShellTaskbarRecovery.NativeMethods" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace SeanShellTaskbarRecovery
+{
+    public static class NativeMethods
+    {
+        private const int SwShow = 5;
+
+        private delegate bool EnumWindowsProc(IntPtr handle, IntPtr parameter);
+
+        public static void RestoreAll()
+        {
+            var primary = FindWindow("Shell_TrayWnd", null);
+            if (primary != IntPtr.Zero)
+            {
+                ShowWindow(primary, SwShow);
+            }
+
+            EnumWindows((handle, parameter) =>
+            {
+                var className = new StringBuilder(256);
+                GetClassName(handle, className, className.Capacity);
+                if (string.Equals(
+                    className.ToString(),
+                    "Shell_SecondaryTrayWnd",
+                    StringComparison.Ordinal))
+                {
+                    ShowWindow(handle, SwShow);
+                }
+
+                return true;
+            }, IntPtr.Zero);
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool EnumWindows(
+            EnumWindowsProc callback,
+            IntPtr parameter);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindWindow(
+            string className,
+            string windowName);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetClassName(
+            IntPtr handle,
+            StringBuilder className,
+            int maximumCount);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr handle, int command);
+    }
+}
+"@
+}
+
+[SeanShellTaskbarRecovery.NativeMethods]::RestoreAll()
+Write-Host "Requested every Windows taskbar to become visible."
+
 $startupHealthPaths = [System.Collections.Generic.List[string]]::new()
 $startupHealthPaths.Add((Join-Path $env:LOCALAPPDATA "SeanShell\startup-health.json"))
 
