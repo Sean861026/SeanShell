@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using SeanShell.PluginBroker.Protocol;
 using SeanShell.PluginContracts;
 
 namespace SeanShell.Plugins;
@@ -205,6 +206,85 @@ public sealed class ExternalPluginCatalog
                     assemblyPath);
             }
 
+            var dependencies = new List<PluginBrokerDependency>();
+            var dependencyPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            long dependencyBytes = 0;
+            foreach (var dependency in validated.Dependencies ?? [])
+            {
+                var dependencyPath = Path.GetFullPath(
+                    Path.Combine(packageDirectory, dependency.Path!));
+                if (!dependencyPaths.Add(dependencyPath) ||
+                    string.Equals(dependencyPath, assemblyPath, StringComparison.OrdinalIgnoreCase) ||
+                    !IsInsideDirectory(packageDirectory, dependencyPath) ||
+                    !string.Equals(
+                        Path.GetExtension(dependencyPath),
+                        ".dll",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    !File.Exists(dependencyPath) ||
+                    HasReparsePoint(packageDirectory, dependencyPath))
+                {
+                    return Candidate(
+                        packageName,
+                        validated,
+                        ExternalPluginCandidateStatus.UnsafePath,
+                        "Every dependency must be a unique, non-linked package DLL.");
+                }
+
+                var dependencyInfo = new FileInfo(dependencyPath);
+                if (dependencyInfo.Length is <= 0 or > PluginBrokerProtocol.MaximumDependencyBytes)
+                {
+                    return Candidate(
+                        packageName,
+                        validated,
+                        ExternalPluginCandidateStatus.InvalidManifest,
+                        "A dependency size is outside the allowed bounds.");
+                }
+
+                dependencyBytes = checked(dependencyBytes + dependencyInfo.Length);
+                if (dependencyBytes > PluginBrokerProtocol.MaximumDependencySetBytes)
+                {
+                    return Candidate(
+                        packageName,
+                        validated,
+                        ExternalPluginCandidateStatus.InvalidManifest,
+                        "The declared dependencies exceed the total size limit.");
+                }
+
+                var dependencyHash = await ComputeSha256Async(
+                    dependencyPath,
+                    cancellationToken).ConfigureAwait(false);
+                if (!string.Equals(
+                        dependencyHash,
+                        NormalizeHash(dependency.Sha256),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Candidate(
+                        packageName,
+                        validated,
+                        ExternalPluginCandidateStatus.InvalidManifest,
+                        $"Dependency '{dependency.Path}' does not match its declared SHA-256.");
+                }
+
+                var dependencyTrust = _authenticodeVerifier.Verify(dependencyPath);
+                if (!dependencyTrust.IsTrusted ||
+                    !string.Equals(
+                        NormalizeHash(dependencyTrust.SignerCertificateSha256),
+                        NormalizeHash(trust.SignerCertificateSha256),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Candidate(
+                        packageName,
+                        validated,
+                        ExternalPluginCandidateStatus.UntrustedSignature,
+                        $"Dependency '{dependency.Path}' is not trusted with the package publisher certificate.");
+                }
+
+                dependencies.Add(new PluginBrokerDependency(
+                    Path.GetRelativePath(packageDirectory, dependencyPath),
+                    dependencyHash,
+                    dependency.Kind!.ToLowerInvariant()));
+            }
+
             return Candidate(
                 packageName,
                 validated,
@@ -214,7 +294,8 @@ public sealed class ExternalPluginCatalog
                 trust.SignerCertificateSha256,
                 trust.VerifiedAtUtc,
                 packageDirectory,
-                assemblyPath);
+                assemblyPath,
+                [.. dependencies]);
         }
         catch (JsonException exception)
         {
@@ -272,6 +353,26 @@ public sealed class ExternalPluginCatalog
             return "Capabilities may contain only LauncherCommands and BackgroundWork.";
         }
 
+        if (manifest.Dependencies is { Length: > PluginBrokerProtocol.MaximumDependencyCount } ||
+            (manifest.Dependencies ?? []).Any(static dependency =>
+                dependency is null ||
+                !IsCanonicalRelativeDependencyPath(dependency.Path) ||
+                !string.Equals(
+                    Path.GetExtension(dependency.Path),
+                    ".dll",
+                    StringComparison.OrdinalIgnoreCase) ||
+                NormalizeHash(dependency.Sha256) is not { Length: 64 } hash ||
+                hash.Any(static character => !char.IsAsciiHexDigit(character)) ||
+                (!string.Equals(dependency.Kind, "managed", StringComparison.OrdinalIgnoreCase) &&
+                 !string.Equals(dependency.Kind, "native", StringComparison.OrdinalIgnoreCase))) ||
+            (manifest.Dependencies ?? [])
+                .Select(static dependency => dependency!.Path)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count() != (manifest.Dependencies?.Length ?? 0))
+        {
+            return "Dependencies must be at most 32 unique package DLLs with kind and SHA-256.";
+        }
+
         var normalizedPublisherHash = NormalizeHash(manifest.PublisherCertificateSha256);
         if (normalizedPublisherHash is null ||
             normalizedPublisherHash.Length != 64 ||
@@ -324,6 +425,24 @@ public sealed class ExternalPluginCatalog
         return false;
     }
 
+    private static bool IsCanonicalRelativeDependencyPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) ||
+            path.Length > PluginBrokerProtocol.MaximumDependencyPathCharacters ||
+            Path.IsPathFullyQualified(path))
+        {
+            return false;
+        }
+
+        var segments = path.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.None);
+        return segments.All(static segment =>
+            segment.Length > 0 &&
+            segment is not "." and not ".." &&
+            segment.IndexOfAny(Path.GetInvalidFileNameChars()) < 0);
+    }
+
     private static bool IsReparsePoint(string path) =>
         (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
 
@@ -343,7 +462,8 @@ public sealed class ExternalPluginCatalog
         string? signerHash = null,
         DateTimeOffset? trustVerifiedAtUtc = null,
         string? packageDirectoryPath = null,
-        string? entryAssemblyPath = null) =>
+        string? entryAssemblyPath = null,
+        PluginBrokerDependency[]? dependencies = null) =>
         new(
             packageName,
             manifest.Id,
@@ -358,7 +478,8 @@ public sealed class ExternalPluginCatalog
             signerHash,
             trustVerifiedAtUtc,
             packageDirectoryPath,
-            entryAssemblyPath);
+            entryAssemblyPath,
+            dependencies);
 
     private static ExternalPluginCandidate Invalid(
         string packageName,
@@ -385,5 +506,11 @@ public sealed class ExternalPluginCatalog
         string? Publisher,
         string[]? Capabilities,
         string? EntryAssembly,
-        string? PublisherCertificateSha256);
+        string? PublisherCertificateSha256,
+        ExternalDependency[]? Dependencies);
+
+    private sealed record ExternalDependency(
+        string? Path,
+        string? Sha256,
+        string? Kind);
 }

@@ -5,9 +5,13 @@ namespace SeanShell.PluginBroker.Protocol;
 
 public static class PluginBrokerProtocol
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
     public const int MaximumFrameCharacters = 64 * 1024;
     public const long MaximumEntryAssemblyBytes = 256 * 1024 * 1024;
+    public const long MaximumDependencyBytes = 256 * 1024 * 1024;
+    public const long MaximumDependencySetBytes = 512 * 1024 * 1024;
+    public const int MaximumDependencyCount = 32;
+    public const int MaximumDependencyPathCharacters = 240;
     public const int KnownCapabilityMask = 3;
     public const string HealthOperation = "health";
     public const string MetadataProbeOperation = "probe-metadata";

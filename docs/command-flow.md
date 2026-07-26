@@ -123,7 +123,7 @@ User revokes one candidate or all stored consent
 ## Plugin broker boundary checks
 
 ```text
-Host creates a protocol-v3 health request + random 256-bit session key
+Host creates a protocol-v4 health request + random 256-bit session key
   -> production composition resolves exact packaged SeanShell.App.exe
   -> CreateProcessW starts it with --plugin-broker and CREATE_SUSPENDED
   -> inherit only stdin / stdout / stderr + private key-pipe handles
@@ -156,6 +156,9 @@ User-approved plugin ID
   -> broker validates grant lifetime and known capability bits
   -> broker rejects traversal, reparse points, missing/oversized DLL
   -> broker recomputes SHA-256 and compares it with the grant
+  -> validate at most 32 declared managed/native dependency DLLs
+  -> reject traversal, duplicate paths, reparse points, size/hash changes
+  -> return dependency count + canonical set digest without local paths
   -> host matches response metadata, request ID, broker PID, and exit code
   -> success: atomically clear this plugin's broker failure window
   -> counted failure: atomically increment this plugin's ten-minute window

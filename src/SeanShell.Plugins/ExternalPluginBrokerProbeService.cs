@@ -64,7 +64,8 @@ public sealed class ExternalPluginBrokerProbeService
             candidate.SignerCertificateSha256,
             (int)candidate.Capabilities,
             issuedAtUtc,
-            issuedAtUtc + GrantLifetime);
+            issuedAtUtc + GrantLifetime,
+            candidate.Dependencies ?? []);
         try
         {
             var response = await _broker.ProbeMetadataAsync(grant, cancellationToken)

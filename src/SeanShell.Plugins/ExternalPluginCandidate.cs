@@ -1,3 +1,4 @@
+using SeanShell.PluginBroker.Protocol;
 using SeanShell.PluginContracts;
 
 namespace SeanShell.Plugins;
@@ -16,4 +17,5 @@ public sealed record ExternalPluginCandidate(
     string? SignerCertificateSha256 = null,
     DateTimeOffset? TrustVerifiedAtUtc = null,
     string? PackageDirectoryPath = null,
-    string? EntryAssemblyPath = null);
+    string? EntryAssemblyPath = null,
+    PluginBrokerDependency[]? Dependencies = null);

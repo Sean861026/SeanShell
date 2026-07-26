@@ -141,7 +141,7 @@ host.
 
 ```text
 PluginBrokerClient
-  -> create protocol-v3 request + random request/session IDs, nonce, session key
+  -> create protocol-v4 request + random request/session IDs, nonce, session key
   -> App composition supplies Environment.ProcessPath from the packaged App
   -> CreateProcessW exact SeanShell.App.exe path + --plugin-broker + CREATE_SUSPENDED
   -> STARTUPINFOEX inherits stdin / stdout / stderr + private key pipe only
@@ -169,7 +169,7 @@ External plugin ID
        assembly SHA-256 + publisher certificate SHA-256
        exact capability mask
   -> one-shot broker process
-  -> path/size/reparse/hash verification
+  -> entry + declared dependency path/size/reparse/hash verification
   -> path-free PluginBrokerMetadata response
   -> exact host response correlation
   -> success: remove plugin health entry
@@ -178,11 +178,16 @@ External plugin ID
        3 failures / 10 minutes -> quarantine for 30 minutes
 ```
 
-Protocol v3 uses paths only inside the one-shot metadata probe. It carries no
+Protocol v4 uses paths only inside the one-shot metadata probe. It carries no
 file content, persisted consent document, type, method, launcher query, or
 activation operation. No response returns a local path and nothing connects the
 probe to `PluginHost`. No broker instruction or runtime initialization executes
 before Job assignment.
+
+Dependency manifests contain at most 32 canonical package-relative `.dll` paths,
+their managed/native kind, and SHA-256. The host also checks Authenticode and
+same-publisher identity. The response replaces dependency paths with a count and
+canonical set digest.
 
 The broker child uses `SeanShell.PluginBroker.Runtime` and never initializes
 WinUI. The standalone console broker used by tests delegates to the same runtime,

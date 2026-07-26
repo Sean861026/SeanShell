@@ -8,4 +8,5 @@ public sealed record PluginBrokerGrant(
     string PublisherCertificateSha256,
     int GrantedCapabilities,
     DateTimeOffset IssuedAtUtc,
-    DateTimeOffset ExpiresAtUtc);
+    DateTimeOffset ExpiresAtUtc,
+    PluginBrokerDependency[]? Dependencies = null);

@@ -207,7 +207,7 @@ must still ship before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
-Protocol v3 now runs in a fail-closed child process of the exact packaged
+Protocol v4 now runs in a fail-closed child process of the exact packaged
 `SeanShell.App.exe`. A custom entry point selects broker mode before WinUI or
 WinRT initialization; normal launches continue into the desktop UI. The
 standalone `SeanShell.PluginBroker` executable remains only as a test harness,
@@ -222,6 +222,12 @@ legacy extension points, unsafe image sources, and child-process creation before
 reading a request. The broker still never loads or activates a plugin, and the
 App does not use it to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
+
+An external manifest may declare up to 32 managed or native package DLLs.
+The host checks their canonical package paths, individual and aggregate sizes,
+SHA-256 identities, Authenticode trust, and exact publisher certificate. The
+broker independently repeats path, reparse-point, size, and hash checks and
+returns only a dependency-set digest. No dependency is loaded.
 
 External metadata probes also keep a separate, atomic broker-health history.
 Three broker timeouts, malformed/authentication failures, or truncated responses
