@@ -14,6 +14,7 @@ public sealed class ShellSettingsStoreTests
         var result = store.Load();
 
         Assert.IsTrue(result.Settings.DockAutoHide);
+        Assert.IsFalse(result.Settings.ReplaceWindowsTaskbar);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
         Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
@@ -30,6 +31,7 @@ public sealed class ShellSettingsStoreTests
         var expected = new ShellSettings
         {
             DockAutoHide = false,
+            ReplaceWindowsTaskbar = true,
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
             Theme = ShellThemePreference.Dark,
             DisplayDensity = ShellDisplayDensity.Compact,
@@ -126,6 +128,7 @@ public sealed class ShellSettingsStoreTests
         Assert.IsFalse(result.Settings.DockAutoHide);
         Assert.AreEqual(LauncherShortcut.ControlAltSpace, result.Settings.LauncherShortcut);
         Assert.IsFalse(result.Settings.AutomaticGamingModeEnabled);
+        Assert.IsFalse(result.Settings.ReplaceWindowsTaskbar);
         Assert.AreEqual(string.Empty, result.Settings.GameProcessRules);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
@@ -204,6 +207,35 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
         Assert.AreEqual(ShellThemePreference.Dark, result.Settings.Theme);
         Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionFiveSettingsWithTaskbarReplacementOff()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 5,
+              "dockAutoHide": true,
+              "launcherShortcut": "altSpace",
+              "theme": "dark",
+              "displayDensity": "compact"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(
+            ShellSettings.CurrentSchemaVersion,
+            result.Settings.SchemaVersion);
+        Assert.IsFalse(result.Settings.ReplaceWindowsTaskbar);
+        Assert.AreEqual(
+            ShellDisplayDensity.Compact,
+            result.Settings.DisplayDensity);
     }
 
     private sealed class TemporaryDirectory : IDisposable

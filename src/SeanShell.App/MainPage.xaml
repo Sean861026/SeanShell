@@ -363,6 +363,19 @@
                                     OnContent="Dock collapses to a visible edge indicator"
                                     Toggled="OnDockAutoHideToggled" />
 
+                                <ToggleSwitch
+                                    x:Name="TaskbarReplacementToggle"
+                                    AutomationProperties.HelpText="Hide the Windows taskbar while SeanShell is running. A separate recovery guard restores it if SeanShell exits."
+                                    Header="Replace Windows taskbar"
+                                    OffContent="Windows taskbar remains visible"
+                                    OnContent="SeanShell Dock replaces the Windows taskbar"
+                                    Toggled="OnTaskbarReplacementToggled" />
+
+                                <TextBlock
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Compatibility mode: Explorer, notifications, system tray services, and input methods remain running. A recovery guard restores every Windows taskbar after a crash or forced exit."
+                                    TextWrapping="Wrap" />
+
                                 <ComboBox
                                     x:Name="LauncherShortcutComboBox"
                                     MinWidth="260"

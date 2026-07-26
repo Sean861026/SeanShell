@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly DispatcherQueueTimer _dockRefreshTimer;
+    private readonly DispatcherQueueTimer _taskbarRefreshTimer;
     private readonly LauncherWindow _launcherWindow;
     private readonly GamingModeManager _gamingMode;
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
@@ -35,6 +36,7 @@ public sealed partial class MainWindow : Window
     private readonly ExternalPluginTrustManager _externalPluginTrust;
     private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
+    private readonly TaskbarReplacementSession _taskbarReplacement;
     private SystemAccessibilityService? _accessibility;
     private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1);
     private DisplayChangeObserver? _displayChangeObserver;
@@ -71,6 +73,13 @@ public sealed partial class MainWindow : Window
         _displayMonitorService = app.Displays;
         _shellState = app.ShellState;
         _launcherWindow = new LauncherWindow(app.LauncherSearch, app.LauncherPerformance);
+        _taskbarReplacement = new TaskbarReplacementSession(
+            new WindowsTaskbarController(),
+            new TaskbarRecoveryGuard(
+                Environment.ProcessPath ??
+                throw new InvalidOperationException(
+                    "The packaged SeanShell executable path is unavailable."),
+                Environment.ProcessId));
         _monitors = _displayMonitorService.Capture();
         _dockWindows = CreateDockWindows(_monitors);
 
@@ -78,6 +87,7 @@ public sealed partial class MainWindow : Window
         {
             mainPage.LauncherRequested += OnLauncherRequested;
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
+            mainPage.TaskbarReplacementChanged += OnTaskbarReplacementChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
             mainPage.ThemePreferenceChanged += OnThemePreferenceChanged;
             mainPage.DisplayDensityChanged += OnDisplayDensityChanged;
@@ -96,6 +106,10 @@ public sealed partial class MainWindow : Window
         _dockRefreshTimer = DispatcherQueue.CreateTimer();
         _dockRefreshTimer.Interval = TimeSpan.FromSeconds(2);
         _dockRefreshTimer.Tick += OnDockRefreshTimerTick;
+
+        _taskbarRefreshTimer = DispatcherQueue.CreateTimer();
+        _taskbarRefreshTimer.Interval = TimeSpan.FromSeconds(2);
+        _taskbarRefreshTimer.Tick += OnTaskbarRefreshTimerTick;
 
         _displayChangeTimer = DispatcherQueue.CreateTimer();
         _displayChangeTimer.Interval = TimeSpan.FromMilliseconds(500);
@@ -123,6 +137,7 @@ public sealed partial class MainWindow : Window
             dockWindow.SetAutoHide(_settings.DockAutoHide);
         }
 
+        ApplyTaskbarReplacementOnStartup();
         _dockRefreshTimer.Start();
         _ = RefreshDockWindowsAsync();
         UpdateGamingModeMonitor();
@@ -336,6 +351,87 @@ public sealed partial class MainWindow : Window
         PersistSettings();
     }
 
+    private void OnTaskbarReplacementChanged(bool enabled)
+    {
+        var previousSettings = _settings;
+        _settings = _settings with { ReplaceWindowsTaskbar = enabled };
+        if (!PersistSettings())
+        {
+            _settings = previousSettings;
+            if (RootFrame.Content is MainPage saveFailedPage)
+            {
+                saveFailedPage.SetTaskbarReplacementPreferenceUnchanged(
+                    previousSettings.ReplaceWindowsTaskbar,
+                    "The preference could not be saved, so the current taskbar state remains active.");
+            }
+
+            return;
+        }
+
+        var result = enabled
+            ? _taskbarReplacement.Enable()
+            : _taskbarReplacement.Disable();
+        if (result.Success)
+        {
+            if (enabled)
+            {
+                _taskbarRefreshTimer.Start();
+            }
+            else
+            {
+                _taskbarRefreshTimer.Stop();
+            }
+
+            if (RootFrame.Content is MainPage appliedPage)
+            {
+                appliedPage.SetTaskbarReplacementApplied(
+                    enabled,
+                    result.TaskbarCount);
+            }
+
+            return;
+        }
+
+        _taskbarRefreshTimer.Stop();
+        _settings = _settings with { ReplaceWindowsTaskbar = false };
+        _ = PersistSettings();
+        if (RootFrame.Content is MainPage failedPage)
+        {
+            failedPage.SetTaskbarReplacementFailed(
+                result.Error ?? "Windows did not change taskbar visibility.");
+        }
+    }
+
+    private void ApplyTaskbarReplacementOnStartup()
+    {
+        if (!_settings.ReplaceWindowsTaskbar)
+        {
+            return;
+        }
+
+        var result = _taskbarReplacement.Enable();
+        if (result.Success)
+        {
+            _taskbarRefreshTimer.Start();
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetTaskbarReplacementApplied(
+                    true,
+                    result.TaskbarCount);
+            }
+
+            return;
+        }
+
+        _settings = _settings with { ReplaceWindowsTaskbar = false };
+        _ = PersistSettings();
+        if (RootFrame.Content is MainPage failedPage)
+        {
+            failedPage.SetTaskbarReplacementFailed(
+                result.Error ?? "Windows did not change taskbar visibility.");
+        }
+    }
+
     private void OnThemePreferenceChanged(ShellThemePreference theme)
     {
         var previousSettings = _settings;
@@ -506,6 +602,26 @@ public sealed partial class MainWindow : Window
     private async void OnDockRefreshTimerTick(DispatcherQueueTimer sender, object args)
     {
         await RefreshDockWindowsAsync().ConfigureAwait(true);
+    }
+
+    private void OnTaskbarRefreshTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        var result = _taskbarReplacement.EnsureHidden();
+        if (result.Success || RootFrame.Content is not MainPage mainPage)
+        {
+            return;
+        }
+
+        if (!_taskbarReplacement.IsEnabled)
+        {
+            _taskbarRefreshTimer.Stop();
+            _settings = _settings with { ReplaceWindowsTaskbar = false };
+            _ = PersistSettings();
+            mainPage.SetTaskbarReplacementFailed(
+                result.Error ?? "The recovery guard is unavailable.");
+        }
     }
 
     private async Task RefreshDockWindowsAsync()
@@ -708,6 +824,8 @@ public sealed partial class MainWindow : Window
 
     private async void OnClosed(object sender, WindowEventArgs args)
     {
+        _taskbarRefreshTimer.Stop();
+        _ = _taskbarReplacement.Disable();
         _displayChangeTimer.Stop();
         _dockRefreshTimer.Stop();
         if (_displayChangeObserver is not null)
@@ -732,5 +850,6 @@ public sealed partial class MainWindow : Window
 
         _launcherWindow.Shutdown();
         await _pluginHost.DisposeAsync().ConfigureAwait(true);
+        _taskbarReplacement.Dispose();
     }
 }
