@@ -137,6 +137,12 @@ without opening or retaining process handles.
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects
   unknown capabilities, traversal and reparse points, and recomputes SHA-256.
+- `PluginBrokerQuarantineManager` persists a separate schema-1 broker-health
+  document. Three counted failures for one external plugin within ten minutes
+  block new probes for thirty minutes; a successful probe clears the window.
+  Corrupt history recovers from its last-known-good copy or blocks every probe.
+  User cancellation, trust failure, and a missing broker binary are not charged
+  to a plugin.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.

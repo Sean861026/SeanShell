@@ -158,6 +158,9 @@ PluginBrokerClient
 
 ```text
 External plugin ID
+  -> PluginBrokerQuarantineManager
+       unavailable history: fail closed
+       active quarantine: reject before trust scan or process launch
   -> fresh ExternalPluginCatalog scan
   -> ReadyForConsent + exact stored consent
   -> 15-second PluginBrokerGrant
@@ -168,6 +171,10 @@ External plugin ID
   -> path/size/reparse/hash verification
   -> path-free PluginBrokerMetadata response
   -> exact host response correlation
+  -> success: remove plugin health entry
+  -> timeout / unsafe response / truncated transport
+       increment persistent failure window
+       3 failures / 10 minutes -> quarantine for 30 minutes
 ```
 
 Protocol v3 uses paths only inside the one-shot metadata probe. It carries no

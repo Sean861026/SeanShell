@@ -6,20 +6,24 @@ public sealed class ExternalPluginBrokerProbeService
 {
     private static readonly TimeSpan GrantLifetime = TimeSpan.FromSeconds(15);
     private readonly ExternalPluginCatalog _catalog;
+    private readonly PluginBrokerQuarantineManager _quarantine;
     private readonly ExternalPluginTrustManager _trust;
-    private readonly PluginBrokerClient _broker;
+    private readonly IPluginBrokerProbeClient _broker;
 
     public ExternalPluginBrokerProbeService(
         ExternalPluginCatalog catalog,
         ExternalPluginTrustManager trust,
-        PluginBrokerClient broker)
+        IPluginBrokerProbeClient broker,
+        PluginBrokerQuarantineManager quarantine)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(trust);
         ArgumentNullException.ThrowIfNull(broker);
+        ArgumentNullException.ThrowIfNull(quarantine);
         _catalog = catalog;
         _trust = trust;
         _broker = broker;
+        _quarantine = quarantine;
     }
 
     public async Task<PluginBrokerResponse> ProbeAsync(
@@ -27,6 +31,7 @@ public sealed class ExternalPluginBrokerProbeService
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginId);
+        _quarantine.EnsureProbeAllowed(pluginId);
 
         var candidates = await _catalog.ScanAsync(cancellationToken).ConfigureAwait(false);
         var matches = candidates
@@ -60,6 +65,21 @@ public sealed class ExternalPluginBrokerProbeService
             (int)candidate.Capabilities,
             issuedAtUtc,
             issuedAtUtc + GrantLifetime);
-        return await _broker.ProbeMetadataAsync(grant, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var response = await _broker.ProbeMetadataAsync(grant, cancellationToken)
+                .ConfigureAwait(false);
+            _quarantine.RecordSuccess(candidate.Id!);
+            return response;
+        }
+        catch (Exception exception) when (CountsTowardQuarantine(exception))
+        {
+            _quarantine.RecordFailure(candidate.Id!);
+            throw;
+        }
     }
+
+    private static bool CountsTowardQuarantine(Exception exception) =>
+        exception is not FileNotFoundException &&
+        (exception is TimeoutException or InvalidDataException or IOException);
 }

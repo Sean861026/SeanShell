@@ -3,7 +3,7 @@ using SeanShell.PluginBroker.Protocol;
 
 namespace SeanShell.Plugins;
 
-public sealed class PluginBrokerClient
+public sealed class PluginBrokerClient : IPluginBrokerProbeClient
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
     private readonly string _brokerExecutablePath;

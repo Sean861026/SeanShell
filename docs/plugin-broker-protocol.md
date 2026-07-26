@@ -118,12 +118,24 @@ metadata, started-process PID, exit code, and deadline. Any mismatch fails
 closed. A captured frame cannot authenticate in a later broker process because
 that process receives a different random key.
 
+## Crash accounting and quarantine
+
+The host records broker transport timeouts, truncated frames, malformed or
+unauthenticated responses, and authenticated rejections against the selected
+plugin ID. Three failures within ten minutes quarantine that plugin for thirty
+minutes. The history is written atomically with a last-known-good recovery copy,
+and an unreadable history with no recovery copy blocks every external probe.
+
+A successful metadata probe removes that plugin's failure window. User
+cancellation, a failed catalog/trust recheck, and an unavailable broker
+installation do not count as plugin-caused failures. Quarantine is separate from
+publisher consent and never authorizes execution.
+
 ## Remaining activation blockers
 
 Before code execution is added, the broker still needs:
 
 - dependency and native-library containment;
 - bounded command/result DTOs with no delegate or shell string;
-- broker crash accounting and automatic quarantine;
 - packaging and signing rules for the broker executable; and
 - adversarial tests against managed and native dependency escape.
