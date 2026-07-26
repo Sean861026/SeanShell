@@ -157,11 +157,26 @@ instead of returning `null` for undeclared managed or native names. Managed
 assemblies load from the same open stream whose SHA-256 was checked, avoiding
 an unlocked path between verification and managed loading.
 
+The protocol assembly also reserves strict data-only command DTOs for a future
+activation version:
+
+- query: at most 256 display characters and 32 requested results;
+- descriptor set: at most 32 unique opaque IDs, bounded title/subtitle, at most
+  eight keywords each, and 8,192 aggregate characters;
+- invocation: one opaque command ID plus the SHA-256 of the exact descriptor
+  set; and
+- result: `succeeded`, `failed`, or `cancelled` plus at most 512 display
+  characters.
+
+Their codec rejects unknown JSON members, control characters, invalid IDs,
+duplicate IDs/keywords, oversized frames, and invalid digests. There is no
+delegate, executable, path, argument, URL, or shell field. These types do not
+change protocol v4 and no request or response currently carries them.
+
 Before code execution is added, the broker still needs:
 
-- bounded command/result DTOs with no delegate or shell string;
 - a broker-owned staging and cleanup design for verified native bytes before
   `LoadUnmanagedDllFromPath` is enabled;
 - production certificate management and release-signing policy; and
-- an explicit activation operation with per-command deadlines and crash
-  accounting.
+- an explicit activation lifecycle with trusted entry-type selection,
+  per-command deadlines, and crash accounting.

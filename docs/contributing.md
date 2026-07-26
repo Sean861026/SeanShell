@@ -61,6 +61,13 @@ shadowed, and dependency count/path/size limits are repeated at the load
 boundary. The resolver must remain disconnected from protocol operations until
 the bounded activation DTO and native staging designs are reviewed.
 
+Broker command DTOs must stay data-only and bounded. Do not add delegates,
+reflection objects, executable paths, process arguments, URLs, local paths, or
+shell strings. New fields require strict-codec unknown-member tests, individual
+and aggregate bounds, canonical digest coverage where applicable, and an
+explicit capability review. The reserved DTOs must remain disconnected from
+protocol v4 until the activation lifecycle is reviewed.
+
 CI sets `SEANSHELL_BROKER_TEST_EXECUTABLE` to the freshly built
 `SeanShell.App.exe`, forcing all process-boundary tests through the same custom
 broker entry point used by packaged production composition. Local tests fall

@@ -182,6 +182,18 @@ Validated dependency grant
   -> any other name or trusted-name collision: throw and stop
 ```
 
+The future command exchange is also defined but disconnected:
+
+```text
+bounded query text + maximum results
+  -> strict DTO validation and unknown-field rejection
+  -> bounded display-only command descriptors
+  -> canonical command-set SHA-256
+  -> invocation contains only opaque command ID + set digest
+  -> result contains only fixed outcome + bounded display message
+  -> no protocol v4 operation consumes or produces these DTOs
+```
+
 ## Git repository refresh
 
 ```text

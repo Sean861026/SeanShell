@@ -172,6 +172,13 @@ name search. Managed dependencies are loaded from the verified open stream.
 Native loading remains disabled until those bytes can be staged under a
 broker-owned lifecycle.
 
+Future command exchange is also constrained in advance by the protocol
+assembly's data-only DTOs. Query text, display descriptors, opaque command IDs,
+descriptor-set digests, fixed outcomes, and short messages are bounded and
+strictly decoded. The DTOs contain no `ShellCommand` delegate and no field for
+an executable, arguments, URL, local path, or shell string. They remain
+disconnected from protocol v4.
+
 Single-project MSIX exposes only the App executable. The broker runtime is a
 UI-independent class library shared with a standalone console test harness.
 Production App composition never accepts a configurable broker path, and the
