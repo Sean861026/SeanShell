@@ -127,6 +127,12 @@ implemented. The current built-in Enabled switch remains separate from external
 consent. A future loader must revalidate the exact file immediately before
 brokered execution rather than trusting an earlier diagnostic snapshot.
 
+The separate `SeanShell.PluginBroker` process currently implements only the
+version-1 health handshake described in
+[plugin-broker-protocol.md](plugin-broker-protocol.md). Its request model has no
+assembly path, type, activation, or command payload. Consent is not forwarded to
+the broker, and the broker is not a plugin host.
+
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable
 only for reviewed built-in plugins and is the primary reason external loading stays

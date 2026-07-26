@@ -116,6 +116,22 @@ User revokes one candidate or all stored consent
   -> external execution remains blocked in every state
 ```
 
+## Plugin broker health check
+
+```text
+Host creates a protocol-v1 health request
+  -> launch SeanShell.PluginBroker as a separate process
+  -> write one bounded JSON frame
+  -> broker accepts only exact operation "health"
+  -> unknown version/ID/operation: fixed rejection + exit 2
+  -> health: return matching ID and broker PID + exit 0
+  -> host verifies response belongs to the started process
+  -> timeout/cancellation/mismatch: terminate process tree
+```
+
+There is no command flow from candidate consent to broker activation in protocol
+version 1.
+
 ## Git repository refresh
 
 ```text

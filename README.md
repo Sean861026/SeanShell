@@ -206,6 +206,13 @@ external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
+An independent `SeanShell.PluginBroker` executable now proves the process
+handshake boundary. Protocol v1 accepts only a bounded `health` request; the host
+verifies the response PID/request ID within two seconds and terminates failed
+process trees. The protocol contains no assembly or activation field, and the App
+does not use the broker to run plugins. See the
+[broker protocol](docs/plugin-broker-protocol.md).
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
@@ -214,6 +221,7 @@ boundary.
 - [Data flow](docs/data-flow.md)
 - [Gaming compatibility](docs/gaming-compatibility.md)
 - [Plugin specification](docs/plugin-spec.md)
+- [Plugin broker protocol](docs/plugin-broker-protocol.md)
 - [Roadmap](docs/roadmap.md)
 - [Contributing](docs/contributing.md)
 
