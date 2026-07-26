@@ -48,7 +48,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
                     "Unable to read the plugin broker exit code.");
             }
 
-            return checked((int)exitCode);
+            return unchecked((int)exitCode);
         }
     }
 
@@ -118,7 +118,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
                 .ToInt64()
                 .ToString(CultureInfo.InvariantCulture);
             var commandLine = new StringBuilder(
-                $"\"{fullPath}\" --session-key-handle={inheritedKeyHandle}");
+                $"\"{fullPath}\" --plugin-broker --session-key-handle={inheritedKeyHandle}");
             if (!CreateProcess(
                     fullPath,
                     commandLine,

@@ -28,10 +28,13 @@ optional, late-stage deployment mode, not an MVP requirement.
   launcher queries, fault isolation, and diagnostics.
 - `SeanShell.PluginBroker.Protocol` defines bounded process messages without
   referencing plugin contracts or the App.
-- `SeanShell.PluginBroker` is a separate console process. Protocol v2 accepts a
-  health handshake and a short-lived, capability-bound metadata probe. It
-  rechecks package containment and file identity but contains no loading or
-  activation path.
+- `SeanShell.PluginBroker.Runtime` owns the identity-free broker entry point,
+  process mitigations, key-pipe reader, and protocol session.
+- Packaged production composition starts the exact `SeanShell.App.exe` in
+  `--plugin-broker` mode. The custom entry point selects this path before WinUI
+  initialization. `SeanShell.PluginBroker` is a console test harness over the
+  same runtime. Protocol v3 accepts a health handshake and a short-lived,
+  capability-bound metadata probe, but contains no loading or activation path.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
 Dependencies point inward: App may depend on every module; Gaming and
@@ -120,7 +123,9 @@ without opening or retaining process handles.
   candidate code. External execution remains blocked after consent until
   capability-restricted broker activation and out-of-process isolation are
   implemented.
-- The broker client starts an exact executable without a command shell, redirects
+- The production broker client resolves the current packaged executable through
+  `Environment.ProcessPath`; no user-configurable executable path participates
+  in App composition. It starts that exact path without a command shell, redirects
   only standard input/output, validates the response against the started process,
   and applies a two-second timeout. It creates the process with its primary
   thread suspended and an explicit inheritance list containing only the three
@@ -224,5 +229,9 @@ not game content or process handles.
 ## Deployment
 
 The initial app uses single-project MSIX packaging and a debug identity generated
-by the Windows App SDK tooling. Release packaging, signing, update channels, and
+by the Windows App SDK tooling. The package manifest enables content-integrity
+enforcement, so Windows checks and repairs tampered package contents before
+launch. Single-project MSIX permits one application executable, so the signed App
+binary also hosts the broker mode while its runtime remains UI-independent.
+Production certificate management, release signing, update channels, and
 full-shell policy are deferred until the MVP has measured compatibility data.

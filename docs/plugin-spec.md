@@ -136,8 +136,9 @@ external consent. A future loader must revalidate the exact file and online
 revocation state immediately before every brokered activation rather than
 trusting an earlier diagnostic snapshot.
 
-The separate `SeanShell.PluginBroker` process implements the version-3 health and
-metadata-probe operations described in
+The exact packaged `SeanShell.App.exe` starts as a separate child process in
+`--plugin-broker` mode and implements the version-3 health and metadata-probe
+operations described in
 [plugin-broker-protocol.md](plugin-broker-protocol.md). The host repeats trust
 and consent validation before issuing a 15-second grant bound to the package
 paths, assembly SHA-256, publisher certificate, and exact capabilities. The
@@ -146,6 +147,11 @@ the file hash. A new random pipe-delivered session key authenticates both frames
 for each one-shot process. The broker never receives the persisted consent
 document and is not a plugin host: there is no type, activation, method, or
 command payload.
+
+Single-project MSIX exposes only the App executable. The broker runtime is a
+UI-independent class library shared with a standalone console test harness.
+Production App composition never accepts a configurable broker path, and the
+manifest enables package-content integrity enforcement.
 
 Broker health is persisted independently from consent. Three counted probe
 failures inside ten minutes quarantine the plugin ID for thirty minutes, while a

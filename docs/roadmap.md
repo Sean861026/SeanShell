@@ -74,8 +74,10 @@
 - [x] Suspended broker creation with restricted handle inheritance before resume
 - [x] Per-process HMAC-authenticated, single-use broker request/response channel
 - [x] Persistent per-plugin broker crash accounting and automatic quarantine
+- [x] Package-contained broker mode using the exact SeanShell App executable
+- [x] MSIX package-content integrity enforcement and packaged broker CI coverage
 - [ ] Capability-restricted broker activation and out-of-process isolation
-- [ ] Signed external loading through an isolated broker
+- [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin

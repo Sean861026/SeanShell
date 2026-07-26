@@ -54,5 +54,11 @@ installation failures must never be charged to a plugin. Do not add an
 activation operation until its dependency-containment, bounded DTO, and
 packaging design is reviewed.
 
+CI sets `SEANSHELL_BROKER_TEST_EXECUTABLE` to the freshly built
+`SeanShell.App.exe`, forcing all process-boundary tests through the same custom
+broker entry point used by packaged production composition. Local tests fall
+back to the standalone console harness. The package manifest must retain
+`uap10:PackageIntegrity` with content enforcement enabled.
+
 Report security-sensitive findings privately to the repository owner rather than
 including exploit details in a public issue.
