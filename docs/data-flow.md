@@ -106,7 +106,8 @@ command arguments, environment values, file contents, or credentials.
   -> schema, capability, and duplicate-ID validation
   -> canonical package-contained DLL path with no reparse points
   -> bounded entry-assembly SHA-256 hash
-  -> Windows Authenticode chain and revocation verification
+  -> Windows Authenticode chain and online revocation verification
+  -> structured trust state + local verification timestamp
   -> signer certificate SHA-256 comparison
   -> immutable diagnostic candidates
   -> dashboard External plugin candidates list
@@ -114,6 +115,9 @@ command arguments, environment values, file contents, or credentials.
 
 The flow ends at diagnostics. Candidate assembly bytes, manifest contents, and
 local paths are not sent to a plugin host or persisted by SeanShell.
+Revoked and unreachable-revocation states both fail closed, while remaining
+distinct in the dashboard so the user can diagnose a permanent denial versus a
+retryable certificate-service outage.
 
 ```text
 ReadyForConsent candidate + explicit dashboard confirmation

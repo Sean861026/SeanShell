@@ -96,11 +96,15 @@ Dashboard loads
   -> read and validate each bounded plugin.json
   -> reject traversal, links, missing/oversized assemblies, and duplicate IDs
   -> hash the entry assembly
-  -> Windows verifies Authenticode trust and revocation
+  -> Windows verifies Authenticode trust and whole-chain revocation
+  -> classify unsigned / revoked / offline / expired / distrusted separately
   -> compare signer certificate fingerprint with manifest
   -> show diagnostic state
   -> stop (no assembly load, activation, or command registration)
 ```
+
+The same bounded flow runs when the user selects **Recheck trust**. Revocation
+unavailable fails closed and can never reach `ReadyForConsent`.
 
 ```text
 User selects Approve capabilities

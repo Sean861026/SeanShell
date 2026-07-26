@@ -13,4 +13,5 @@ public sealed record ExternalPluginCandidate(
     ExternalPluginCandidateStatus Status,
     string Detail,
     string? AssemblySha256 = null,
-    string? SignerCertificateSha256 = null);
+    string? SignerCertificateSha256 = null,
+    DateTimeOffset? TrustVerifiedAtUtc = null);

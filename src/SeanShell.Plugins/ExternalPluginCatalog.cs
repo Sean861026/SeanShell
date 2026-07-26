@@ -167,10 +167,23 @@ public sealed class ExternalPluginCatalog
             var trust = _authenticodeVerifier.Verify(assemblyPath);
             if (!trust.IsTrusted)
             {
-                var status = trust.SignerCertificateSha256 is null
-                    ? ExternalPluginCandidateStatus.Unsigned
-                    : ExternalPluginCandidateStatus.UntrustedSignature;
-                return Candidate(packageName, validated, status, trust.Detail, assemblyHash, trust.SignerCertificateSha256);
+                var status = trust.Status switch
+                {
+                    AuthenticodeTrustStatus.Unsigned => ExternalPluginCandidateStatus.Unsigned,
+                    AuthenticodeTrustStatus.Revoked => ExternalPluginCandidateStatus.RevokedSignature,
+                    AuthenticodeTrustStatus.RevocationUnavailable => ExternalPluginCandidateStatus.RevocationUnavailable,
+                    AuthenticodeTrustStatus.Expired => ExternalPluginCandidateStatus.ExpiredSignature,
+                    AuthenticodeTrustStatus.ExplicitlyDistrusted => ExternalPluginCandidateStatus.ExplicitlyDistrusted,
+                    _ => ExternalPluginCandidateStatus.UntrustedSignature,
+                };
+                return Candidate(
+                    packageName,
+                    validated,
+                    status,
+                    trust.Detail,
+                    assemblyHash,
+                    trust.SignerCertificateSha256,
+                    trust.VerifiedAtUtc);
             }
 
             if (!string.Equals(
@@ -184,7 +197,8 @@ public sealed class ExternalPluginCatalog
                     ExternalPluginCandidateStatus.PublisherMismatch,
                     "The trusted signer's SHA-256 certificate fingerprint does not match the manifest.",
                     assemblyHash,
-                    trust.SignerCertificateSha256);
+                    trust.SignerCertificateSha256,
+                    trust.VerifiedAtUtc);
             }
 
             return Candidate(
@@ -193,7 +207,8 @@ public sealed class ExternalPluginCatalog
                 ExternalPluginCandidateStatus.ReadyForConsent,
                 "Signature and package checks passed. External loading remains disabled.",
                 assemblyHash,
-                trust.SignerCertificateSha256);
+                trust.SignerCertificateSha256,
+                trust.VerifiedAtUtc);
         }
         catch (JsonException exception)
         {
@@ -319,7 +334,8 @@ public sealed class ExternalPluginCatalog
         ExternalPluginCandidateStatus status,
         string detail,
         string? assemblyHash = null,
-        string? signerHash = null) =>
+        string? signerHash = null,
+        DateTimeOffset? trustVerifiedAtUtc = null) =>
         new(
             packageName,
             manifest.Id,
@@ -331,7 +347,8 @@ public sealed class ExternalPluginCatalog
             status,
             detail,
             assemblyHash,
-            signerHash);
+            signerHash,
+            trustVerifiedAtUtc);
 
     private static ExternalPluginCandidate Invalid(
         string packageName,

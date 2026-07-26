@@ -27,6 +27,7 @@ public sealed partial class MainPage : Page
     private bool _applyingSettings;
     private bool _applyingPluginDiagnostics;
     private bool _refreshing;
+    private bool _refreshingExternalPlugins;
     private IReadOnlyList<ExternalPluginCandidate> _externalPluginCandidates = [];
 
     public MainPage()
@@ -617,8 +618,16 @@ public sealed partial class MainPage : Page
         PluginDiagnosticsList.Visibility = diagnostics.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    private async Task RefreshExternalPluginCandidatesAsync()
+    private async Task<bool> RefreshExternalPluginCandidatesAsync()
     {
+        if (_refreshingExternalPlugins)
+        {
+            return false;
+        }
+
+        _refreshingExternalPlugins = true;
+        RefreshExternalPluginsButton.IsEnabled = false;
+        ExternalPluginStatusSummary.Text = "Rechecking package signatures and publisher revocation status";
         try
         {
             var candidates = await _externalPlugins.ScanAsync().ConfigureAwait(true);
@@ -629,6 +638,7 @@ public sealed partial class MainPage : Page
             ExternalPluginEmptyState.Visibility = Visibility.Collapsed;
 
             UpdateExternalPluginStatusSummary();
+            return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -636,7 +646,26 @@ public sealed partial class MainPage : Page
             ExternalPluginEmptyState.Visibility = Visibility.Visible;
             ExternalPluginEmptyState.Text = $"Candidate scan unavailable: {exception.Message}";
             ExternalPluginStatusSummary.Text = "External loading blocked";
+            return false;
         }
+        finally
+        {
+            _refreshingExternalPlugins = false;
+            RefreshExternalPluginsButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnRefreshExternalPluginsClicked(object sender, RoutedEventArgs e)
+    {
+        if (!await RefreshExternalPluginCandidatesAsync().ConfigureAwait(true))
+        {
+            return;
+        }
+
+        SetSettingsStatus(
+            "External plugin trust rechecked",
+            "Signatures and publisher revocation status were checked again. External execution remains blocked.",
+            InfoBarSeverity.Success);
     }
 
     private void ApplyExternalPluginCandidates()

@@ -113,9 +113,11 @@ without opening or retaining process handles.
 - Only built-in instances registered by the App composition root are accepted.
   The external catalog scans at most 32 immediate package directories and reports
   manifest, containment, content-hash, Authenticode, and publisher-fingerprint
-  diagnostics. It never loads candidate code. External execution remains blocked
-  after consent until publisher revocation policy and out-of-process isolation
-  are implemented.
+  diagnostics. Whole-chain publisher revocation failures are fail-closed and
+  surfaced separately from revoked or expired certificates. It never loads
+  candidate code. External execution remains blocked after consent until
+  capability-restricted broker activation and out-of-process isolation are
+  implemented.
 - The broker client starts an exact executable without a command shell, redirects
   only standard input/output, validates the response against the started process,
   and applies a two-second timeout. Failure or cancellation terminates the broker
