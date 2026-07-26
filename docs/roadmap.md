@@ -70,6 +70,7 @@
 - [x] Versioned, bounded, fail-closed out-of-process broker health handshake
 - [x] Fail-closed publisher revocation diagnostics and explicit trust recheck
 - [x] Short-lived capability-bound broker metadata probe without code execution
+- [x] One-process Job Object limits and fail-closed broker process mitigations
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

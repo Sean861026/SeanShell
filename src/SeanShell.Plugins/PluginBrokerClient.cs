@@ -75,6 +75,7 @@ public sealed class PluginBrokerClient
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             timeoutCancellation.Token);
+        using var sandbox = BrokerProcessSandbox.Create();
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo(_brokerExecutablePath)
@@ -95,6 +96,7 @@ public sealed class PluginBrokerClient
             }
 
             started = true;
+            sandbox.Assign(process);
             await process.StandardInput.WriteLineAsync(PluginBrokerProtocol.Serialize(request))
                 .ConfigureAwait(false);
             process.StandardInput.Close();

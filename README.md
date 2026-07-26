@@ -201,16 +201,19 @@ and requested capabilities. A changed signer or expanded capability set requires
 new consent, and the dashboard can revoke a candidate or clear every stored
 decision even after a package is removed. No external DLL is loaded or executed.
 
-Publisher revocation policy and stronger process isolation must ship before
-external plugins can be accepted for execution. See the
+Dependency containment, an authenticated single-use activation channel, and
+crash quarantine must still ship before external plugins can be accepted for
+execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
-An independent `SeanShell.PluginBroker` executable now proves the process
-handshake boundary. Protocol v1 accepts only a bounded `health` request; the host
-verifies the response PID/request ID within two seconds and terminates failed
-process trees. The protocol contains no assembly or activation field, and the App
-does not use the broker to run plugins. See the
+An independent `SeanShell.PluginBroker` executable now proves a fail-closed
+process boundary. Protocol v2 accepts bounded `health` and read-only
+`probe-metadata` requests; the host verifies the response PID/request ID within
+two seconds. Every broker receives a one-process, 256 MiB, kill-on-close Windows
+Job Object, then disables legacy extension points, unsafe image sources, and
+child-process creation before reading a request. The broker still never loads or
+activates a plugin, and the App does not use it to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
 
 ## Documentation

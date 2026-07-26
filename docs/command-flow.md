@@ -125,12 +125,14 @@ User revokes one candidate or all stored consent
 ```text
 Host creates a protocol-v2 health request
   -> launch SeanShell.PluginBroker as a separate process
+  -> assign broker to one-process / 256 MiB / kill-on-close Job Object
+  -> broker applies extension-point, image-load, and child-process mitigations
   -> write one bounded JSON frame
   -> broker accepts exact operation "health" without a grant
   -> unknown version/ID/operation: fixed rejection + exit 2
   -> health: return matching ID and broker PID + exit 0
   -> host verifies response belongs to the started process
-  -> timeout/cancellation/mismatch: terminate process tree
+  -> timeout/cancellation/mismatch: close Job Object and fail closed
 ```
 
 ```text

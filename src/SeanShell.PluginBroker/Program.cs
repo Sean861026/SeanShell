@@ -1,4 +1,7 @@
+using SeanShell.PluginBroker;
 using SeanShell.PluginBroker.Protocol;
+
+BrokerProcessMitigations.Apply();
 
 using var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, args) =>
