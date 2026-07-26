@@ -136,25 +136,29 @@ public sealed class PluginBrokerTests
     }
 
     [TestMethod]
-    public async Task ClosingBrokerJobTerminatesBlockedProcess()
+    public async Task ClientCompletesRepeatedSuspendedHandshakes()
     {
-        using var process = new Process
+        var client = new PluginBrokerClient(FindBrokerExecutable());
+
+        for (var attempt = 0; attempt < 8; attempt++)
         {
-            StartInfo = new ProcessStartInfo(FindBrokerExecutable())
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-            },
-        };
-        Assert.IsTrue(process.Start());
+            var response = await client.CheckHealthAsync();
+
+            Assert.IsTrue(response.Accepted);
+            Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
+        }
+    }
+
+    [TestMethod]
+    public async Task ClosingBrokerJobTerminatesSuspendedBroker()
+    {
+        using var sandbox = BrokerProcessSandbox.Create();
+        using var process = SuspendedBrokerProcess.Start(
+            FindBrokerExecutable(),
+            sandbox);
         try
         {
-            using (var sandbox = BrokerProcessSandbox.Create())
-            {
-                sandbox.Assign(process);
-            }
+            sandbox.Dispose();
 
             using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             await process.WaitForExitAsync(cancellation.Token);
@@ -164,7 +168,7 @@ public sealed class PluginBrokerTests
         {
             if (!process.HasExited)
             {
-                process.Kill(entireProcessTree: true);
+                process.Terminate();
             }
         }
     }

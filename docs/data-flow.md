@@ -142,8 +142,10 @@ host.
 ```text
 PluginBrokerClient
   -> create protocol-v2 health request + random request ID
-  -> start exact SeanShell.PluginBroker executable without a command shell
+  -> CreateProcessW exact broker path + CREATE_SUSPENDED
+  -> STARTUPINFOEX inherits only stdin / stdout / stderr pipe handles
   -> assign PID to one-process / 256 MiB / kill-on-close Windows Job Object
+  -> ResumeThread after successful assignment
   -> broker disables legacy extension points, unsafe image sources, and children
   -> send one bounded JSON frame and close stdin
   -> broker validates frame size, version, request ID, and exact operation
@@ -169,9 +171,8 @@ External plugin ID
 Protocol v2 uses paths only inside the one-shot metadata probe. It carries no
 file content, persisted consent document, type, method, launcher query, or
 activation operation. No response returns a local path and nothing connects the
-probe to `PluginHost`. Job assignment currently happens immediately after normal
-process creation while the broker blocks on stdin; suspended creation remains a
-pre-activation hardening item.
+probe to `PluginHost`. No broker instruction or runtime initialization executes
+before Job assignment.
 
 ## Dock and dashboard
 

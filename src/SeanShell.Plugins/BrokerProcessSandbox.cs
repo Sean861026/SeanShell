@@ -85,13 +85,19 @@ internal sealed class BrokerProcessSandbox : IDisposable
     public void Assign(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
+        Assign(process.SafeHandle);
+    }
+
+    public void Assign(SafeProcessHandle processHandle)
+    {
+        ArgumentNullException.ThrowIfNull(processHandle);
         if (_assigned)
         {
             throw new InvalidOperationException(
                 "The plugin broker Job Object already contains a process.");
         }
 
-        if (!AssignProcessToJobObject(_jobHandle, process.SafeHandle))
+        if (!AssignProcessToJobObject(_jobHandle, processHandle))
         {
             throw new Win32Exception(
                 Marshal.GetLastPInvokeError(),
