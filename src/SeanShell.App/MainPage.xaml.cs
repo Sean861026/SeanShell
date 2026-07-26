@@ -15,6 +15,7 @@ public sealed partial class MainPage : Page
     private readonly SystemMetricsProvider _systemMetrics;
     private int _displayCount;
     private readonly GamingModeManager _gamingMode;
+    private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
     private readonly LauncherPerformanceMonitor _launcherPerformance;
     private readonly PluginHost _pluginHost;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
@@ -32,6 +33,7 @@ public sealed partial class MainPage : Page
         _desktopWindows = app.DesktopWindows;
         _systemMetrics = app.SystemMetrics;
         _gamingMode = app.GamingMode;
+        _gamingDetectionPerformance = app.GamingDetectionPerformance;
         _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
         _displayCount = app.Displays.Capture().Count;
@@ -239,12 +241,15 @@ public sealed partial class MainPage : Page
         _shellState.StateChanged += OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
         _gamingMode.StatusChanged += OnGamingModeStatusChanged;
+        _gamingDetectionPerformance.Changed -= OnGamingDetectionPerformanceChanged;
+        _gamingDetectionPerformance.Changed += OnGamingDetectionPerformanceChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _pluginHost.DiagnosticsChanged += OnPluginDiagnosticsChanged;
         _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
         _launcherPerformance.Changed += OnLauncherPerformanceChanged;
         ApplyShellState(_shellState.Current);
         ApplyGamingModeStatus(_gamingMode.Current);
+        ApplyGamingDetectionPerformance();
         ApplyPluginDiagnostics();
         ApplyLauncherPerformance();
         ApplyAdaptiveLayout(ActualWidth);
@@ -260,6 +265,7 @@ public sealed partial class MainPage : Page
         _refreshTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
+        _gamingDetectionPerformance.Changed -= OnGamingDetectionPerformanceChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
     }
@@ -423,6 +429,11 @@ public sealed partial class MainPage : Page
         ApplyGamingModeStatus(status);
     }
 
+    private void OnGamingDetectionPerformanceChanged(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(ApplyGamingDetectionPerformance);
+    }
+
     private void OnPluginDiagnosticsChanged(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(ApplyPluginDiagnostics);
@@ -454,6 +465,17 @@ public sealed partial class MainPage : Page
                         ? "Watching configured game processes"
                         : "Automatic detection is on; add at least one process name"
                     : "Automatic detection is off";
+    }
+
+    private void ApplyGamingDetectionPerformance()
+    {
+        var snapshot = _gamingDetectionPerformance.Current;
+        GamingDetectionPerformance.Text = snapshot.SampleCount == 0
+            ? "Detector performance: Not measured"
+            : $"Detector: {snapshot.EstimatedCpuPercentage!.Value:F3}% estimated CPU · " +
+              $"{snapshot.LastScanDuration!.Value.TotalMilliseconds:F1} ms last · " +
+              $"{snapshot.P95ScanDuration!.Value.TotalMilliseconds:F1} ms P95 " +
+              $"({snapshot.SampleCount} samples)";
     }
 
     private void ApplyPluginDiagnostics()

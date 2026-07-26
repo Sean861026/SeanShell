@@ -19,6 +19,8 @@ public sealed class GamingModeManager
 
     public GamingModeStatus Current => CreateStatus();
 
+    public IReadOnlyList<string> ConfiguredProcessNames => _detector.ProcessNames;
+
     public void ConfigureAutomaticDetection(bool enabled, IEnumerable<string> processNames)
     {
         ArgumentNullException.ThrowIfNull(processNames);

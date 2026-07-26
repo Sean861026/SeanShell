@@ -115,12 +115,16 @@ bypass Windows foreground restrictions.
 The M3 preview supports a manual override and opt-in automatic detection. Add one
 game process name per line in the dashboard, enable automatic detection, and
 SeanShell checks a disposable process snapshot every two seconds. Matching is
-case-insensitive and accepts names with or without `.exe`.
+case-insensitive and accepts names with or without `.exe`. Only matching
+processes become snapshots, so SeanShell does not allocate or sort dashboard data
+for every running process.
 
 While gaming mode is active, dashboard sampling stops and every Dock window is
 hidden. The small process detector remains active so SeanShell can restore the
 workspace after the last matching game exits. Steam and other launchers are not
 matched unless the user explicitly adds them. No process handles are retained.
+The Gaming mode card keeps a bounded 60-sample diagnostic window with the latest
+scan time, scan P95, and estimated detector CPU percentage.
 
 ## Plugin platform preview
 

@@ -14,6 +14,12 @@ compares process names selected by the user. It does not:
 The process snapshot is discarded after each comparison. Matching is
 case-insensitive and strips an optional `.exe` suffix.
 
+SeanShell takes one process-list pass per interval but retains and sorts snapshots
+only for configured executable names. The Gaming mode card retains the latest 60
+samples and reports scan-duration P95 plus an estimated detector CPU percentage.
+The estimate uses SeanShell processor time observed during each scan and is
+intended for before/after comparisons, not as a replacement for a system profiler.
+
 ## Recommended rules
 
 Add the executable for the actual game, not its launcher. For example, prefer
@@ -35,6 +41,7 @@ For each game under test, record:
 | Enable manual mode | Gaming mode stays active after the game exits |
 | Disable manual mode while game runs | Automatic detection keeps gaming mode active |
 | Anti-cheat launch and play | No warning, kick, or blocked launch attributable to SeanShell |
+| Observe 60 detector samples | Record estimated CPU and scan P95 from the Gaming mode card |
 
 Compatibility results should include the game version, anti-cheat provider,
 Windows build, GPU driver, and SeanShell commit. A successful test is evidence for

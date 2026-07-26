@@ -22,4 +22,12 @@ public sealed class GameDetectorTests
 
         CollectionAssert.AreEqual(new[] { "eldenring", "Game" }, rules.ToArray());
     }
+
+    [TestMethod]
+    public void ProcessNamesExposeNormalizedDistinctRules()
+    {
+        var detector = new GameDetector(["Game.exe", "game", "eldenring.exe"]);
+
+        CollectionAssert.AreEqual(new[] { "eldenring", "Game" }, detector.ProcessNames.ToArray());
+    }
 }

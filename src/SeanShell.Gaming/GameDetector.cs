@@ -2,6 +2,7 @@ namespace SeanShell.Gaming;
 
 public sealed class GameDetector
 {
+    private readonly string[] _orderedProcessNames;
     private readonly HashSet<string> _processNames;
 
     public GameDetector(IEnumerable<string> processNames)
@@ -11,9 +12,14 @@ public sealed class GameDetector
             .Select(Normalize)
             .Where(static name => name.Length > 0)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _orderedProcessNames = _processNames
+            .OrderBy(static name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     public int RuleCount => _processNames.Count;
+
+    public IReadOnlyList<string> ProcessNames => _orderedProcessNames;
 
     public bool IsGame(string processName)
     {

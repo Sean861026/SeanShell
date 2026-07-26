@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -19,12 +20,14 @@ namespace SeanShell.App;
 public sealed partial class MainWindow : Window
 {
     private const uint SpaceVirtualKey = 0x20;
+    private static readonly TimeSpan GamingDetectionInterval = TimeSpan.FromSeconds(2);
     private readonly DesktopWindowService _desktopWindows;
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly DispatcherQueueTimer _dockRefreshTimer;
     private readonly LauncherWindow _launcherWindow;
     private readonly GamingModeManager _gamingMode;
+    private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
@@ -57,6 +60,7 @@ public sealed partial class MainWindow : Window
         _settingsStore = app.SettingsStore;
         _settings = app.SettingsLoad.Settings;
         _gamingMode = app.GamingMode;
+        _gamingDetectionPerformance = app.GamingDetectionPerformance;
         _pluginHost = app.PluginHost;
         _processCatalog = app.Processes;
         _desktopWindows = app.DesktopWindows;
@@ -80,7 +84,7 @@ public sealed partial class MainWindow : Window
         }
 
         _gamingModeTimer = DispatcherQueue.CreateTimer();
-        _gamingModeTimer.Interval = TimeSpan.FromSeconds(2);
+        _gamingModeTimer.Interval = GamingDetectionInterval;
         _gamingModeTimer.Tick += OnGamingModeTimerTick;
 
         _dockRefreshTimer = DispatcherQueue.CreateTimer();
@@ -219,6 +223,7 @@ public sealed partial class MainWindow : Window
 
     private void OnAutomaticGamingModeChanged(bool enabled)
     {
+        _gamingDetectionPerformance.Reset();
         _settings = _settings with { AutomaticGamingModeEnabled = enabled };
         _gamingMode.ConfigureAutomaticDetection(
             enabled,
@@ -235,6 +240,7 @@ public sealed partial class MainWindow : Window
 
     private void OnGameProcessRulesSaved(string rules)
     {
+        _gamingDetectionPerformance.Reset();
         var processNames = GameDetector.ParseRules(rules);
         var normalizedRules = string.Join(Environment.NewLine, processNames);
         _settings = _settings with { GameProcessRules = normalizedRules };
@@ -582,7 +588,19 @@ public sealed partial class MainWindow : Window
         _refreshingGamingMode = true;
         try
         {
-            var processes = await Task.Run(_processCatalog.Capture).ConfigureAwait(true);
+            var startedAt = Stopwatch.GetTimestamp();
+            using var currentProcess = Process.GetCurrentProcess();
+            var processorTimeBefore = currentProcess.TotalProcessorTime;
+            var configuredProcessNames = _gamingMode.ConfiguredProcessNames;
+            var processes = await Task.Run(
+                () => _processCatalog.CaptureByNames(configuredProcessNames)).ConfigureAwait(true);
+            var scanDuration = Stopwatch.GetElapsedTime(startedAt);
+            var processorTime = currentProcess.TotalProcessorTime - processorTimeBefore;
+            _gamingDetectionPerformance.RecordSample(
+                scanDuration,
+                processorTime,
+                GamingDetectionInterval,
+                processes.Count);
             _gamingMode.Reconcile(processes);
         }
         catch (Exception exception)
