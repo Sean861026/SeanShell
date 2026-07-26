@@ -99,7 +99,21 @@ Dashboard loads
   -> Windows verifies Authenticode trust and revocation
   -> compare signer certificate fingerprint with manifest
   -> show diagnostic state
-  -> stop (no assembly load, activation, consent, or command registration)
+  -> stop (no assembly load, activation, or command registration)
+```
+
+```text
+User selects Approve capabilities
+  -> show plugin, publisher, signer fingerprint, and exact capabilities
+  -> user confirms
+  -> atomically persist the bound consent decision
+  -> save succeeds: update dashboard to Approved / execution blocked
+  -> save fails: retain previous in-memory trust and show warning
+
+User revokes one candidate or all stored consent
+  -> atomically persist removal
+  -> refresh dashboard
+  -> external execution remains blocked in every state
 ```
 
 ## Git repository refresh

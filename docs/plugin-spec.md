@@ -105,14 +105,27 @@ computes its SHA-256 content hash, asks Windows to validate its Authenticode tru
 chain and revocation status, then compares the signer's SHA-256 certificate
 fingerprint with the manifest. Duplicate IDs are rejected.
 
-Passing these checks means only **ready for a future consent flow**. The catalog
-does not call `Assembly.Load`, instantiate a type, register a command, or pass the
-candidate to `PluginHost`. Third-party loading remains blocked until per-capability
-user consent, persisted publisher trust and revocation policy, and stronger
-out-of-process crash isolation are implemented. The current persistent switch
-applies only to trusted built-in registrations. A future loader must revalidate
-the exact file immediately before brokered execution rather than trusting an
-earlier diagnostic snapshot.
+Passing these checks makes the package eligible for explicit consent. The
+dashboard confirmation shows the package name, publisher, signer certificate
+SHA-256 fingerprint, and exact requested capabilities. A schema-1 decision is
+stored separately in `%LOCALAPPDATA%\SeanShell\plugin-trust.json` and binds:
+
+- the stable plugin ID;
+- the signer certificate SHA-256 fingerprint;
+- the exact granted capability flags; and
+- the UTC grant time.
+
+A new signer certificate or additional capability is not covered by an older
+decision. A user may revoke a candidate's decision or clear every stored decision,
+including approvals whose package directory no longer exists. Writes are atomic,
+retain a `.bak`, and recover safely; an unreadable document means no approvals.
+
+Consent does not call `Assembly.Load`, instantiate a type, register a command, or
+pass the candidate to `PluginHost`. Third-party loading remains blocked until
+publisher revocation policy and stronger out-of-process crash isolation are
+implemented. The current built-in Enabled switch remains separate from external
+consent. A future loader must revalidate the exact file immediately before
+brokered execution rather than trusting an earlier diagnostic snapshot.
 
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable

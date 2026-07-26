@@ -1,3 +1,5 @@
+using SeanShell.PluginContracts;
+
 namespace SeanShell.Plugins;
 
 public sealed record ExternalPluginCandidate(
@@ -7,6 +9,7 @@ public sealed record ExternalPluginCandidate(
     string? Version,
     string? Publisher,
     string? EntryAssembly,
+    PluginCapability Capabilities,
     ExternalPluginCandidateStatus Status,
     string Detail,
     string? AssemblySha256 = null,

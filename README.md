@@ -196,12 +196,15 @@ SeanShell also performs a diagnostic-only scan of up to 32 immediate package
 directories under `%LOCALAPPDATA%\SeanShell\plugins`. It validates a bounded
 manifest, package-contained non-linked DLL path, content hash, Windows
 Authenticode trust, and the declared publisher certificate fingerprint. Passing
-packages are shown as waiting for a future consent flow; no external DLL is loaded
-or executed.
+packages can receive explicit local consent for their exact signer fingerprint
+and requested capabilities. A changed signer or expanded capability set requires
+new consent, and the dashboard can revoke a candidate or clear every stored
+decision even after a package is removed. No external DLL is loaded or executed.
 
-Capability consent, publisher trust/revocation policy, and stronger process
-isolation must ship before external plugins can be accepted for execution. See
-the [plugin specification](docs/plugin-spec.md) for the preview manifest.
+Publisher revocation policy and stronger process isolation must ship before
+external plugins can be accepted for execution. See the
+[plugin specification](docs/plugin-spec.md) for the preview manifest and consent
+boundary.
 
 ## Documentation
 

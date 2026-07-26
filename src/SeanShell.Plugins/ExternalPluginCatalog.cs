@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using SeanShell.PluginContracts;
 
 namespace SeanShell.Plugins;
 
@@ -326,6 +327,7 @@ public sealed class ExternalPluginCatalog
             manifest.Version,
             manifest.Publisher,
             manifest.EntryAssembly,
+            ParseCapabilities(manifest.Capabilities!),
             status,
             detail,
             assemblyHash,
@@ -335,7 +337,17 @@ public sealed class ExternalPluginCatalog
         string packageName,
         ExternalPluginCandidateStatus status,
         string detail) =>
-        new(packageName, null, packageName, null, null, null, status, detail);
+        new(packageName, null, packageName, null, null, null, PluginCapability.None, status, detail);
+
+    private static PluginCapability ParseCapabilities(IEnumerable<string> capabilities) =>
+        capabilities.Aggregate(
+            PluginCapability.None,
+            static (value, capability) => value | (capability switch
+            {
+                "LauncherCommands" => PluginCapability.LauncherCommands,
+                "BackgroundWork" => PluginCapability.BackgroundWork,
+                _ => PluginCapability.None,
+            }));
 
     private sealed record ExternalManifest(
         int SchemaVersion,

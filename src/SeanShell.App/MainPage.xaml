@@ -538,10 +538,29 @@
                                                             Style="{StaticResource SeanCaptionTextStyle}"
                                                             Text="{x:Bind Detail}"
                                                             TextWrapping="Wrap" />
+                                                        <TextBlock
+                                                            Style="{StaticResource SeanCaptionTextStyle}"
+                                                            Text="{x:Bind CapabilityText}"
+                                                            TextWrapping="Wrap" />
+                                                        <Button
+                                                            MinHeight="44"
+                                                            HorizontalAlignment="Left"
+                                                            Click="OnExternalPluginConsentClicked"
+                                                            Content="{x:Bind ActionText}"
+                                                            IsEnabled="{x:Bind CanChange}"
+                                                            Tag="{x:Bind Candidate}"
+                                                            Visibility="{x:Bind ActionVisibility}" />
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
+                                        <Button
+                                            x:Name="ClearExternalPluginTrustButton"
+                                            MinHeight="44"
+                                            HorizontalAlignment="Left"
+                                            Click="OnClearExternalPluginTrustClicked"
+                                            Content="Revoke all stored consent"
+                                            Visibility="Collapsed" />
                                     </StackPanel>
                                 </Expander>
                             </StackPanel>

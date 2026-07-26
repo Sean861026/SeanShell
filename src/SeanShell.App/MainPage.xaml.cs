@@ -20,11 +20,14 @@ public sealed partial class MainPage : Page
     private readonly LauncherPerformanceMonitor _launcherPerformance;
     private readonly PluginHost _pluginHost;
     private readonly ExternalPluginCatalog _externalPlugins;
+    private readonly ExternalPluginTrustManager _externalPluginTrust;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _pendingExternalPluginIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _applyingSettings;
     private bool _applyingPluginDiagnostics;
     private bool _refreshing;
+    private IReadOnlyList<ExternalPluginCandidate> _externalPluginCandidates = [];
 
     public MainPage()
     {
@@ -40,6 +43,7 @@ public sealed partial class MainPage : Page
         _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
         _externalPlugins = app.ExternalPlugins;
+        _externalPluginTrust = app.ExternalPluginTrust;
         _displayCount = app.Displays.Capture().Count;
         ApplyDisplayDensity(app.SettingsLoad.Settings.DisplayDensity);
 
@@ -56,6 +60,13 @@ public sealed partial class MainPage : Page
         }
 
         ApplyStartupStatus(app.StartupSession);
+        if (_externalPluginTrust.Warning is not null)
+        {
+            SetSettingsStatus(
+                "Plugin trust recovery active",
+                _externalPluginTrust.Warning,
+                InfoBarSeverity.Warning);
+        }
     }
 
     public event EventHandler? LauncherRequested;
@@ -75,6 +86,61 @@ public sealed partial class MainPage : Page
     public event Action<bool>? ManualGamingModeChanged;
 
     public event Action<string, bool>? PluginEnabledChanged;
+
+    public event Action<ExternalPluginCandidate, bool>? ExternalPluginConsentChanged;
+
+    public event Action? ExternalPluginTrustClearRequested;
+
+    public void SetExternalPluginConsentApplied(
+        ExternalPluginCandidate candidate,
+        bool approved)
+    {
+        if (candidate.Id is not null)
+        {
+            _pendingExternalPluginIds.Remove(candidate.Id);
+        }
+
+        ApplyExternalPluginCandidates();
+        UpdateExternalPluginStatusSummary();
+        SetSettingsStatus(
+            approved ? "Plugin capabilities approved" : "Plugin consent revoked",
+            approved
+                ? $"{candidate.Name} is recorded as approved, but external execution remains blocked."
+                : $"{candidate.Name} no longer has stored capability consent.",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetExternalPluginConsentFailed(
+        ExternalPluginCandidate candidate,
+        string message)
+    {
+        if (candidate.Id is not null)
+        {
+            _pendingExternalPluginIds.Remove(candidate.Id);
+        }
+
+        ApplyExternalPluginCandidates();
+        UpdateExternalPluginStatusSummary();
+        SetSettingsStatus("Plugin consent not changed", message, InfoBarSeverity.Warning);
+    }
+
+    public void SetExternalPluginTrustCleared()
+    {
+        _pendingExternalPluginIds.Clear();
+        ApplyExternalPluginCandidates();
+        UpdateExternalPluginStatusSummary();
+        SetSettingsStatus(
+            "External plugin consent cleared",
+            "All stored publisher and capability approvals were revoked.",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetExternalPluginTrustClearFailed(string message)
+    {
+        ApplyExternalPluginCandidates();
+        UpdateExternalPluginStatusSummary();
+        SetSettingsStatus("Plugin consent not changed", message, InfoBarSeverity.Warning);
+    }
 
     private void ApplyStartupStatus(StartupSessionResult? startup)
     {
@@ -556,18 +622,13 @@ public sealed partial class MainPage : Page
         try
         {
             var candidates = await _externalPlugins.ScanAsync().ConfigureAwait(true);
-            ExternalPluginCandidateList.ItemsSource = candidates
-                .Select(static candidate => new ExternalPluginCandidateViewModel(candidate))
-                .ToArray();
+            _externalPluginCandidates = candidates;
+            ApplyExternalPluginCandidates();
             ExternalPluginCandidateList.Visibility =
                 candidates.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
             ExternalPluginEmptyState.Visibility = Visibility.Collapsed;
 
-            var ready = candidates.Count(
-                static candidate => candidate.Status == ExternalPluginCandidateStatus.ReadyForConsent);
-            ExternalPluginStatusSummary.Text = candidates.Count == 0
-                ? "No external packages detected"
-                : $"{candidates.Count} detected · {ready} passed trust checks · loading blocked";
+            UpdateExternalPluginStatusSummary();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -576,6 +637,124 @@ public sealed partial class MainPage : Page
             ExternalPluginEmptyState.Text = $"Candidate scan unavailable: {exception.Message}";
             ExternalPluginStatusSummary.Text = "External loading blocked";
         }
+    }
+
+    private void ApplyExternalPluginCandidates()
+    {
+        ExternalPluginCandidateList.ItemsSource = _externalPluginCandidates
+            .Select(candidate => new ExternalPluginCandidateViewModel(
+                candidate,
+                _externalPluginTrust.IsApproved(candidate),
+                candidate.Id is null || !_pendingExternalPluginIds.Contains(candidate.Id)))
+            .ToArray();
+        ClearExternalPluginTrustButton.Visibility = _externalPluginTrust.Consents.Count == 0
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    private void UpdateExternalPluginStatusSummary()
+    {
+        var ready = _externalPluginCandidates.Count(
+            static candidate => candidate.Status == ExternalPluginCandidateStatus.ReadyForConsent);
+        ExternalPluginStatusSummary.Text = _externalPluginCandidates.Count == 0
+            ? $"No external packages detected · {_externalPluginTrust.Consents.Count} stored approvals"
+            : $"{_externalPluginCandidates.Count} detected · {ready} passed trust checks · " +
+              $"{_externalPluginTrust.Consents.Count} stored approvals · loading blocked";
+    }
+
+    private async void OnClearExternalPluginTrustClicked(object sender, RoutedEventArgs e)
+    {
+        if (_externalPluginTrust.Consents.Count == 0)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "Revoke all external plugin consent?",
+            Content =
+                "Every stored publisher and capability approval will be removed, including decisions for packages that are no longer installed.",
+            PrimaryButtonText = "Revoke all",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        ClearExternalPluginTrustButton.IsEnabled = false;
+        if (ExternalPluginTrustClearRequested is null)
+        {
+            ClearExternalPluginTrustButton.IsEnabled = true;
+            return;
+        }
+
+        ExternalPluginTrustClearRequested.Invoke();
+        ClearExternalPluginTrustButton.IsEnabled = true;
+    }
+
+    private async void OnExternalPluginConsentClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: ExternalPluginCandidate candidate } button ||
+            candidate.Id is null ||
+            _pendingExternalPluginIds.Contains(candidate.Id))
+        {
+            return;
+        }
+
+        var approved = !_externalPluginTrust.IsApproved(candidate);
+        if (approved)
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Approve external plugin capabilities?",
+                Content =
+                    $"{candidate.Name}\n" +
+                    $"Publisher: {candidate.Publisher}\n" +
+                    $"Certificate SHA-256: {candidate.SignerCertificateSha256}\n" +
+                    $"Capabilities: {ExternalPluginCandidateViewModel.FormatCapabilities(candidate.Capabilities)}\n\n" +
+                    "This records consent only. SeanShell will not load or execute the plugin until an isolated broker ships.",
+                PrimaryButtonText = "Approve",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
+        }
+        else
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = "Revoke this plugin consent?",
+                Content =
+                    $"{candidate.Name} will lose its stored publisher and capability approval. External execution is already blocked.",
+                PrimaryButtonText = "Revoke",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
+        }
+
+        _pendingExternalPluginIds.Add(candidate.Id);
+        button.IsEnabled = false;
+        ApplyExternalPluginCandidates();
+        if (ExternalPluginConsentChanged is null)
+        {
+            _pendingExternalPluginIds.Remove(candidate.Id);
+            ApplyExternalPluginCandidates();
+            return;
+        }
+
+        ExternalPluginConsentChanged.Invoke(candidate, approved);
     }
 
     private void OnLauncherPerformanceChanged(object? sender, EventArgs e)
