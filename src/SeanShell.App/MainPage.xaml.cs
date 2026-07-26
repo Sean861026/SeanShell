@@ -19,6 +19,7 @@ public sealed partial class MainPage : Page
     private readonly GamingSessionRecorder _gamingSessions;
     private readonly LauncherPerformanceMonitor _launcherPerformance;
     private readonly PluginHost _pluginHost;
+    private readonly ExternalPluginCatalog _externalPlugins;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherQueueTimer _refreshTimer;
     private bool _applyingSettings;
@@ -38,6 +39,7 @@ public sealed partial class MainPage : Page
         _gamingSessions = app.GamingSessions;
         _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
+        _externalPlugins = app.ExternalPlugins;
         _displayCount = app.Displays.Capture().Count;
         ApplyDisplayDensity(app.SettingsLoad.Settings.DisplayDensity);
 
@@ -256,6 +258,7 @@ public sealed partial class MainPage : Page
         ApplyGamingDetectionPerformance();
         ApplyGamingSessionHistory();
         ApplyPluginDiagnostics();
+        _ = RefreshExternalPluginCandidatesAsync();
         ApplyLauncherPerformance();
         ApplyAdaptiveLayout(ActualWidth);
         if (_shellState.Current.Mode == ShellMode.Normal)
@@ -546,6 +549,33 @@ public sealed partial class MainPage : Page
             : $"{diagnostics.Count} registered · {active} active · {suspended} suspended · {disabled} disabled · {faulted} faulted";
         PluginEmptyState.Visibility = diagnostics.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         PluginDiagnosticsList.Visibility = diagnostics.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private async Task RefreshExternalPluginCandidatesAsync()
+    {
+        try
+        {
+            var candidates = await _externalPlugins.ScanAsync().ConfigureAwait(true);
+            ExternalPluginCandidateList.ItemsSource = candidates
+                .Select(static candidate => new ExternalPluginCandidateViewModel(candidate))
+                .ToArray();
+            ExternalPluginCandidateList.Visibility =
+                candidates.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            ExternalPluginEmptyState.Visibility = Visibility.Collapsed;
+
+            var ready = candidates.Count(
+                static candidate => candidate.Status == ExternalPluginCandidateStatus.ReadyForConsent);
+            ExternalPluginStatusSummary.Text = candidates.Count == 0
+                ? "No external packages detected"
+                : $"{candidates.Count} detected · {ready} passed trust checks · loading blocked";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ExternalPluginCandidateList.Visibility = Visibility.Collapsed;
+            ExternalPluginEmptyState.Visibility = Visibility.Visible;
+            ExternalPluginEmptyState.Text = $"Candidate scan unavailable: {exception.Message}";
+            ExternalPluginStatusSummary.Text = "External loading blocked";
+        }
     }
 
     private void OnLauncherPerformanceChanged(object? sender, EventArgs e)

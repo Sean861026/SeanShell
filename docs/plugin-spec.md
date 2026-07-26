@@ -4,7 +4,9 @@
 
 This is an MVP contract draft. Binary compatibility is not guaranteed before 1.0.
 The M4 preview accepts only built-in instances explicitly registered by the App
-composition root. Directory scanning and arbitrary assembly loading are disabled.
+composition root. A bounded external package catalog is diagnostic-only: it
+inspects manifests, paths, hashes, and Authenticode trust but never loads an
+external assembly.
 
 ## Manifest schema 1
 
@@ -79,11 +81,38 @@ Compose operations are intentionally excluded.
 
 ## Planned external loading model
 
-An external manifest will additionally declare its entry assembly and signed
-publisher identity. Third-party loading remains blocked until capability consent,
-signature verification and revocation, and stronger out-of-process crash
-isolation are implemented. The current persistent switch applies only to trusted
-built-in registrations.
+External candidates are immediate child directories under
+`%LOCALAPPDATA%\SeanShell\plugins`. At most 32 directories are inspected per
+scan. Each package may contain a `plugin.json` of at most 64 KiB:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "example.publisher.plugin",
+  "name": "Example plugin",
+  "version": "0.1.0",
+  "minimumHostApiVersion": 1,
+  "publisher": "Example Publisher",
+  "capabilities": ["LauncherCommands"],
+  "entryAssembly": "Example.Plugin.dll",
+  "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS"
+}
+```
+
+The entry assembly must be a non-empty DLL no larger than 256 MiB, remain inside
+its package directory, and use no reparse-point path component. The catalog
+computes its SHA-256 content hash, asks Windows to validate its Authenticode trust
+chain and revocation status, then compares the signer's SHA-256 certificate
+fingerprint with the manifest. Duplicate IDs are rejected.
+
+Passing these checks means only **ready for a future consent flow**. The catalog
+does not call `Assembly.Load`, instantiate a type, register a command, or pass the
+candidate to `PluginHost`. Third-party loading remains blocked until per-capability
+user consent, persisted publisher trust and revocation policy, and stronger
+out-of-process crash isolation are implemented. The current persistent switch
+applies only to trusted built-in registrations. A future loader must revalidate
+the exact file immediately before brokered execution rather than trusting an
+earlier diagnostic snapshot.
 
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable

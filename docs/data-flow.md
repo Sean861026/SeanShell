@@ -98,6 +98,23 @@ Diagnostics contain plugin identity, declared capabilities, state, last operatio
 duration, and exception type/message. They do not contain Launcher queries,
 command arguments, environment values, file contents, or credentials.
 
+## External plugin candidate diagnostics
+
+```text
+%LOCALAPPDATA%\SeanShell\plugins (immediate children, maximum 32)
+  -> bounded plugin.json read (maximum 64 KiB)
+  -> schema, capability, and duplicate-ID validation
+  -> canonical package-contained DLL path with no reparse points
+  -> bounded entry-assembly SHA-256 hash
+  -> Windows Authenticode chain and revocation verification
+  -> signer certificate SHA-256 comparison
+  -> immutable diagnostic candidates
+  -> dashboard External plugin candidates list
+```
+
+The flow ends at diagnostics. Candidate assembly bytes, manifest contents, and
+local paths are not sent to a plugin host or persisted by SeanShell.
+
 ## Dock and dashboard
 
 ```text

@@ -38,5 +38,11 @@ global input, weaken Windows security, or remove recovery paths are out of scope
 Do not add code that changes the configured Windows shell until a reviewed recovery
 design and crash-loop guard exist.
 
+External package contributions must remain data-only until the brokered loading
+milestone. Do not add reflection, `Assembly.Load`, dependency resolution, or type
+activation to the candidate catalog. Path containment and Authenticode checks are
+diagnostic evidence, not permission to execute a candidate in the SeanShell
+process.
+
 Report security-sensitive findings privately to the repository owner rather than
 including exploit details in a public issue.

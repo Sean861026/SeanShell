@@ -88,6 +88,20 @@ User changes a plugin Enabled switch
 Unknown IDs are preserved in settings so temporarily unavailable built-in plugins
 do not lose the user's choice. No third-party assemblies are discovered or loaded.
 
+## External plugin candidate scan
+
+```text
+Dashboard loads
+  -> enumerate immediate external package directories to a fixed limit
+  -> read and validate each bounded plugin.json
+  -> reject traversal, links, missing/oversized assemblies, and duplicate IDs
+  -> hash the entry assembly
+  -> Windows verifies Authenticode trust and revocation
+  -> compare signer certificate fingerprint with manifest
+  -> show diagnostic state
+  -> stop (no assembly load, activation, consent, or command registration)
+```
+
 ## Git repository refresh
 
 ```text

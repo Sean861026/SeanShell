@@ -65,7 +65,9 @@
 - [x] Fluent dashboard diagnostics for explicitly registered built-in plugins
 - [x] Gaming Mode suspend/resume integration
 - [x] Built-in Developer tools Launcher plugin
-- [ ] Signed external loading, consent, revocation, and process isolation
+- [x] Bounded external manifest, path, hash, and Authenticode candidate diagnostics
+- [ ] Capability consent, publisher trust/revocation policy, and process isolation
+- [ ] Signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [x] Built-in read-only Git repository plugin
 - [x] Built-in WSL distribution plugin

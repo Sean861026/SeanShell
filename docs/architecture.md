@@ -20,17 +20,19 @@ optional, late-stage deployment mode, not an MVP requirement.
 - `SeanShell.App` is the WinUI 3 composition root. It contains views and binds
   platform services to feature modules.
 - `SeanShell.Core` owns immutable models, shell state, and command abstractions.
-- `SeanShell.Windows` isolates Win32, process, registry, and shell integration.
+- `SeanShell.Windows` isolates Win32, process, registry, shell, and Authenticode
+  trust integration.
 - `SeanShell.Gaming` owns process rules and the policy for pausing optional work.
 - `SeanShell.PluginContracts` is the small, versioned surface available to plugins.
 - `SeanShell.Plugins` validates manifests and owns bounded plugin lifecycle,
   launcher queries, fault isolation, and diagnostics.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
-Dependencies point inward: App may depend on every module; Windows, Gaming, and
+Dependencies point inward: App may depend on every module; Gaming and
 PluginContracts depend on Core; the plugin host depends on Core and contracts;
-Core depends only on .NET. Plugins never receive the App service container or
-direct access to UI internals.
+the Windows boundary depends on Core and the plugin host's narrow trust-verifier
+contract. Core depends only on .NET. Plugins never receive the App service
+container or direct access to UI internals.
 
 The built-in Git plugin receives a small list of repository roots from the App
 composition root. The App first walks upward from its current and binary
@@ -105,8 +107,11 @@ without opening or retaining process handles.
   without a command shell. Package restore and project mutation commands are not
   exposed.
 - Only built-in instances registered by the App composition root are accepted.
-  Third-party discovery remains blocked until signing, user consent, revocation,
-  and out-of-process isolation are implemented.
+  The external catalog scans at most 32 immediate package directories and reports
+  manifest, containment, content-hash, Authenticode, and publisher-fingerprint
+  diagnostics. It never loads candidate code. External execution remains blocked
+  until user consent, publisher trust/revocation policy, and out-of-process
+  isolation are implemented.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.

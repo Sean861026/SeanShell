@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SeanShell.Core\SeanShell.Core.csproj" />
+    <ProjectReference Include="..\SeanShell.Plugins\SeanShell.Plugins.csproj" />
   </ItemGroup>
 
 </Project>

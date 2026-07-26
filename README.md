@@ -134,7 +134,7 @@ history is never uploaded.
 
 ## Plugin platform preview
 
-The first M4 slice adds a bounded host for explicitly registered built-in plugins.
+The M4 preview adds a bounded host for explicitly registered built-in plugins.
 Every plugin declares a versioned manifest, minimum host API, publisher, and
 capabilities. Initialization and lifecycle calls have time limits; launcher
 queries are limited to 250 ms. A plugin that throws or exceeds a limit is marked
@@ -192,8 +192,16 @@ receive a `dotnet watch run` hot-reload action. Local HTTP/HTTPS endpoints from
 `Properties/launchSettings.json` can be opened directly; external and non-web
 URLs are ignored.
 
-Arbitrary third-party DLL discovery is intentionally disabled. Signing, consent,
-and stronger process isolation must ship before external plugins are accepted.
+SeanShell also performs a diagnostic-only scan of up to 32 immediate package
+directories under `%LOCALAPPDATA%\SeanShell\plugins`. It validates a bounded
+manifest, package-contained non-linked DLL path, content hash, Windows
+Authenticode trust, and the declared publisher certificate fingerprint. Passing
+packages are shown as waiting for a future consent flow; no external DLL is loaded
+or executed.
+
+Capability consent, publisher trust/revocation policy, and stronger process
+isolation must ship before external plugins can be accepted for execution. See
+the [plugin specification](docs/plugin-spec.md) for the preview manifest.
 
 ## Documentation
 
