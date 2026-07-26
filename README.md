@@ -201,9 +201,8 @@ and requested capabilities. A changed signer or expanded capability set requires
 new consent, and the dashboard can revoke a candidate or clear every stored
 decision even after a package is removed. No external DLL is loaded or executed.
 
-Dependency containment, bounded activation DTOs, broker packaging/signing, and
-crash quarantine must still ship before external plugins can be accepted for
-execution. See the
+Dependency containment, bounded activation DTOs, and broker packaging/signing
+must still ship before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
@@ -218,6 +217,12 @@ legacy extension points, unsafe image sources, and child-process creation before
 reading a request. The broker still never loads or activates a plugin, and the
 App does not use it to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
+
+External metadata probes also keep a separate, atomic broker-health history.
+Three broker timeouts, malformed/authentication failures, or truncated responses
+for the same plugin inside ten minutes quarantine that plugin for thirty minutes.
+A successful probe clears its failure window. User cancellation, trust-scan
+failure, and a missing broker installation do not count against a plugin.
 
 ## Documentation
 

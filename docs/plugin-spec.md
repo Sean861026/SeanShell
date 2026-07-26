@@ -147,6 +147,12 @@ for each one-shot process. The broker never receives the persisted consent
 document and is not a plugin host: there is no type, activation, method, or
 command payload.
 
+Broker health is persisted independently from consent. Three counted probe
+failures inside ten minutes quarantine the plugin ID for thirty minutes, while a
+successful probe clears the sequence. Corrupt health state without a valid
+backup blocks probes, and neither quarantine nor its expiry grants permission to
+load code.
+
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable
 only for reviewed built-in plugins and is the primary reason external loading stays

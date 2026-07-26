@@ -48,9 +48,11 @@ the atomic trust-document write succeeds.
 
 Broker protocol changes require cross-process tests for frame bounds, version and
 request/session correlation, authentication tampering and replay, rejected
-operations, exit behavior, timeout cleanup, and process identity. Do not add an
-activation operation until its dependency-containment, bounded DTO, quarantine,
-and packaging design is reviewed.
+operations, exit behavior, timeout cleanup, process identity, persisted failure
+windows, recovery, and quarantine expiry. User cancellation and host
+installation failures must never be charged to a plugin. Do not add an
+activation operation until its dependency-containment, bounded DTO, and
+packaging design is reviewed.
 
 Report security-sensitive findings privately to the repository owner rather than
 including exploit details in a public issue.

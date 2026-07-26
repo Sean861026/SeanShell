@@ -142,6 +142,7 @@ Host creates a protocol-v3 health request + random 256-bit session key
 
 ```text
 User-approved plugin ID
+  -> quarantine history available and plugin not currently quarantined
   -> host repeats bounded catalog and online publisher trust scan
   -> require exact publisher + capability consent
   -> issue package/hash/capability grant for 15 seconds
@@ -150,6 +151,10 @@ User-approved plugin ID
   -> broker rejects traversal, reparse points, missing/oversized DLL
   -> broker recomputes SHA-256 and compares it with the grant
   -> host matches response metadata, request ID, broker PID, and exit code
+  -> success: atomically clear this plugin's broker failure window
+  -> counted failure: atomically increment this plugin's ten-minute window
+  -> third counted failure: quarantine this plugin for thirty minutes
+  -> cancellation/trust failure/missing broker: do not charge the plugin
   -> stop (no Assembly.Load, reflection, activation, or command execution)
 ```
 
