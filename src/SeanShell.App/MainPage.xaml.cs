@@ -57,6 +57,8 @@ public sealed partial class MainPage : Page
 
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
 
+    public event Action<ShellThemePreference>? ThemePreferenceChanged;
+
     public event Action<bool>? AutomaticGamingModeChanged;
 
     public event Action<string>? GameProcessRulesSaved;
@@ -135,6 +137,17 @@ public sealed partial class MainPage : Page
                 ? $"Windows could not register {requested.GetDisplayName()}. Use Open Launcher or choose another shortcut. {reason}"
                 : $"Windows could not register {requested.GetDisplayName()}. {restored.Value.GetDisplayName()} remains active. {reason}",
             InfoBarSeverity.Warning);
+    }
+
+    public void SetThemePreferenceApplied(ShellThemePreference theme, bool persisted)
+    {
+        SelectThemePreference(theme);
+        SetSettingsStatus(
+            persisted ? "Appearance saved" : "Appearance not saved",
+            persisted
+                ? "Restart SeanShell to apply the selected appearance to the dashboard, Launcher, and Dock."
+                : "The appearance could not be saved, so the previous preference remains active.",
+            persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }
 
     public void SetSettingsSaveFailed(string message)
@@ -352,6 +365,19 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private void OnThemePreferenceSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_applyingSettings || ThemePreferenceComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        if (Enum.TryParse<ShellThemePreference>(item.Tag?.ToString(), out var theme))
+        {
+            ThemePreferenceChanged?.Invoke(theme);
+        }
+    }
+
     private void OnShellStateChanged(object? sender, ShellState state)
     {
         ApplyShellState(state);
@@ -510,8 +536,19 @@ public sealed partial class MainPage : Page
         AutomaticGamingModeToggle.IsOn = settings.AutomaticGamingModeEnabled;
         GameProcessRulesTextBox.Text = settings.GameProcessRules;
         SelectShortcut(settings.LauncherShortcut);
+        SelectThemePreference(settings.Theme);
         ShortcutStatus.Text = $"Keyboard shortcut: {settings.LauncherShortcut.GetDisplayName()}";
         _applyingSettings = false;
+    }
+
+    private void SelectThemePreference(ShellThemePreference theme)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        ThemePreferenceComboBox.SelectedItem = ThemePreferenceComboBox.Items
+            .OfType<ComboBoxItem>()
+            .First(item => string.Equals(item.Tag?.ToString(), theme.ToString(), StringComparison.Ordinal));
+        _applyingSettings = wasApplyingSettings;
     }
 
     private void SelectShortcut(LauncherShortcut shortcut)

@@ -94,7 +94,7 @@
         BasedOn="{StaticResource SeanCardStyle}"
         TargetType="Border">
         <Setter Property="Padding" Value="{StaticResource SeanSpace24}" />
-        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
     </Style>
 

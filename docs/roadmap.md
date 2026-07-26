@@ -82,8 +82,11 @@
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
-- [ ] Light, dark, high-contrast, text-scaling, and multi-display visual checks
-- [ ] Compact display density and reduced-effects Gaming Mode
+- [x] Persisted system, light, and dark appearance preference with schema v4 migration
+- [x] Light, dark, keyboard-focus, and two-display visual checks
+- [ ] High-contrast and text-scaling visual checks on representative Windows settings
+- [ ] Compact display density
+- [x] Reduced-effects Gaming Mode removes Mica and pauses background providers
 
 ## Later: shell modes
 
