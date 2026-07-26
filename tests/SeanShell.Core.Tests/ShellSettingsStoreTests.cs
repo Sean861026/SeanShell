@@ -16,6 +16,7 @@ public sealed class ShellSettingsStoreTests
         Assert.IsTrue(result.Settings.DockAutoHide);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
+        Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
         Assert.IsFalse(result.WasRecovered);
         Assert.IsNull(result.Warning);
@@ -31,6 +32,7 @@ public sealed class ShellSettingsStoreTests
             DockAutoHide = false,
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
             Theme = ShellThemePreference.Dark,
+            DisplayDensity = ShellDisplayDensity.Compact,
             AutomaticGamingModeEnabled = true,
             GameProcessRules = "eldenring",
             DisabledPluginIds = "seanshell.developer-tools",
@@ -178,6 +180,30 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
         Assert.AreEqual("seanshell.wsl", result.Settings.DisabledPluginIds);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionFourSettingsWithComfortableDensityByDefault()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 4,
+              "dockAutoHide": true,
+              "launcherShortcut": "altSpace",
+              "theme": "dark"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(ShellSettings.CurrentSchemaVersion, result.Settings.SchemaVersion);
+        Assert.AreEqual(ShellThemePreference.Dark, result.Settings.Theme);
+        Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
     }
 
     private sealed class TemporaryDirectory : IDisposable

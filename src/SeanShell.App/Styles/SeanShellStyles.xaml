@@ -137,6 +137,14 @@
         <Setter Property="Padding" Value="12,10" />
     </Style>
 
+    <Style
+        x:Key="SeanCompactLauncherResultItemStyle"
+        BasedOn="{StaticResource SeanLauncherResultItemStyle}"
+        TargetType="ListViewItem">
+        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
     <Style x:Key="SeanDockItemStyle" TargetType="ListViewItem">
         <Setter Property="MinWidth" Value="136" />
         <Setter Property="MaxWidth" Value="204" />
@@ -144,5 +152,13 @@
         <Setter Property="Margin" Value="0,0,4,0" />
         <Setter Property="Padding" Value="8,6" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style
+        x:Key="SeanCompactDockItemStyle"
+        BasedOn="{StaticResource SeanDockItemStyle}"
+        TargetType="ListViewItem">
+        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="Padding" Value="6,4" />
     </Style>
 </ResourceDictionary>

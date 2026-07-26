@@ -2,7 +2,7 @@ namespace SeanShell.Core;
 
 public sealed record ShellSettings
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -11,6 +11,8 @@ public sealed record ShellSettings
     public LauncherShortcut LauncherShortcut { get; init; } = LauncherShortcut.AltSpace;
 
     public ShellThemePreference Theme { get; init; } = ShellThemePreference.System;
+
+    public ShellDisplayDensity DisplayDensity { get; init; } = ShellDisplayDensity.Comfortable;
 
     public bool AutomaticGamingModeEnabled { get; init; }
 
