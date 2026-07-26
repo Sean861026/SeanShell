@@ -123,17 +123,20 @@ User revokes one candidate or all stored consent
 ## Plugin broker boundary checks
 
 ```text
-Host creates a protocol-v2 health request
+Host creates a protocol-v3 health request + random 256-bit session key
   -> CreateProcessW starts SeanShell.PluginBroker with CREATE_SUSPENDED
-  -> inherit only redirected stdin / stdout / stderr handles
+  -> inherit only stdin / stdout / stderr + private key-pipe handles
   -> assign broker to one-process / 256 MiB / kill-on-close Job Object
+  -> write key through private pipe and close host key handle
   -> ResumeThread only after successful Job assignment
   -> broker applies extension-point, image-load, and child-process mitigations
-  -> write one bounded JSON frame
+  -> broker reads exactly one key and host writes one HMAC-tagged JSON frame
+  -> broker verifies request tag before interpreting operation or grant
   -> broker accepts exact operation "health" without a grant
   -> unknown version/ID/operation: fixed rejection + exit 2
-  -> health: return matching ID and broker PID + exit 0
-  -> host verifies response belongs to the started process
+  -> health: return tagged matching envelope and broker PID + exit 0
+  -> host authenticates response, then verifies envelope/PID/exit code
+  -> both processes clear key buffers; broker handles no second frame
   -> timeout/cancellation/mismatch: close Job Object and fail closed
 ```
 

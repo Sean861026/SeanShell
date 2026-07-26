@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -61,10 +62,17 @@ internal sealed class SuspendedBrokerProcess : IDisposable
 
     public static SuspendedBrokerProcess Start(
         string executablePath,
-        BrokerProcessSandbox sandbox)
+        BrokerProcessSandbox sandbox,
+        ReadOnlySpan<byte> sessionKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         ArgumentNullException.ThrowIfNull(sandbox);
+        if (sessionKey.Length != PluginBroker.Protocol.PluginBrokerAuthentication.SessionKeyBytes)
+        {
+            throw new ArgumentException(
+                "The broker session key has an invalid length.",
+                nameof(sessionKey));
+        }
         if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException(
@@ -75,6 +83,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         PipePair? stdin = null;
         PipePair? stdout = null;
         PipePair? stderr = null;
+        PipePair? sessionKeyPipe = null;
         SafeProcessHandle? nativeProcessHandle = null;
         SafeWaitHandle? primaryThreadHandle = null;
         StreamWriter? input = null;
@@ -87,10 +96,12 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             stdin = CreatePipe(parentReads: false);
             stdout = CreatePipe(parentReads: true);
             stderr = CreatePipe(parentReads: true);
+            sessionKeyPipe = CreatePipe(parentReads: false);
             using var attributes = ProcessThreadAttributeList.Create(
                 stdin.Child,
                 stdout.Child,
-                stderr.Child);
+                stderr.Child,
+                sessionKeyPipe.Child);
             var startupInfo = new StartupInfoEx
             {
                 StartupInfo = new StartupInfo
@@ -103,7 +114,11 @@ internal sealed class SuspendedBrokerProcess : IDisposable
                 },
                 AttributeList = attributes.Handle,
             };
-            var commandLine = new StringBuilder($"\"{fullPath}\"");
+            var inheritedKeyHandle = sessionKeyPipe.Child.DangerousGetHandle()
+                .ToInt64()
+                .ToString(CultureInfo.InvariantCulture);
+            var commandLine = new StringBuilder(
+                $"\"{fullPath}\" --session-key-handle={inheritedKeyHandle}");
             if (!CreateProcess(
                     fullPath,
                     commandLine,
@@ -131,8 +146,10 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             stdin.Child.Dispose();
             stdout.Child.Dispose();
             stderr.Child.Dispose();
+            sessionKeyPipe.Child.Dispose();
 
             sandbox.Assign(nativeProcessHandle);
+            WriteSessionKey(sessionKeyPipe, sessionKey);
             if (ResumeThread(primaryThreadHandle) == ResumeThreadFailed)
             {
                 throw new Win32Exception(
@@ -171,6 +188,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             stdin?.DisposeUnused();
             stdout?.DisposeUnused();
             stderr?.DisposeUnused();
+            sessionKeyPipe?.DisposeUnused();
         }
     }
 
@@ -300,6 +318,17 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         }
     }
 
+    private static void WriteSessionKey(PipePair pipe, ReadOnlySpan<byte> sessionKey)
+    {
+        using var stream = new FileStream(
+            pipe.Parent,
+            FileAccess.Write,
+            bufferSize: PluginBroker.Protocol.PluginBrokerAuthentication.SessionKeyBytes);
+        pipe.MarkParentTransferred();
+        stream.Write(sessionKey);
+        stream.Flush();
+    }
+
     private sealed class PipePair(SafeFileHandle parent, SafeFileHandle child)
     {
         private bool _parentTransferred;
@@ -347,7 +376,8 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         public static ProcessThreadAttributeList Create(
             SafeFileHandle stdin,
             SafeFileHandle stdout,
-            SafeFileHandle stderr)
+            SafeFileHandle stderr,
+            SafeFileHandle sessionKey)
         {
             nuint size = 0;
             _ = InitializeProcThreadAttributeList(
@@ -367,7 +397,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             var initialized = false;
             try
             {
-                handles = Marshal.AllocHGlobal(IntPtr.Size * 3);
+                handles = Marshal.AllocHGlobal(IntPtr.Size * 4);
                 if (!InitializeProcThreadAttributeList(
                         attributes,
                         attributeCount: 1,
@@ -383,12 +413,13 @@ internal sealed class SuspendedBrokerProcess : IDisposable
                 Marshal.WriteIntPtr(handles, 0, stdin.DangerousGetHandle());
                 Marshal.WriteIntPtr(handles, IntPtr.Size, stdout.DangerousGetHandle());
                 Marshal.WriteIntPtr(handles, IntPtr.Size * 2, stderr.DangerousGetHandle());
+                Marshal.WriteIntPtr(handles, IntPtr.Size * 3, sessionKey.DangerousGetHandle());
                 if (!UpdateProcThreadAttribute(
                         attributes,
                         flags: 0,
                         ProcThreadAttributeHandleList,
                         handles,
-                        checked((nuint)(IntPtr.Size * 3)),
+                        checked((nuint)(IntPtr.Size * 4)),
                         IntPtr.Zero,
                         IntPtr.Zero))
                 {

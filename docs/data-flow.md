@@ -141,16 +141,18 @@ host.
 
 ```text
 PluginBrokerClient
-  -> create protocol-v2 health request + random request ID
+  -> create protocol-v3 request + random request/session IDs, nonce, session key
   -> CreateProcessW exact broker path + CREATE_SUSPENDED
-  -> STARTUPINFOEX inherits only stdin / stdout / stderr pipe handles
+  -> STARTUPINFOEX inherits stdin / stdout / stderr + private key pipe only
   -> assign PID to one-process / 256 MiB / kill-on-close Windows Job Object
+  -> write exactly 32 key bytes and close the host key-pipe end
   -> ResumeThread after successful assignment
   -> broker disables legacy extension points, unsafe image sources, and children
-  -> send one bounded JSON frame and close stdin
-  -> broker validates frame size, version, request ID, and exact operation
-  -> broker returns its PID + matching request ID, then exits
-  -> host validates response, process ID, exit code, and two-second deadline
+  -> send one HMAC-tagged bounded JSON frame and close stdin
+  -> broker authenticates before validating version, request ID, and operation
+  -> broker signs matching envelope + PID, then exits
+  -> host authenticates before checking envelope, PID, exit, and deadline
+  -> host and broker zero their key buffers
   -> any mismatch/failure: close the Job Object and fail closed
 ```
 
@@ -168,7 +170,7 @@ External plugin ID
   -> exact host response correlation
 ```
 
-Protocol v2 uses paths only inside the one-shot metadata probe. It carries no
+Protocol v3 uses paths only inside the one-shot metadata probe. It carries no
 file content, persisted consent document, type, method, launcher query, or
 activation operation. No response returns a local path and nothing connects the
 probe to `PluginHost`. No broker instruction or runtime initialization executes

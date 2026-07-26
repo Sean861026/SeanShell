@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using SeanShell.PluginBroker.Protocol;
 
 namespace SeanShell.Plugins;
@@ -70,48 +71,85 @@ public sealed class PluginBrokerClient
                 _brokerExecutablePath);
         }
 
-        using var timeoutCancellation = new CancellationTokenSource(_timeout);
-        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            timeoutCancellation.Token);
-        using var sandbox = BrokerProcessSandbox.Create();
-        using var process = SuspendedBrokerProcess.Start(_brokerExecutablePath, sandbox);
+        var sessionKey = PluginBrokerAuthentication.CreateSessionKey();
 
         try
         {
-            await process.Input.WriteLineAsync(PluginBrokerProtocol.Serialize(request))
-                .ConfigureAwait(false);
-            process.Input.Close();
-            var frameTask = PluginBrokerProtocol.ReadFrameAsync(
-                process.Output,
-                linkedCancellation.Token);
-            var frame = await frameTask.WaitAsync(linkedCancellation.Token)
-                .ConfigureAwait(false);
-            var response = PluginBrokerProtocol.DeserializeResponse(frame);
-            await process.WaitForExitAsync(linkedCancellation.Token).ConfigureAwait(false);
+            var authenticatedRequest = PluginBrokerAuthentication.SignRequest(
+                request with
+                {
+                    SessionId = PluginBrokerAuthentication.CreateSessionId(),
+                    Nonce = PluginBrokerAuthentication.CreateNonce(),
+                },
+                sessionKey);
+            using var timeoutCancellation = new CancellationTokenSource(_timeout);
+            using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                timeoutCancellation.Token);
+            using var sandbox = BrokerProcessSandbox.Create();
+            using var process = SuspendedBrokerProcess.Start(
+                _brokerExecutablePath,
+                sandbox,
+                sessionKey);
 
-            if (process.ExitCode != 0 ||
-                !response.Accepted ||
-                response.ProtocolVersion != PluginBrokerProtocol.CurrentVersion ||
-                !string.Equals(response.RequestId, request.RequestId, StringComparison.Ordinal) ||
-                response.BrokerProcessId != process.Id)
+            try
             {
-                throw new InvalidDataException(
-                    $"The plugin broker request was rejected. {response.Status}");
-            }
+                await process.Input.WriteLineAsync(
+                    PluginBrokerProtocol.Serialize(authenticatedRequest))
+                    .ConfigureAwait(false);
+                process.Input.Close();
+                var frameTask = PluginBrokerProtocol.ReadFrameAsync(
+                    process.Output,
+                    linkedCancellation.Token);
+                var frame = await frameTask.WaitAsync(linkedCancellation.Token)
+                    .ConfigureAwait(false);
+                var response = PluginBrokerProtocol.DeserializeResponse(frame);
+                await process.WaitForExitAsync(linkedCancellation.Token).ConfigureAwait(false);
 
-            return response;
-        }
-        catch (OperationCanceledException) when (
-            timeoutCancellation.IsCancellationRequested &&
-            !cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException(
-                $"The plugin broker did not respond within {_timeout.TotalMilliseconds:F0} ms.");
+                if (!PluginBrokerAuthentication.VerifyResponse(response, sessionKey))
+                {
+                    throw new InvalidDataException(
+                        "The plugin broker returned an unauthenticated response.");
+                }
+
+                if (process.ExitCode != 0 ||
+                    !response.Accepted ||
+                    response.ProtocolVersion != PluginBrokerProtocol.CurrentVersion ||
+                    !string.Equals(
+                        response.RequestId,
+                        authenticatedRequest.RequestId,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        response.SessionId,
+                        authenticatedRequest.SessionId,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        response.Nonce,
+                        authenticatedRequest.Nonce,
+                        StringComparison.Ordinal) ||
+                    response.BrokerProcessId != process.Id)
+                {
+                    throw new InvalidDataException(
+                        $"The plugin broker request was rejected. {response.Status}");
+                }
+
+                return response;
+            }
+            catch (OperationCanceledException) when (
+                timeoutCancellation.IsCancellationRequested &&
+                !cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException(
+                    $"The plugin broker did not respond within {_timeout.TotalMilliseconds:F0} ms.");
+            }
+            finally
+            {
+                process.Terminate();
+            }
         }
         finally
         {
-            process.Terminate();
+            CryptographicOperations.ZeroMemory(sessionKey);
         }
     }
 }

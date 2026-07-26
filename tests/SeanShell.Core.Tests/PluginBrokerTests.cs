@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using SeanShell.PluginBroker.Protocol;
 using SeanShell.Plugins;
 
@@ -7,6 +6,11 @@ namespace SeanShell.Core.Tests;
 [TestClass]
 public sealed class PluginBrokerTests
 {
+    private static readonly byte[] SessionKey =
+        Enumerable.Range(1, PluginBrokerAuthentication.SessionKeyBytes)
+            .Select(static value => checked((byte)value))
+            .ToArray();
+
     [TestMethod]
     public async Task SessionAcceptsOnlyVersionedHealthHandshake()
     {
@@ -14,15 +18,92 @@ public sealed class PluginBrokerTests
             PluginBrokerProtocol.CurrentVersion,
             PluginBrokerProtocol.CreateRequestId(),
             PluginBrokerProtocol.HealthOperation);
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
-        var response = await PluginBrokerSession.RunAsync(input, output, processId: 123);
+        var response = await PluginBrokerSession.RunAsync(
+            input, output, processId: 123, SessionKey);
 
         Assert.IsTrue(response.Accepted);
         Assert.AreEqual(request.RequestId, response.RequestId);
         Assert.AreEqual(123, response.BrokerProcessId);
+        Assert.IsTrue(PluginBrokerAuthentication.VerifyResponse(response, SessionKey));
         StringAssert.Contains(response.Status, "activation is disabled");
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsRequestWithTamperedAuthenticatedPayload()
+    {
+        var request = Authenticate(new PluginBrokerRequest(
+            PluginBrokerProtocol.CurrentVersion,
+            PluginBrokerProtocol.CreateRequestId(),
+            PluginBrokerProtocol.HealthOperation));
+        request = request with { Operation = "activate" };
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input, output, processId: 123, SessionKey);
+
+        Assert.IsFalse(response.Accepted);
+        Assert.IsTrue(PluginBrokerAuthentication.VerifyResponse(response, SessionKey));
+        StringAssert.Contains(response.Status, "authentication failed");
+    }
+
+    [TestMethod]
+    public async Task RequestFromPreviousSessionIsRejectedByNewSessionKey()
+    {
+        var request = Authenticate(new PluginBrokerRequest(
+            PluginBrokerProtocol.CurrentVersion,
+            PluginBrokerProtocol.CreateRequestId(),
+            PluginBrokerProtocol.HealthOperation));
+        var nextSessionKey = PluginBrokerAuthentication.CreateSessionKey();
+        try
+        {
+            using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+            using var output = new StringWriter();
+
+            var response = await PluginBrokerSession.RunAsync(
+                input, output, processId: 123, nextSessionKey);
+
+            Assert.IsFalse(response.Accepted);
+            Assert.IsTrue(
+                PluginBrokerAuthentication.VerifyResponse(response, nextSessionKey));
+            StringAssert.Contains(response.Status, "authentication failed");
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(nextSessionKey);
+        }
+    }
+
+    [TestMethod]
+    public void ResponseAuthenticationRejectsTamperingAndWrongKey()
+    {
+        var response = PluginBrokerAuthentication.SignResponse(
+            new PluginBrokerResponse(
+                PluginBrokerProtocol.CurrentVersion,
+                PluginBrokerProtocol.CreateRequestId(),
+                true,
+                "ok",
+                123,
+                SessionId: PluginBrokerAuthentication.CreateSessionId(),
+                Nonce: PluginBrokerAuthentication.CreateNonce()),
+            SessionKey);
+        var wrongKey = PluginBrokerAuthentication.CreateSessionKey();
+        try
+        {
+            Assert.IsFalse(
+                PluginBrokerAuthentication.VerifyResponse(
+                    response with { BrokerProcessId = 456 },
+                    SessionKey));
+            Assert.IsFalse(PluginBrokerAuthentication.VerifyResponse(response, wrongKey));
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(wrongKey);
+        }
     }
 
     [TestMethod]
@@ -32,10 +113,12 @@ public sealed class PluginBrokerTests
             PluginBrokerProtocol.CurrentVersion,
             PluginBrokerProtocol.CreateRequestId(),
             "activate");
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
-        var response = await PluginBrokerSession.RunAsync(input, output, processId: 123);
+        var response = await PluginBrokerSession.RunAsync(
+            input, output, processId: 123, SessionKey);
 
         Assert.IsFalse(response.Accepted);
         StringAssert.Contains(response.Status, "not enabled");
@@ -47,6 +130,7 @@ public sealed class PluginBrokerTests
         using var package = new TemporaryBrokerPackage();
         var now = DateTimeOffset.UtcNow;
         var request = CreateProbeRequest(package, now);
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
@@ -54,6 +138,7 @@ public sealed class PluginBrokerTests
             input,
             output,
             processId: 123,
+            SessionKey,
             currentTimeUtc: now);
 
         Assert.IsTrue(response.Accepted);
@@ -76,6 +161,7 @@ public sealed class PluginBrokerTests
                 ExpiresAtUtc = issuedAt + TimeSpan.FromSeconds(15),
             },
         };
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
@@ -83,6 +169,7 @@ public sealed class PluginBrokerTests
             input,
             output,
             processId: 123,
+            SessionKey,
             currentTimeUtc: DateTimeOffset.UtcNow);
 
         Assert.IsFalse(response.Accepted);
@@ -96,6 +183,7 @@ public sealed class PluginBrokerTests
         var now = DateTimeOffset.UtcNow;
         var request = CreateProbeRequest(package, now);
         await File.AppendAllTextAsync(package.AssemblyPath, "changed");
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
@@ -103,6 +191,7 @@ public sealed class PluginBrokerTests
             input,
             output,
             processId: 123,
+            SessionKey,
             currentTimeUtc: now);
 
         Assert.IsFalse(response.Accepted);
@@ -116,7 +205,8 @@ public sealed class PluginBrokerTests
             new string('x', PluginBrokerProtocol.MaximumFrameCharacters + 1));
         using var output = new StringWriter();
 
-        var response = await PluginBrokerSession.RunAsync(input, output, processId: 123);
+        var response = await PluginBrokerSession.RunAsync(
+            input, output, processId: 123, SessionKey);
 
         Assert.IsFalse(response.Accepted);
         Assert.AreEqual("Rejected malformed or unsafe request.", response.Status);
@@ -155,7 +245,8 @@ public sealed class PluginBrokerTests
         using var sandbox = BrokerProcessSandbox.Create();
         using var process = SuspendedBrokerProcess.Start(
             FindBrokerExecutable(),
-            sandbox);
+            sandbox,
+            SessionKey);
         try
         {
             sandbox.Dispose();
@@ -178,10 +269,11 @@ public sealed class PluginBrokerTests
     {
         var requestId = PluginBrokerProtocol.CreateRequestId();
         using var input = new StringReader(
-            $$"""{"protocolVersion":2,"requestId":"{{requestId}}","operation":"health","unexpected":true}""");
+            $$"""{"protocolVersion":3,"requestId":"{{requestId}}","operation":"health","unexpected":true}""");
         using var output = new StringWriter();
 
-        var response = await PluginBrokerSession.RunAsync(input, output, processId: 123);
+        var response = await PluginBrokerSession.RunAsync(
+            input, output, processId: 123, SessionKey);
 
         Assert.IsFalse(response.Accepted);
         Assert.AreEqual("Rejected malformed or unsafe request.", response.Status);
@@ -197,6 +289,7 @@ public sealed class PluginBrokerTests
         {
             Grant = original.Grant! with { GrantedCapabilities = 4 },
         };
+        request = Authenticate(request);
         using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
         using var output = new StringWriter();
 
@@ -204,6 +297,7 @@ public sealed class PluginBrokerTests
             input,
             output,
             processId: 123,
+            SessionKey,
             currentTimeUtc: now);
 
         Assert.IsFalse(response.Accepted);
@@ -226,6 +320,7 @@ public sealed class PluginBrokerTests
             {
                 Grant = original.Grant! with { EntryAssemblyPath = outsidePath },
             };
+            request = Authenticate(request);
             using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
             using var output = new StringWriter();
 
@@ -233,6 +328,7 @@ public sealed class PluginBrokerTests
                 input,
                 output,
                 processId: 123,
+                SessionKey,
                 currentTimeUtc: now);
 
             Assert.IsFalse(response.Accepted);
@@ -289,36 +385,45 @@ public sealed class PluginBrokerTests
     private static async Task<(int ExitCode, PluginBrokerResponse Response)> RunBrokerAsync(
         PluginBrokerRequest request)
     {
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo(FindBrokerExecutable())
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-            },
-        };
-        Assert.IsTrue(process.Start());
+        var sessionKey = PluginBrokerAuthentication.CreateSessionKey();
+        using var sandbox = BrokerProcessSandbox.Create();
+        using var process = SuspendedBrokerProcess.Start(
+            FindBrokerExecutable(),
+            sandbox,
+            sessionKey);
         try
         {
-            await process.StandardInput.WriteLineAsync(PluginBrokerProtocol.Serialize(request));
-            process.StandardInput.Close();
+            request = PluginBrokerAuthentication.SignRequest(
+                request with
+                {
+                    SessionId = PluginBrokerAuthentication.CreateSessionId(),
+                    Nonce = PluginBrokerAuthentication.CreateNonce(),
+                },
+                sessionKey);
+            await process.Input.WriteLineAsync(PluginBrokerProtocol.Serialize(request));
+            process.Input.Close();
             using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             var frame = await PluginBrokerProtocol.ReadFrameAsync(
-                process.StandardOutput,
+                process.Output,
                 cancellation.Token);
             await process.WaitForExitAsync(cancellation.Token);
             return (process.ExitCode, PluginBrokerProtocol.DeserializeResponse(frame));
         }
         finally
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
+            process.Terminate();
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(sessionKey);
         }
     }
+
+    private static PluginBrokerRequest Authenticate(PluginBrokerRequest request) =>
+        PluginBrokerAuthentication.SignRequest(
+            request with
+            {
+                SessionId = PluginBrokerAuthentication.CreateSessionId(),
+                Nonce = PluginBrokerAuthentication.CreateNonce(),
+            },
+            SessionKey);
 
     private static PluginBrokerRequest CreateProbeRequest(
         TemporaryBrokerPackage package,
