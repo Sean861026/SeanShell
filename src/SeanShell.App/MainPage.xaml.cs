@@ -35,6 +35,7 @@ public sealed partial class MainPage : Page
         _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
         _displayCount = app.Displays.Capture().Count;
+        ApplyDisplayDensity(app.SettingsLoad.Settings.DisplayDensity);
 
         _refreshTimer = DispatcherQueue.CreateTimer();
         _refreshTimer.Interval = TimeSpan.FromSeconds(2);
@@ -58,6 +59,8 @@ public sealed partial class MainPage : Page
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
 
     public event Action<ShellThemePreference>? ThemePreferenceChanged;
+
+    public event Action<ShellDisplayDensity>? DisplayDensityChanged;
 
     public event Action<bool>? AutomaticGamingModeChanged;
 
@@ -147,6 +150,17 @@ public sealed partial class MainPage : Page
             persisted
                 ? "Restart SeanShell to apply the selected appearance to the dashboard, Launcher, and Dock."
                 : "The appearance could not be saved, so the previous preference remains active.",
+            persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+    }
+
+    public void SetDisplayDensityApplied(ShellDisplayDensity density, bool persisted)
+    {
+        SelectDisplayDensity(density);
+        SetSettingsStatus(
+            persisted ? "Display density saved" : "Display density not saved",
+            persisted
+                ? "Restart SeanShell to apply the selected spacing to the dashboard, Launcher, and Dock."
+                : "The display density could not be saved, so the previous preference remains active.",
             persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }
 
@@ -378,6 +392,19 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private void OnDisplayDensitySelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_applyingSettings || DisplayDensityComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        if (Enum.TryParse<ShellDisplayDensity>(item.Tag?.ToString(), out var density))
+        {
+            DisplayDensityChanged?.Invoke(density);
+        }
+    }
+
     private void OnShellStateChanged(object? sender, ShellState state)
     {
         ApplyShellState(state);
@@ -537,8 +564,39 @@ public sealed partial class MainPage : Page
         GameProcessRulesTextBox.Text = settings.GameProcessRules;
         SelectShortcut(settings.LauncherShortcut);
         SelectThemePreference(settings.Theme);
+        SelectDisplayDensity(settings.DisplayDensity);
         ShortcutStatus.Text = $"Keyboard shortcut: {settings.LauncherShortcut.GetDisplayName()}";
         _applyingSettings = false;
+    }
+
+    private void ApplyDisplayDensity(ShellDisplayDensity density)
+    {
+        if (density != ShellDisplayDensity.Compact)
+        {
+            return;
+        }
+
+        DashboardRoot.Padding = new Thickness(20);
+        DashboardSections.Spacing = 20;
+        HeroCard.Padding = new Thickness(16);
+        MetricsGrid.ColumnSpacing = 8;
+        MetricsGrid.RowSpacing = 8;
+        WorkspaceGrid.ColumnSpacing = 12;
+        WorkspaceGrid.RowSpacing = 12;
+        ConfigurationGrid.ColumnSpacing = 12;
+        ConfigurationGrid.RowSpacing = 12;
+        PluginCard.Padding = new Thickness(16);
+        GamingModeCard.Padding = new Thickness(16);
+    }
+
+    private void SelectDisplayDensity(ShellDisplayDensity density)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        DisplayDensityComboBox.SelectedItem = DisplayDensityComboBox.Items
+            .OfType<ComboBoxItem>()
+            .First(item => string.Equals(item.Tag?.ToString(), density.ToString(), StringComparison.Ordinal));
+        _applyingSettings = wasApplyingSettings;
     }
 
     private void SelectThemePreference(ShellThemePreference theme)

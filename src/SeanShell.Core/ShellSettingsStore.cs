@@ -157,6 +157,11 @@ public sealed class ShellSettingsStore
                 throw new InvalidDataException("The shell theme preference is not supported.");
             }
 
+            if (!Enum.IsDefined(settings.DisplayDensity))
+            {
+                throw new InvalidDataException("The shell display density is not supported.");
+            }
+
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)

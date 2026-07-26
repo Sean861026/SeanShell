@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
             mainPage.ThemePreferenceChanged += OnThemePreferenceChanged;
+            mainPage.DisplayDensityChanged += OnDisplayDensityChanged;
             mainPage.AutomaticGamingModeChanged += OnAutomaticGamingModeChanged;
             mainPage.GameProcessRulesSaved += OnGameProcessRulesSaved;
             mainPage.ManualGamingModeChanged += OnManualGamingModeChanged;
@@ -267,6 +268,24 @@ public sealed partial class MainWindow : Window
         if (RootFrame.Content is MainPage mainPage)
         {
             mainPage.SetThemePreferenceApplied(persisted ? theme : previousSettings.Theme, persisted);
+        }
+    }
+
+    private void OnDisplayDensityChanged(ShellDisplayDensity density)
+    {
+        var previousSettings = _settings;
+        _settings = _settings with { DisplayDensity = density };
+        var persisted = PersistSettings();
+        if (!persisted)
+        {
+            _settings = previousSettings;
+        }
+
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetDisplayDensityApplied(
+                persisted ? density : previousSettings.DisplayDensity,
+                persisted);
         }
     }
 

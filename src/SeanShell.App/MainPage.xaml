@@ -21,8 +21,8 @@
                 Padding="{StaticResource SeanPagePadding}"
                 HorizontalAlignment="Center">
 
-                <StackPanel Spacing="{StaticResource SeanSpace32}">
-                <Border Style="{StaticResource SeanHeroCardStyle}">
+                <StackPanel x:Name="DashboardSections" Spacing="{StaticResource SeanSpace32}">
+                <Border x:Name="HeroCard" Style="{StaticResource SeanHeroCardStyle}">
                     <Grid
                         ColumnSpacing="{StaticResource SeanSpace24}"
                         RowSpacing="{StaticResource SeanSpace20}">
@@ -397,6 +397,23 @@
                                     Style="{StaticResource SeanSecondaryTextStyle}"
                                     Text="The selected appearance is applied after SeanShell restarts. High contrast always follows Windows."
                                     TextWrapping="Wrap" />
+
+                                <ComboBox
+                                    x:Name="DisplayDensityComboBox"
+                                    MinWidth="260"
+                                    MaxWidth="360"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.HelpText="Choose comfortable or compact spacing for SeanShell."
+                                    Header="Display density"
+                                    SelectionChanged="OnDisplayDensitySelectionChanged">
+                                    <ComboBoxItem Content="Comfortable" Tag="Comfortable" />
+                                    <ComboBoxItem Content="Compact" Tag="Compact" />
+                                </ComboBox>
+
+                                <TextBlock
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Density changes after SeanShell restarts. Compact mode keeps interactive controls at least 44 pixels tall."
+                                    TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 
@@ -481,7 +498,7 @@
                     </Grid>
                 </StackPanel>
 
-                <Border Style="{StaticResource SeanCardStyle}">
+                <Border x:Name="GamingModeCard" Style="{StaticResource SeanCardStyle}">
                     <StackPanel Spacing="{StaticResource SeanSpace12}">
                         <Grid ColumnSpacing="{StaticResource SeanSpace12}">
                             <Grid.ColumnDefinitions>

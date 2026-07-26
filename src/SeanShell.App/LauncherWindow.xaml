@@ -22,7 +22,7 @@
             x:Name="LauncherTitleBar"
             Title="SeanShell · Command palette" />
 
-        <Grid Grid.Row="1" Padding="24,12,24,20" RowSpacing="{StaticResource SeanSpace12}">
+        <Grid x:Name="LauncherContent" Grid.Row="1" Padding="24,12,24,20" RowSpacing="{StaticResource SeanSpace12}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />

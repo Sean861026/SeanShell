@@ -16,10 +16,12 @@ public sealed partial class DockWindow : Window
     private const int DockHeight = 92;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
+    private const int CompactDockHeight = 88;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
     private readonly DispatcherQueueTimer _autoHideTimer;
+    private readonly bool _compactDensity;
     private bool _allowClose;
     private bool _autoHide = true;
     private bool _collapsed;
@@ -36,6 +38,9 @@ public sealed partial class DockWindow : Window
         _monitor = monitor;
         InitializeComponent();
 
+        var density = ((App)Application.Current).SettingsLoad.Settings.DisplayDensity;
+        _compactDensity = density == ShellDisplayDensity.Compact;
+        ApplyDisplayDensity(density);
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ConfigurePresenter();
@@ -50,6 +55,18 @@ public sealed partial class DockWindow : Window
     }
 
     public ObservableCollection<DockItemViewModel> Items { get; } = [];
+
+    private void ApplyDisplayDensity(ShellDisplayDensity density)
+    {
+        if (density != ShellDisplayDensity.Compact)
+        {
+            return;
+        }
+
+        ExpandedDock.Padding = new Thickness(4);
+        WindowList.ItemContainerStyle =
+            (Style)Application.Current.Resources["SeanCompactDockItemStyle"];
+    }
 
     public void ShowDock()
     {
@@ -100,7 +117,7 @@ public sealed partial class DockWindow : Window
         var bounds = DockPlacement.Calculate(
             _monitor,
             DockWidth,
-            DockHeight,
+            _compactDensity ? CompactDockHeight : DockHeight,
             collapsed,
             PeekWidth,
             PeekHeight);

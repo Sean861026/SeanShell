@@ -85,7 +85,7 @@
 - [x] Persisted system, light, and dark appearance preference with schema v4 migration
 - [x] Light, dark, keyboard-focus, and two-display visual checks
 - [ ] High-contrast and text-scaling visual checks on representative Windows settings
-- [ ] Compact display density
+- [x] Persisted comfortable and compact display density with schema v5 migration
 - [x] Reduced-effects Gaming Mode removes Mica and pauses background providers
 
 ## Later: shell modes

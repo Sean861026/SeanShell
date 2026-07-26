@@ -29,6 +29,7 @@ public sealed partial class LauncherWindow : Window
         _performanceMonitor = performanceMonitor;
         InitializeComponent();
 
+        ApplyDisplayDensity(((App)Application.Current).SettingsLoad.Settings.DisplayDensity);
         ResultsList.ItemsSource = Results;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(LauncherTitleBar);
@@ -39,6 +40,19 @@ public sealed partial class LauncherWindow : Window
     }
 
     public ObservableCollection<LauncherResultViewModel> Results { get; } = [];
+
+    private void ApplyDisplayDensity(ShellDisplayDensity density)
+    {
+        if (density != ShellDisplayDensity.Compact)
+        {
+            return;
+        }
+
+        LauncherContent.Padding = new Thickness(16, 8, 16, 12);
+        LauncherContent.RowSpacing = 8;
+        ResultsList.ItemContainerStyle =
+            (Style)Application.Current.Resources["SeanCompactLauncherResultItemStyle"];
+    }
 
     public async Task ShowLauncherAsync()
     {
