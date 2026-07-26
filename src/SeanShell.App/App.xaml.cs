@@ -45,6 +45,8 @@ public partial class App : Application
 
     public PluginHost PluginHost { get; }
 
+    public ExternalPluginCatalog ExternalPlugins { get; }
+
     public ShellSettingsStore SettingsStore { get; }
 
     public SettingsLoadResult SettingsLoad { get; }
@@ -85,6 +87,10 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
             "gaming-sessions.json");
+        var externalPluginPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "plugins");
         _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
@@ -117,6 +123,9 @@ public partial class App : Application
             new PluginRegistration(WslPlugin.Manifest, new WslPlugin()),
         ],
         disabledPluginIds: PluginIdList.Parse(SettingsLoad.Settings.DisabledPluginIds));
+        ExternalPlugins = new ExternalPluginCatalog(
+            externalPluginPath,
+            new WindowsAuthenticodeVerifier());
 
         LauncherSearch = new LauncherSearchService(
         [
