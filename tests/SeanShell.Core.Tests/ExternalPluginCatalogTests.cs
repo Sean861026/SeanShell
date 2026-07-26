@@ -12,7 +12,7 @@ public sealed class ExternalPluginCatalogTests
     public async Task ScanAsync_MissingRoot_ReturnsEmpty()
     {
         var root = GetUnusedPath();
-        var catalog = new ExternalPluginCatalog(root, new FakeVerifier(true, PublisherHash));
+        var catalog = new ExternalPluginCatalog(root, new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash));
 
         var candidates = await catalog.ScanAsync();
 
@@ -26,7 +26,7 @@ public sealed class ExternalPluginCatalogTests
         try
         {
             CreatePackage(root, "trusted", "seanshell.sample", "Sample.dll", PublisherHash);
-            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(true, PublisherHash));
+            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash));
 
             var candidates = await catalog.ScanAsync();
             Assert.HasCount(1, candidates);
@@ -50,7 +50,7 @@ public sealed class ExternalPluginCatalogTests
         try
         {
             CreatePackage(root, "unsigned", "seanshell.unsigned", "Unsigned.dll", PublisherHash);
-            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(false, null));
+            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(AuthenticodeTrustStatus.Unsigned, null));
 
             var candidates = await catalog.ScanAsync();
             Assert.HasCount(1, candidates);
@@ -70,7 +70,7 @@ public sealed class ExternalPluginCatalogTests
         var root = CreateTemporaryDirectory();
         try
         {
-            var verifier = new FakeVerifier(true, PublisherHash);
+            var verifier = new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash);
             CreatePackage(root, "traversal", "seanshell.traversal", @"..\Outside.dll", PublisherHash);
             File.WriteAllBytes(Path.Combine(root, "Outside.dll"), [1, 2, 3]);
             var catalog = new ExternalPluginCatalog(root, verifier);
@@ -96,7 +96,7 @@ public sealed class ExternalPluginCatalogTests
         {
             CreatePackage(root, "mismatch", "seanshell.mismatch", "Mismatch.dll", PublisherHash);
             var unexpectedHash = new string('A', 64);
-            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(true, unexpectedHash));
+            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(AuthenticodeTrustStatus.Trusted, unexpectedHash));
 
             var candidates = await catalog.ScanAsync();
             Assert.HasCount(1, candidates);
@@ -118,7 +118,7 @@ public sealed class ExternalPluginCatalogTests
         {
             CreatePackage(root, "first", "seanshell.duplicate", "First.dll", PublisherHash);
             CreatePackage(root, "second", "seanshell.duplicate", "Second.dll", PublisherHash);
-            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(true, PublisherHash));
+            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash));
 
             var candidates = await catalog.ScanAsync();
 
@@ -189,14 +189,47 @@ public sealed class ExternalPluginCatalogTests
         }
     }
 
-    private sealed class FakeVerifier(bool trusted, string? signerHash) : IAuthenticodeVerifier
+    [TestMethod]
+    [DataRow(AuthenticodeTrustStatus.Revoked, ExternalPluginCandidateStatus.RevokedSignature)]
+    [DataRow(AuthenticodeTrustStatus.RevocationUnavailable, ExternalPluginCandidateStatus.RevocationUnavailable)]
+    [DataRow(AuthenticodeTrustStatus.Expired, ExternalPluginCandidateStatus.ExpiredSignature)]
+    [DataRow(AuthenticodeTrustStatus.ExplicitlyDistrusted, ExternalPluginCandidateStatus.ExplicitlyDistrusted)]
+    [DataRow(AuthenticodeTrustStatus.Untrusted, ExternalPluginCandidateStatus.UntrustedSignature)]
+    public async Task ScanAsync_UntrustedPublisherState_IsDiagnosedAndBlocked(
+        AuthenticodeTrustStatus trustStatus,
+        ExternalPluginCandidateStatus expectedStatus)
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "blocked", "seanshell.blocked", "Blocked.dll", PublisherHash);
+            var catalog = new ExternalPluginCatalog(root, new FakeVerifier(trustStatus, PublisherHash));
+
+            var candidates = await catalog.ScanAsync();
+            Assert.HasCount(1, candidates);
+            var candidate = candidates[0];
+
+            Assert.AreEqual(expectedStatus, candidate.Status);
+            Assert.IsNotNull(candidate.TrustVerifiedAtUtc);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    private sealed class FakeVerifier(AuthenticodeTrustStatus status, string? signerHash) : IAuthenticodeVerifier
     {
         public int CallCount { get; private set; }
 
         public AuthenticodeVerificationResult Verify(string filePath)
         {
             CallCount++;
-            return new AuthenticodeVerificationResult(trusted, "Fake trust result.", signerHash);
+            return new AuthenticodeVerificationResult(
+                status,
+                "Fake trust result.",
+                signerHash,
+                DateTimeOffset.UtcNow);
         }
     }
 }

@@ -105,6 +105,14 @@ computes its SHA-256 content hash, asks Windows to validate its Authenticode tru
 chain and revocation status, then compares the signer's SHA-256 certificate
 fingerprint with the manifest. Duplicate IDs are rejected.
 
+Revocation checking covers the complete certificate chain except the root and may
+retrieve current revocation data from the network. Results are reported
+separately as trusted, unsigned, revoked, revocation unavailable, expired,
+explicitly distrusted, or otherwise untrusted. Revocation unavailable is not a
+soft success: the candidate remains ineligible for consent until a later recheck
+can confirm trust. The dashboard records the verification time in the current
+diagnostic snapshot and provides an explicit **Recheck trust** action.
+
 Passing these checks makes the package eligible for explicit consent. The
 dashboard confirmation shows the package name, publisher, signer certificate
 SHA-256 fingerprint, and exact requested capabilities. A schema-1 decision is
@@ -121,11 +129,12 @@ including approvals whose package directory no longer exists. Writes are atomic,
 retain a `.bak`, and recover safely; an unreadable document means no approvals.
 
 Consent does not call `Assembly.Load`, instantiate a type, register a command, or
-pass the candidate to `PluginHost`. Third-party loading remains blocked until
-publisher revocation policy and stronger out-of-process crash isolation are
-implemented. The current built-in Enabled switch remains separate from external
-consent. A future loader must revalidate the exact file immediately before
-brokered execution rather than trusting an earlier diagnostic snapshot.
+pass the candidate to `PluginHost`. Third-party loading remains blocked until the
+broker implements capability-restricted activation and stronger out-of-process
+crash isolation. The current built-in Enabled switch remains separate from
+external consent. A future loader must revalidate the exact file and online
+revocation state immediately before every brokered activation rather than
+trusting an earlier diagnostic snapshot.
 
 The separate `SeanShell.PluginBroker` process currently implements only the
 version-1 health handshake described in

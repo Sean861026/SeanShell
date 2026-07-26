@@ -68,7 +68,8 @@
 - [x] Bounded external manifest, path, hash, and Authenticode candidate diagnostics
 - [x] Atomic per-publisher and per-capability consent with user revocation
 - [x] Versioned, bounded, fail-closed out-of-process broker health handshake
-- [ ] Publisher revocation policy and out-of-process isolation
+- [x] Fail-closed publisher revocation diagnostics and explicit trust recheck
+- [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [x] Built-in read-only Git repository plugin

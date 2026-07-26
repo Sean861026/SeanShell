@@ -22,13 +22,19 @@ public sealed class ExternalPluginCandidateViewModel
             {
                 ExternalPluginCandidateStatus.ReadyForConsent => "Trust checks passed",
                 ExternalPluginCandidateStatus.Unsigned => "Unsigned",
+                ExternalPluginCandidateStatus.RevokedSignature => "Publisher revoked",
+                ExternalPluginCandidateStatus.RevocationUnavailable => "Revocation unavailable",
+                ExternalPluginCandidateStatus.ExpiredSignature => "Certificate expired",
+                ExternalPluginCandidateStatus.ExplicitlyDistrusted => "Publisher distrusted",
                 ExternalPluginCandidateStatus.UntrustedSignature => "Untrusted signature",
                 ExternalPluginCandidateStatus.PublisherMismatch => "Publisher mismatch",
                 ExternalPluginCandidateStatus.UnsafePath => "Unsafe path",
                 ExternalPluginCandidateStatus.MissingAssembly => "Assembly missing",
                 _ => "Invalid manifest",
             };
-        Detail = candidate.Detail;
+        Detail = candidate.TrustVerifiedAtUtc is { } verifiedAtUtc
+            ? $"{candidate.Detail} Checked {verifiedAtUtc.ToLocalTime():g}."
+            : candidate.Detail;
         CapabilityText = FormatCapabilities(candidate.Capabilities);
         ActionText = isApproved ? "Revoke consent" : "Approve capabilities";
         ActionVisibility = candidate.Status == ExternalPluginCandidateStatus.ReadyForConsent

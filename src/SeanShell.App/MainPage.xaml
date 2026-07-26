@@ -495,15 +495,31 @@
                                             Height="1"
                                             Margin="0,4"
                                             Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                                        <StackPanel Spacing="{StaticResource SeanSpace4}">
-                                            <TextBlock FontWeight="SemiBold" Text="External plugin candidates" />
+                                        <StackPanel Spacing="{StaticResource SeanSpace8}">
+                                            <Grid ColumnSpacing="{StaticResource SeanSpace12}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    FontWeight="SemiBold"
+                                                    Text="External plugin candidates" />
+                                                <Button
+                                                    x:Name="RefreshExternalPluginsButton"
+                                                    Grid.Column="1"
+                                                    MinHeight="40"
+                                                    AutomationProperties.Name="Recheck external plugin trust"
+                                                    Click="OnRefreshExternalPluginsClicked"
+                                                    Content="Recheck trust" />
+                                            </Grid>
                                             <TextBlock
                                                 x:Name="ExternalPluginStatusSummary"
                                                 Style="{StaticResource SeanSecondaryTextStyle}"
                                                 Text="Scanning bounded package directory" />
                                             <TextBlock
                                                 Style="{StaticResource SeanCaptionTextStyle}"
-                                                Text="Diagnostic only: SeanShell never loads or executes these assemblies."
+                                                Text="Diagnostic only: every recheck validates the signature and online publisher revocation status. SeanShell never loads or executes these assemblies."
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
                                         <TextBlock
