@@ -1,5 +1,5 @@
-using SeanShell.PluginBroker.Protocol;
 using SeanShell.PluginBroker;
+using SeanShell.PluginBroker.Protocol;
 
 BrokerProcessMitigations.Apply();
 
