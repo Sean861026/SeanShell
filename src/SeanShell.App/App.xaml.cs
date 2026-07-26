@@ -47,6 +47,8 @@ public partial class App : Application
 
     public ExternalPluginCatalog ExternalPlugins { get; }
 
+    public ExternalPluginTrustManager ExternalPluginTrust { get; }
+
     public ShellSettingsStore SettingsStore { get; }
 
     public SettingsLoadResult SettingsLoad { get; }
@@ -91,6 +93,10 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
             "plugins");
+        var externalPluginTrustPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "plugin-trust.json");
         _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
@@ -126,6 +132,10 @@ public partial class App : Application
         ExternalPlugins = new ExternalPluginCatalog(
             externalPluginPath,
             new WindowsAuthenticodeVerifier());
+        var externalPluginTrustStore = new ExternalPluginTrustStore(externalPluginTrustPath);
+        ExternalPluginTrust = new ExternalPluginTrustManager(
+            externalPluginTrustStore,
+            externalPluginTrustStore.Load());
 
         LauncherSearch = new LauncherSearchService(
         [

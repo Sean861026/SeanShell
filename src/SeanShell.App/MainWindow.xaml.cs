@@ -32,6 +32,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
+    private readonly ExternalPluginTrustManager _externalPluginTrust;
     private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
     private SystemAccessibilityService? _accessibility;
@@ -64,6 +65,7 @@ public sealed partial class MainWindow : Window
         _gamingDetectionPerformance = app.GamingDetectionPerformance;
         _gamingSessions = app.GamingSessions;
         _pluginHost = app.PluginHost;
+        _externalPluginTrust = app.ExternalPluginTrust;
         _processCatalog = app.Processes;
         _desktopWindows = app.DesktopWindows;
         _displayMonitorService = app.Displays;
@@ -83,6 +85,8 @@ public sealed partial class MainWindow : Window
             mainPage.GameProcessRulesSaved += OnGameProcessRulesSaved;
             mainPage.ManualGamingModeChanged += OnManualGamingModeChanged;
             mainPage.PluginEnabledChanged += OnPluginEnabledChanged;
+            mainPage.ExternalPluginConsentChanged += OnExternalPluginConsentChanged;
+            mainPage.ExternalPluginTrustClearRequested += OnExternalPluginTrustClearRequested;
         }
 
         _gamingModeTimer = DispatcherQueue.CreateTimer();
@@ -232,6 +236,56 @@ public sealed partial class MainWindow : Window
             if (RootFrame.Content is MainPage mainPage)
             {
                 mainPage.SetPluginEnabledFailed(pluginId, exception.Message);
+            }
+        }
+    }
+
+    private void OnExternalPluginConsentChanged(
+        ExternalPluginCandidate candidate,
+        bool approved)
+    {
+        try
+        {
+            if (approved)
+            {
+                _externalPluginTrust.Approve(candidate, DateTimeOffset.UtcNow);
+            }
+            else
+            {
+                _externalPluginTrust.Revoke(candidate);
+            }
+
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetExternalPluginConsentApplied(candidate, approved);
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetExternalPluginConsentFailed(candidate, exception.Message);
+            }
+        }
+    }
+
+    private void OnExternalPluginTrustClearRequested()
+    {
+        try
+        {
+            _externalPluginTrust.RevokeAll();
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetExternalPluginTrustCleared();
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetExternalPluginTrustClearFailed(exception.Message);
             }
         }
     }

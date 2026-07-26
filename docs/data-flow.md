@@ -115,6 +115,24 @@ command arguments, environment values, file contents, or credentials.
 The flow ends at diagnostics. Candidate assembly bytes, manifest contents, and
 local paths are not sent to a plugin host or persisted by SeanShell.
 
+```text
+ReadyForConsent candidate + explicit dashboard confirmation
+  -> bind plugin ID + signer SHA-256 + exact capability flags + grant UTC
+  -> validate complete schema-1 trust document
+  -> write plugin-trust.json.tmp and flush to disk
+  -> atomically replace plugin-trust.json and retain .bak
+  -> update in-memory consent snapshot only after save succeeds
+
+Candidate-specific revoke or package-independent revoke-all
+  -> remove matching decision(s)
+  -> same atomic save boundary
+  -> refresh dashboard consent state
+```
+
+Consent is local policy data, not an activation command. No candidate path or
+assembly hash is placed in the trust document, and no external code enters the
+host.
+
 ## Dock and dashboard
 
 ```text

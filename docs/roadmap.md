@@ -66,7 +66,8 @@
 - [x] Gaming Mode suspend/resume integration
 - [x] Built-in Developer tools Launcher plugin
 - [x] Bounded external manifest, path, hash, and Authenticode candidate diagnostics
-- [ ] Capability consent, publisher trust/revocation policy, and process isolation
+- [x] Atomic per-publisher and per-capability consent with user revocation
+- [ ] Publisher revocation policy and out-of-process isolation
 - [ ] Signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration
 - [x] Built-in read-only Git repository plugin

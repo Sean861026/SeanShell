@@ -110,8 +110,8 @@ without opening or retaining process handles.
   The external catalog scans at most 32 immediate package directories and reports
   manifest, containment, content-hash, Authenticode, and publisher-fingerprint
   diagnostics. It never loads candidate code. External execution remains blocked
-  until user consent, publisher trust/revocation policy, and out-of-process
-  isolation are implemented.
+  after consent until publisher revocation policy and out-of-process isolation
+  are implemented.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.
@@ -143,6 +143,15 @@ and removes its Launcher commands; disabling before startup skips initialization
 Enabling while Gaming Mode is active initializes or resumes the plugin and then
 keeps it suspended until normal mode returns. A failed settings write rolls the
 runtime state back so persisted and visible state remain consistent.
+
+External consent is independent from built-in enablement. A schema-1
+`plugin-trust.json` document binds the package ID, signer certificate SHA-256,
+exact capability flags, and UTC grant time. The trust manager saves a complete
+replacement document before changing its in-memory snapshot, so a failed write
+cannot create session-only approval. Primary corruption recovers from `.bak`;
+unrecoverable data fails closed to no approvals. Removing a package does not
+remove the decision, so the dashboard also provides a package-independent
+revoke-all action.
 
 `StartupCrashLoopGuard` owns a small schema-1 `startup-health.json` document under
 the App's local SeanShell data directory. In an MSIX launch, Windows redirects
