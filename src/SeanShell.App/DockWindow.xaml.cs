@@ -22,6 +22,7 @@ public sealed partial class DockWindow : Window
     private readonly DisplayMonitorSnapshot _monitor;
     private readonly DispatcherQueueTimer _autoHideTimer;
     private readonly bool _compactDensity;
+    private double _textScaleFactor = 1;
     private bool _allowClose;
     private bool _autoHide = true;
     private bool _collapsed;
@@ -31,7 +32,8 @@ public sealed partial class DockWindow : Window
     public DockWindow(
         DesktopWindowService windowService,
         ShellStateStore shellState,
-        DisplayMonitorSnapshot monitor)
+        DisplayMonitorSnapshot monitor,
+        double textScaleFactor)
     {
         _windowService = windowService;
         _shellState = shellState;
@@ -40,6 +42,7 @@ public sealed partial class DockWindow : Window
 
         var density = ((App)Application.Current).SettingsLoad.Settings.DisplayDensity;
         _compactDensity = density == ShellDisplayDensity.Compact;
+        _textScaleFactor = textScaleFactor;
         ApplyDisplayDensity(density);
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
@@ -89,6 +92,12 @@ public sealed partial class DockWindow : Window
         ScheduleAutoHide();
     }
 
+    public void ApplyTextScaleFactor(double textScaleFactor)
+    {
+        _textScaleFactor = textScaleFactor;
+        SetCollapsed(_collapsed);
+    }
+
     public void Shutdown()
     {
         _autoHideTimer.Stop();
@@ -117,7 +126,9 @@ public sealed partial class DockWindow : Window
         var bounds = DockPlacement.Calculate(
             _monitor,
             DockWidth,
-            _compactDensity ? CompactDockHeight : DockHeight,
+            AccessibilityLayout.ScaleDockHeight(
+                _compactDensity ? CompactDockHeight : DockHeight,
+                _textScaleFactor),
             collapsed,
             PeekWidth,
             PeekHeight);
