@@ -1,16 +1,22 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SeanShell.PluginBroker.Protocol;
 
 public static class PluginBrokerProtocol
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
     public const int MaximumFrameCharacters = 64 * 1024;
+    public const long MaximumEntryAssemblyBytes = 256 * 1024 * 1024;
+    public const int KnownCapabilityMask = 3;
     public const string HealthOperation = "health";
+    public const string MetadataProbeOperation = "probe-metadata";
+    public static readonly TimeSpan MaximumGrantLifetime = TimeSpan.FromSeconds(30);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
     public static string Serialize(PluginBrokerRequest request) =>
@@ -73,6 +79,10 @@ public static class PluginBrokerProtocol
 
     public static bool IsValidRequestId(string? requestId) =>
         Guid.TryParseExact(requestId, "N", out _);
+
+    public static bool IsValidSha256(string? value) =>
+        value is { Length: 64 } &&
+        value.All(static character => char.IsAsciiHexDigit(character));
 
     private static void ValidateFrame(string frame)
     {

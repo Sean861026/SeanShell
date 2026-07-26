@@ -28,8 +28,10 @@ optional, late-stage deployment mode, not an MVP requirement.
   launcher queries, fault isolation, and diagnostics.
 - `SeanShell.PluginBroker.Protocol` defines bounded process messages without
   referencing plugin contracts or the App.
-- `SeanShell.PluginBroker` is a separate console process. Protocol v1 accepts
-  only a health handshake and contains no loading or activation path.
+- `SeanShell.PluginBroker` is a separate console process. Protocol v2 accepts a
+  health handshake and a short-lived, capability-bound metadata probe. It
+  rechecks package containment and file identity but contains no loading or
+  activation path.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
 Dependencies point inward: App may depend on every module; Gaming and
@@ -121,7 +123,10 @@ without opening or retaining process handles.
 - The broker client starts an exact executable without a command shell, redirects
   only standard input/output, validates the response against the started process,
   and applies a two-second timeout. Failure or cancellation terminates the broker
-  process tree. The preview broker handles one bounded frame and exits.
+  process tree. The preview broker handles one bounded frame and exits. Before a
+  metadata probe, the host repeats catalog trust and consent checks and sends a
+  grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects
+  unknown capabilities, traversal and reparse points, and recomputes SHA-256.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.

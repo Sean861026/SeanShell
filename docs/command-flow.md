@@ -120,21 +120,33 @@ User revokes one candidate or all stored consent
   -> external execution remains blocked in every state
 ```
 
-## Plugin broker health check
+## Plugin broker boundary checks
 
 ```text
-Host creates a protocol-v1 health request
+Host creates a protocol-v2 health request
   -> launch SeanShell.PluginBroker as a separate process
   -> write one bounded JSON frame
-  -> broker accepts only exact operation "health"
+  -> broker accepts exact operation "health" without a grant
   -> unknown version/ID/operation: fixed rejection + exit 2
   -> health: return matching ID and broker PID + exit 0
   -> host verifies response belongs to the started process
   -> timeout/cancellation/mismatch: terminate process tree
 ```
 
-There is no command flow from candidate consent to broker activation in protocol
-version 1.
+```text
+User-approved plugin ID
+  -> host repeats bounded catalog and online publisher trust scan
+  -> require exact publisher + capability consent
+  -> issue package/hash/capability grant for 15 seconds
+  -> launch a new broker process with operation "probe-metadata"
+  -> broker validates grant lifetime and known capability bits
+  -> broker rejects traversal, reparse points, missing/oversized DLL
+  -> broker recomputes SHA-256 and compares it with the grant
+  -> host matches response metadata, request ID, broker PID, and exit code
+  -> stop (no Assembly.Load, reflection, activation, or command execution)
+```
+
+There is still no command flow from metadata probing to plugin activation.
 
 ## Git repository refresh
 

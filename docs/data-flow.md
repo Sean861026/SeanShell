@@ -137,11 +137,11 @@ Consent is local policy data, not an activation command. No candidate path or
 assembly hash is placed in the trust document, and no external code enters the
 host.
 
-## Plugin broker health handshake
+## Plugin broker boundary
 
 ```text
 PluginBrokerClient
-  -> create protocol-v1 health request + random request ID
+  -> create protocol-v2 health request + random request ID
   -> start exact SeanShell.PluginBroker executable without a command shell
   -> send one bounded JSON frame and close stdin
   -> broker validates frame size, version, request ID, and exact operation
@@ -150,8 +150,24 @@ PluginBrokerClient
   -> any mismatch/failure: terminate broker process tree and fail closed
 ```
 
-Protocol v1 carries no candidate, path, assembly, type, capability token, or
-activation operation. The handshake is not connected to `PluginHost`.
+```text
+External plugin ID
+  -> fresh ExternalPluginCatalog scan
+  -> ReadyForConsent + exact stored consent
+  -> 15-second PluginBrokerGrant
+       package directory + entry DLL path
+       assembly SHA-256 + publisher certificate SHA-256
+       exact capability mask
+  -> one-shot broker process
+  -> path/size/reparse/hash verification
+  -> path-free PluginBrokerMetadata response
+  -> exact host response correlation
+```
+
+Protocol v2 uses paths only inside the one-shot metadata probe. It carries no
+file content, persisted consent document, type, method, launcher query, or
+activation operation. No response returns a local path and nothing connects the
+probe to `PluginHost`.
 
 ## Dock and dashboard
 

@@ -183,7 +183,9 @@ public sealed class ExternalPluginCatalog
                     trust.Detail,
                     assemblyHash,
                     trust.SignerCertificateSha256,
-                    trust.VerifiedAtUtc);
+                    trust.VerifiedAtUtc,
+                    packageDirectory,
+                    assemblyPath);
             }
 
             if (!string.Equals(
@@ -198,7 +200,9 @@ public sealed class ExternalPluginCatalog
                     "The trusted signer's SHA-256 certificate fingerprint does not match the manifest.",
                     assemblyHash,
                     trust.SignerCertificateSha256,
-                    trust.VerifiedAtUtc);
+                    trust.VerifiedAtUtc,
+                    packageDirectory,
+                    assemblyPath);
             }
 
             return Candidate(
@@ -208,7 +212,9 @@ public sealed class ExternalPluginCatalog
                 "Signature and package checks passed. External loading remains disabled.",
                 assemblyHash,
                 trust.SignerCertificateSha256,
-                trust.VerifiedAtUtc);
+                trust.VerifiedAtUtc,
+                packageDirectory,
+                assemblyPath);
         }
         catch (JsonException exception)
         {
@@ -335,7 +341,9 @@ public sealed class ExternalPluginCatalog
         string detail,
         string? assemblyHash = null,
         string? signerHash = null,
-        DateTimeOffset? trustVerifiedAtUtc = null) =>
+        DateTimeOffset? trustVerifiedAtUtc = null,
+        string? packageDirectoryPath = null,
+        string? entryAssemblyPath = null) =>
         new(
             packageName,
             manifest.Id,
@@ -348,7 +356,9 @@ public sealed class ExternalPluginCatalog
             detail,
             assemblyHash,
             signerHash,
-            trustVerifiedAtUtc);
+            trustVerifiedAtUtc,
+            packageDirectoryPath,
+            entryAssemblyPath);
 
     private static ExternalPluginCandidate Invalid(
         string packageName,
