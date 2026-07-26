@@ -19,6 +19,30 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
     public Task<IReadOnlyList<ShellCommand>> WarmAsync(CancellationToken cancellationToken = default) =>
         GetOrCreateIndexTask().WaitAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<ShellCommand>> GetByIdsAsync(
+        IEnumerable<string> applicationIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(applicationIds);
+        var requestedIds = PinnedApplicationIdList.Parse(
+            PinnedApplicationIdList.Serialize(applicationIds));
+        if (requestedIds.Count == 0)
+        {
+            return [];
+        }
+
+        var index = await GetOrCreateIndexTask()
+            .WaitAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var byId = index.ToDictionary(
+            static command => command.Id,
+            StringComparer.OrdinalIgnoreCase);
+        return requestedIds
+            .Where(byId.ContainsKey)
+            .Select(id => byId[id])
+            .ToArray();
+    }
+
     private Task<IReadOnlyList<ShellCommand>> GetOrCreateIndexTask()
     {
         lock (_gate)

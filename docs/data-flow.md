@@ -266,6 +266,24 @@ Only taskbar window handles, the owner process ID, and bounded success/error
 status cross this boundary. No process injection, shell registry mutation, input
 hook, or game-process access is involved.
 
+## Pinned applications
+
+```text
+Start Menu shortcut roots
+  -> one-time InstalledApplicationProvider index
+  -> exact app: command IDs
+  -> PinnedApplicationIdList (ordered, distinct, maximum eight)
+  -> ShellSettings.PinnedApplicationIds
+  -> exact cache lookup
+  -> available ShellCommand[]
+  -> every monitor-local Dock
+```
+
+The local settings file contains shortcut command IDs, which include local Start
+Menu paths. No pin data is uploaded. Normal Dock refreshes do not query the
+filesystem. Missing IDs produce no executable command and stay persisted for
+later recovery.
+
 ## Git repository snapshots
 
 ```text
@@ -350,7 +368,7 @@ SeanShell startup
   -> invalid primary: load settings.json.bak
   -> invalid backup: use safe defaults and show warning
   -> apply Dock auto-hide and register Launcher shortcut
-  -> migrate schema v1 through v5 to v6 in memory
+  -> migrate schema v1 through v6 to v7 in memory
   -> start the recovery guard before applying persisted taskbar replacement
   -> construct PluginHost with persisted disabled plugin IDs
   -> configure automatic game detection and normalized process rules

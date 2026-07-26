@@ -135,6 +135,7 @@
                                             <ColumnDefinition Width="40" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Border
                                             Width="40"
@@ -160,11 +161,26 @@
                                         </StackPanel>
                                         <Border
                                             Grid.Column="2"
+                                            Margin="0,0,8,0"
                                             Style="{StaticResource SeanStatusPillStyle}">
                                             <TextBlock
                                                 Style="{StaticResource SeanCaptionTextStyle}"
                                                 Text="{Binding KindLabel}" />
                                         </Border>
+                                        <Button
+                                            Grid.Column="3"
+                                            Width="36"
+                                            Height="36"
+                                            AutomationProperties.Name="{Binding PinLabel}"
+                                            Click="OnPinClicked"
+                                            Tag="{Binding}"
+                                            ToolTipService.ToolTip="{Binding PinLabel}"
+                                            Visibility="{Binding PinVisibility}">
+                                            <FontIcon
+                                                FontFamily="Segoe Fluent Icons"
+                                                FontSize="15"
+                                                Glyph="{Binding PinGlyph}" />
+                                        </Button>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>

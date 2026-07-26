@@ -26,6 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly DispatcherQueueTimer _dockRefreshTimer;
     private readonly DispatcherQueueTimer _taskbarRefreshTimer;
+    private readonly InstalledApplicationProvider _installedApplications;
     private readonly LauncherWindow _launcherWindow;
     private readonly GamingModeManager _gamingMode;
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
@@ -42,6 +43,7 @@ public sealed partial class MainWindow : Window
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
     private IReadOnlyList<DockWindow> _dockWindows;
+    private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private GlobalHotKey? _launcherHotKey;
@@ -71,8 +73,12 @@ public sealed partial class MainWindow : Window
         _processCatalog = app.Processes;
         _desktopWindows = app.DesktopWindows;
         _displayMonitorService = app.Displays;
+        _installedApplications = app.InstalledApplications;
         _shellState = app.ShellState;
         _launcherWindow = new LauncherWindow(app.LauncherSearch, app.LauncherPerformance);
+        _launcherWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
+        _launcherWindow.SetPinnedApplicationIds(
+            PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds));
         _taskbarReplacement = new TaskbarReplacementSession(
             new WindowsTaskbarController(),
             new TaskbarRecoveryGuard(
@@ -140,6 +146,7 @@ public sealed partial class MainWindow : Window
         ApplyTaskbarReplacementOnStartup();
         _dockRefreshTimer.Start();
         _ = RefreshDockWindowsAsync();
+        _ = RefreshPinnedApplicationsAsync();
         UpdateGamingModeMonitor();
         await _pluginHost.InitializeAsync().ConfigureAwait(true);
         if (_gamingMode.Current.IsGaming)
@@ -579,11 +586,14 @@ public sealed partial class MainWindow : Window
         {
             foreach (var monitor in monitors)
             {
-                windows.Add(new DockWindow(
+                var dockWindow = new DockWindow(
                     _desktopWindows,
                     _shellState,
                     monitor,
-                    _systemAccessibility.TextScaleFactor));
+                    _systemAccessibility.TextScaleFactor);
+                dockWindow.LauncherRequested += OnLauncherRequested;
+                dockWindow.ApplyPinnedApplications(_pinnedApplications);
+                windows.Add(dockWindow);
             }
 
             return windows;
@@ -650,6 +660,103 @@ public sealed partial class MainWindow : Window
         finally
         {
             _refreshingDockWindows = false;
+        }
+    }
+
+    private async Task<bool> OnPinnedApplicationChangedAsync(
+        ShellCommand command,
+        bool shouldPin)
+    {
+        if (command.Kind != ShellCommandKind.Application)
+        {
+            throw new InvalidOperationException(
+                "Only installed applications can be pinned to the Dock.");
+        }
+
+        var available = await _installedApplications
+            .GetByIdsAsync([command.Id])
+            .ConfigureAwait(true);
+        if (available.Count != 1)
+        {
+            throw new InvalidOperationException(
+                "This Start Menu shortcut is no longer available.");
+        }
+
+        var previousSettings = _settings;
+        var applicationIds = PinnedApplicationIdList
+            .Parse(_settings.PinnedApplicationIds)
+            .ToList();
+        var existingIndex = applicationIds.FindIndex(
+            id => string.Equals(
+                id,
+                command.Id,
+                StringComparison.OrdinalIgnoreCase));
+        if (shouldPin)
+        {
+            if (existingIndex >= 0)
+            {
+                return true;
+            }
+
+            if (applicationIds.Count >= PinnedApplicationIdList.MaximumCount)
+            {
+                throw new InvalidOperationException(
+                    $"The Dock supports up to {PinnedApplicationIdList.MaximumCount} pinned applications.");
+            }
+
+            applicationIds.Add(command.Id);
+        }
+        else if (existingIndex >= 0)
+        {
+            applicationIds.RemoveAt(existingIndex);
+        }
+
+        _settings = _settings with
+        {
+            PinnedApplicationIds =
+                PinnedApplicationIdList.Serialize(applicationIds),
+        };
+        if (!PersistSettings())
+        {
+            _settings = previousSettings;
+            throw new IOException(
+                "The pinned application preference could not be saved.");
+        }
+
+        _launcherWindow.SetPinnedApplicationIds(applicationIds);
+        await RefreshPinnedApplicationsAsync().ConfigureAwait(true);
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetPinnedApplicationsApplied(
+                command.Title,
+                shouldPin,
+                _pinnedApplications.Count);
+        }
+
+        return true;
+    }
+
+    private async Task RefreshPinnedApplicationsAsync()
+    {
+        try
+        {
+            var applicationIds =
+                PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds);
+            var applications = await _installedApplications
+                .GetByIdsAsync(applicationIds)
+                .ConfigureAwait(true);
+            _pinnedApplications = applications;
+            foreach (var dockWindow in _dockWindows)
+            {
+                dockWindow.ApplyPinnedApplications(applications);
+            }
+        }
+        catch (Exception exception)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetPinnedApplicationsUnavailable(exception.Message);
+            }
         }
     }
 
@@ -849,6 +956,7 @@ public sealed partial class MainWindow : Window
         }
 
         _launcherWindow.Shutdown();
+        _launcherWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
         await _pluginHost.DisposeAsync().ConfigureAwait(true);
         _taskbarReplacement.Dispose();
     }

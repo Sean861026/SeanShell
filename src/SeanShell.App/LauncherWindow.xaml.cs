@@ -18,6 +18,8 @@ public sealed partial class LauncherWindow : Window
     private const int WindowHeight = 620;
     private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
+    private readonly HashSet<string> _pinnedApplicationIds =
+        new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _searchCancellation;
     private bool _allowClose;
 
@@ -40,6 +42,19 @@ public sealed partial class LauncherWindow : Window
     }
 
     public ObservableCollection<LauncherResultViewModel> Results { get; } = [];
+
+    public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
+
+    public void SetPinnedApplicationIds(IEnumerable<string> applicationIds)
+    {
+        ArgumentNullException.ThrowIfNull(applicationIds);
+        _pinnedApplicationIds.Clear();
+        _pinnedApplicationIds.UnionWith(applicationIds);
+        foreach (var result in Results)
+        {
+            result.SetPinned(_pinnedApplicationIds.Contains(result.Command.Id));
+        }
+    }
 
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
@@ -143,7 +158,9 @@ public sealed partial class LauncherWindow : Window
             Results.Clear();
             foreach (var command in commands)
             {
-                Results.Add(new LauncherResultViewModel(command));
+                Results.Add(new LauncherResultViewModel(
+                    command,
+                    _pinnedApplicationIds.Contains(command.Id)));
             }
 
             ResultsList.SelectedIndex = Results.Count > 0 ? 0 : -1;
@@ -161,6 +178,38 @@ public sealed partial class LauncherWindow : Window
         if (e.ClickedItem is LauncherResultViewModel result)
         {
             await ExecuteAsync(result).ConfigureAwait(true);
+        }
+    }
+
+    private async void OnPinClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button
+            {
+                Tag: LauncherResultViewModel { CanPin: true } result,
+            })
+        {
+            return;
+        }
+
+        var handler = PinChangedRequested;
+        if (handler is null)
+        {
+            return;
+        }
+
+        var shouldPin = !result.IsPinned;
+        try
+        {
+            ErrorInfoBar.IsOpen = false;
+            if (await handler(result.Command, shouldPin).ConfigureAwait(true))
+            {
+                result.SetPinned(shouldPin);
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorInfoBar.Message = exception.Message;
+            ErrorInfoBar.IsOpen = true;
         }
     }
 

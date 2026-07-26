@@ -340,7 +340,7 @@ normal-mode transition displays them later.
 
 ```text
 User enables Replace Windows taskbar
-  -> persist the opt-in schema-v6 preference
+  -> persist the opt-in schema-v7 preference
   -> launch the exact packaged SeanShell executable in recovery-guard mode
   -> guard opens the main-process handle and confirms readiness over stdout
   -> enumerate Shell_TrayWnd and Shell_SecondaryTrayWnd windows
@@ -361,6 +361,34 @@ SeanShell main process crashes or is forcibly terminated
 The guard must acknowledge readiness before any taskbar is hidden. Failure to
 start the guard, discover a taskbar, or verify the requested visibility fails
 safe by showing all taskbars and clearing the persisted replacement preference.
+
+## Launcher and pinned Dock applications
+
+```text
+User selects the Launcher/Start button on any Dock
+  -> MainWindow requests the existing Launcher window
+  -> Launcher opens on the current display
+
+User searches for an installed application and selects Pin
+  -> require ShellCommandKind.Application
+  -> verify the exact app ID against the cached Start Menu index
+  -> add it to the ordered list capped at eight IDs
+  -> atomically persist schema-v7 settings
+  -> resolve available pinned commands from the existing index
+  -> distribute the same ordered command list to every Dock
+
+User selects a pinned Dock application
+  -> execute the original installed-application ShellCommand
+  -> Windows Shell opens the exact indexed shortcut
+
+User selects Unpin
+  -> remove the exact app ID
+  -> atomically persist and refresh every Dock
+```
+
+Selecting the pin button does not execute the result. A missing Start Menu
+shortcut is not launched or displayed and is not removed from settings, allowing
+the pin to recover if the shortcut returns.
 
 ## Gaming mode
 

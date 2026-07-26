@@ -120,11 +120,17 @@ the backup or safe defaults without preventing SeanShell from starting.
 The dock does not retain process handles, inject code, attach input queues, or
 bypass Windows foreground restrictions.
 
-Companion Taskbar mode currently covers running-window switching and Launcher
-access. Explorer remains running for notifications, system tray services, input
-methods, file associations, and recovery. Pinned applications and user-facing
-tray/clock affordances are the next replacement-first milestones; visual effects
-and production icon work follow those functional surfaces.
+Companion Taskbar mode covers running-window switching, a Launcher/Start button,
+and up to eight pinned Start Menu applications synchronized across every Dock.
+Search for an installed App in Launcher and use its pin button to add or remove
+it. Pins reuse the cached Start Menu index, persist locally, and do not add
+background filesystem polling. A temporarily missing shortcut is omitted without
+deleting the pin, allowing it to return after the shortcut is restored.
+
+Explorer remains running for notifications, system tray services, input methods,
+file associations, and recovery. User-facing clock and retained tray/notification
+access are the next replacement-first milestones; visual effects and production
+icon work follow those functional surfaces.
 
 ## Gaming mode preview
 

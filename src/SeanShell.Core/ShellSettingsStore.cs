@@ -57,6 +57,12 @@ public sealed class ShellSettingsStore
             throw new InvalidDataException($"Unsupported settings schema version {settings.SchemaVersion}.");
         }
 
+        settings = settings with
+        {
+            PinnedApplicationIds = PinnedApplicationIdList.Serialize(
+                PinnedApplicationIdList.Parse(settings.PinnedApplicationIds)),
+        };
+
         var directory = Path.GetDirectoryName(_filePath)
             ?? throw new InvalidOperationException("The settings path must include a directory.");
         Directory.CreateDirectory(directory);
@@ -161,6 +167,12 @@ public sealed class ShellSettingsStore
             {
                 throw new InvalidDataException("The shell display density is not supported.");
             }
+
+            settings = settings with
+            {
+                PinnedApplicationIds = PinnedApplicationIdList.Serialize(
+                    PinnedApplicationIdList.Parse(settings.PinnedApplicationIds)),
+            };
 
             return true;
         }

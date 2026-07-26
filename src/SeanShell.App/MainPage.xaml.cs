@@ -332,6 +332,27 @@ public sealed partial class MainPage : Page
             InfoBarSeverity.Warning);
     }
 
+    public void SetPinnedApplicationsApplied(
+        string applicationName,
+        bool pinned,
+        int visibleCount)
+    {
+        SetSettingsStatus(
+            pinned ? "Application pinned" : "Application unpinned",
+            pinned
+                ? $"{applicationName} is now available from every Dock. {visibleCount} pinned application(s) are currently available."
+                : $"{applicationName} was removed from every Dock.",
+            InfoBarSeverity.Success);
+    }
+
+    public void SetPinnedApplicationsUnavailable(string message)
+    {
+        SetSettingsStatus(
+            "Pinned applications unavailable",
+            $"Running-window switching and Launcher remain available. {message}",
+            InfoBarSeverity.Warning);
+    }
+
     public void SetPluginEnabledApplied(string pluginId, string pluginName, bool enabled)
     {
         _pendingPluginIds.Remove(pluginId);

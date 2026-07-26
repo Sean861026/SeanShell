@@ -30,6 +30,8 @@ dotnet test SeanShell.sln -c Release -p:Platform=x64 --no-build
 3. Add tests for state transitions, ranking, configuration, and gaming rules.
 4. Update command-flow and data-flow documents when behavior crosses components.
 5. Measure idle CPU, memory, startup time, and gaming-mode behavior for shell work.
+6. Resolve pinned applications only from the bounded installed-application cache;
+   do not add Dock-time filesystem scanning or execute an unindexed settings path.
 
 ## Safety requirements
 

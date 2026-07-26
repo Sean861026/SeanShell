@@ -44,6 +44,7 @@ public sealed partial class DockWindow : Window
         _compactDensity = density == ShellDisplayDensity.Compact;
         _textScaleFactor = textScaleFactor;
         ApplyDisplayDensity(density);
+        PinnedList.ItemsSource = PinnedItems;
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ConfigurePresenter();
@@ -58,6 +59,10 @@ public sealed partial class DockWindow : Window
     }
 
     public ObservableCollection<DockItemViewModel> Items { get; } = [];
+
+    public ObservableCollection<PinnedDockItemViewModel> PinnedItems { get; } = [];
+
+    public event EventHandler? LauncherRequested;
 
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
@@ -184,6 +189,24 @@ public sealed partial class DockWindow : Window
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public void ApplyPinnedApplications(
+        IReadOnlyList<ShellCommand> applications)
+    {
+        if (_allowClose ||
+            applications.Select(static command => command.Id).SequenceEqual(
+                PinnedItems.Select(static item => item.Id),
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        PinnedItems.Clear();
+        foreach (var application in applications)
+        {
+            PinnedItems.Add(new PinnedDockItemViewModel(application));
+        }
+    }
+
     public void SetWindowSnapshotUnavailable(string message)
     {
         if (_allowClose)
@@ -243,6 +266,39 @@ public sealed partial class DockWindow : Window
         if (e.ClickedItem is DockItemViewModel item)
         {
             _ = _windowService.Activate(item.Handle);
+            ScheduleAutoHide();
+        }
+    }
+
+    private void OnLauncherClicked(object sender, RoutedEventArgs e)
+    {
+        LauncherRequested?.Invoke(this, EventArgs.Empty);
+        ScheduleAutoHide();
+    }
+
+    private async void OnPinnedApplicationClicked(
+        object sender,
+        ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not PinnedDockItemViewModel item)
+        {
+            return;
+        }
+
+        try
+        {
+            await item.Command.ExecuteAsync(CancellationToken.None)
+                .ConfigureAwait(true);
+        }
+        catch (Exception exception)
+        {
+            DockCountText.Text = "Launch failed";
+            ToolTipService.SetToolTip(
+                DockCountText,
+                $"Unable to open {item.Title}: {exception.Message}");
+        }
+        finally
+        {
             ScheduleAutoHide();
         }
     }
