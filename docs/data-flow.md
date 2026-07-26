@@ -133,6 +133,22 @@ Consent is local policy data, not an activation command. No candidate path or
 assembly hash is placed in the trust document, and no external code enters the
 host.
 
+## Plugin broker health handshake
+
+```text
+PluginBrokerClient
+  -> create protocol-v1 health request + random request ID
+  -> start exact SeanShell.PluginBroker executable without a command shell
+  -> send one bounded JSON frame and close stdin
+  -> broker validates frame size, version, request ID, and exact operation
+  -> broker returns its PID + matching request ID, then exits
+  -> host validates response, process ID, exit code, and two-second deadline
+  -> any mismatch/failure: terminate broker process tree and fail closed
+```
+
+Protocol v1 carries no candidate, path, assembly, type, capability token, or
+activation operation. The handshake is not connected to `PluginHost`.
+
 ## Dock and dashboard
 
 ```text

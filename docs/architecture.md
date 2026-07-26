@@ -26,6 +26,10 @@ optional, late-stage deployment mode, not an MVP requirement.
 - `SeanShell.PluginContracts` is the small, versioned surface available to plugins.
 - `SeanShell.Plugins` validates manifests and owns bounded plugin lifecycle,
   launcher queries, fault isolation, and diagnostics.
+- `SeanShell.PluginBroker.Protocol` defines bounded process messages without
+  referencing plugin contracts or the App.
+- `SeanShell.PluginBroker` is a separate console process. Protocol v1 accepts
+  only a health handshake and contains no loading or activation path.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
 Dependencies point inward: App may depend on every module; Gaming and
@@ -112,6 +116,10 @@ without opening or retaining process handles.
   diagnostics. It never loads candidate code. External execution remains blocked
   after consent until publisher revocation policy and out-of-process isolation
   are implemented.
+- The broker client starts an exact executable without a command shell, redirects
+  only standard input/output, validates the response against the started process,
+  and applies a two-second timeout. Failure or cancellation terminates the broker
+  process tree. The preview broker handles one bounded frame and exits.
 - Configuration writes will be atomic and recover from a last-known-good copy.
 - Gaming mode pauses polling and animations; it never disables security services,
   injects code, hooks rendering, or intercepts game input.

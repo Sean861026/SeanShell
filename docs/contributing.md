@@ -46,5 +46,10 @@ process. Consent changes must fail closed, bind the exact signer and capabilitie
 remain revocable without the package being present, and update memory only after
 the atomic trust-document write succeeds.
 
+Broker protocol changes require cross-process tests for frame bounds, version and
+request correlation, rejected operations, exit behavior, timeout cleanup, and
+process identity. Do not add an assembly path or activation operation until the
+next-version mitigation and capability-grant design is reviewed.
+
 Report security-sensitive findings privately to the repository owner rather than
 including exploit details in a public issue.
