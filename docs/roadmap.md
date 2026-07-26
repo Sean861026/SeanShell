@@ -76,6 +76,7 @@
 - [x] Persistent per-plugin broker crash accounting and automatic quarantine
 - [x] Package-contained broker mode using the exact SeanShell App executable
 - [x] MSIX package-content integrity enforcement and packaged broker CI coverage
+- [x] Bounded same-publisher managed/native dependency allowlist and broker revalidation
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

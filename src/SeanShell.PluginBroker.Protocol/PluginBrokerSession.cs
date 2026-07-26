@@ -138,6 +138,17 @@ public static class PluginBrokerSession
             return Reject(request, processId, "The entry assembly changed after host verification.");
         }
 
+        var dependencies = grant.Dependencies ?? [];
+        var dependencyError = await ValidateDependenciesAsync(
+            packageDirectory,
+            entryAssembly,
+            dependencies,
+            cancellationToken).ConfigureAwait(false);
+        if (dependencyError is not null)
+        {
+            return Reject(request, processId, dependencyError);
+        }
+
         return new PluginBrokerResponse(
             PluginBrokerProtocol.CurrentVersion,
             request.RequestId,
@@ -148,7 +159,9 @@ public static class PluginBrokerSession
                 grant.PluginId,
                 observedHash,
                 grant.PublisherCertificateSha256.ToUpperInvariant(),
-                grant.GrantedCapabilities),
+                grant.GrantedCapabilities,
+                dependencies.Length,
+                PluginBrokerDependencySet.ComputeDigest(dependencies)),
             request.SessionId,
             request.Nonce);
     }
@@ -197,6 +210,88 @@ public static class PluginBrokerSession
         }
 
         return null;
+    }
+
+    private static async Task<string?> ValidateDependenciesAsync(
+        string packageDirectory,
+        string entryAssembly,
+        PluginBrokerDependency[] dependencies,
+        CancellationToken cancellationToken)
+    {
+        if (dependencies.Length > PluginBrokerProtocol.MaximumDependencyCount)
+        {
+            return "The dependency allowlist exceeds its item limit.";
+        }
+
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        long totalBytes = 0;
+        foreach (var dependency in dependencies)
+        {
+            if (dependency is null ||
+                !IsCanonicalRelativeDependencyPath(dependency.RelativePath) ||
+                !PluginBrokerProtocol.IsValidSha256(dependency.Sha256) ||
+                (!string.Equals(dependency.Kind, "managed", StringComparison.Ordinal) &&
+                 !string.Equals(dependency.Kind, "native", StringComparison.Ordinal)))
+            {
+                return "The dependency allowlist contains an invalid entry.";
+            }
+
+            var path = Path.GetFullPath(
+                Path.Combine(packageDirectory, dependency.RelativePath));
+            if (!paths.Add(path) ||
+                string.Equals(path, entryAssembly, StringComparison.OrdinalIgnoreCase) ||
+                !IsInsideDirectory(packageDirectory, path) ||
+                !string.Equals(Path.GetExtension(path), ".dll", StringComparison.OrdinalIgnoreCase) ||
+                !File.Exists(path) ||
+                HasReparsePoint(packageDirectory, path))
+            {
+                return "A dependency path is missing, duplicated, or unsafe.";
+            }
+
+            var info = new FileInfo(path);
+            if (info.Length is <= 0 or > PluginBrokerProtocol.MaximumDependencyBytes)
+            {
+                return "A dependency size is outside the allowed bounds.";
+            }
+
+            totalBytes = checked(totalBytes + info.Length);
+            if (totalBytes > PluginBrokerProtocol.MaximumDependencySetBytes)
+            {
+                return "The dependency allowlist exceeds its total size limit.";
+            }
+
+            var observedHash = await ComputeSha256Async(path, cancellationToken)
+                .ConfigureAwait(false);
+            if (!string.Equals(
+                    observedHash,
+                    dependency.Sha256,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return "A dependency changed after host verification.";
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsCanonicalRelativeDependencyPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) ||
+            path.Length > PluginBrokerProtocol.MaximumDependencyPathCharacters ||
+            Path.IsPathFullyQualified(path) ||
+            path.EndsWith(Path.DirectorySeparatorChar) ||
+            path.EndsWith(Path.AltDirectorySeparatorChar))
+        {
+            return false;
+        }
+
+        var segments = path.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.None);
+        return segments.All(static segment =>
+            segment.Length > 0 &&
+            segment is not "." and not ".." &&
+            segment.IndexOfAny(Path.GetInvalidFileNameChars()) < 0);
     }
 
     private static bool IsInsideDirectory(string directory, string path)

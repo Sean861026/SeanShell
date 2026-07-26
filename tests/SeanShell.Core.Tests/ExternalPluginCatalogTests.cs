@@ -44,6 +44,90 @@ public sealed class ExternalPluginCatalogTests
     }
 
     [TestMethod]
+    public async Task ScanAsync_TrustedSamePublisherDependencies_AreBounded()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "dependencies", "seanshell.dependencies", "Plugin.dll", PublisherHash);
+            var package = Path.Combine(root, "dependencies");
+            var dependencyPath = Path.Combine(package, "lib", "Support.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(dependencyPath)!);
+            File.WriteAllBytes(dependencyPath, [5, 6, 7, 8]);
+            SetDependencies(
+                package,
+                $$"""[{"path":"lib/Support.dll","sha256":"{{ComputeHash(dependencyPath)}}","kind":"managed"}]""");
+            var verifier = new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash);
+            var catalog = new ExternalPluginCatalog(root, verifier);
+
+            var candidate = (await catalog.ScanAsync()).Single();
+
+            Assert.AreEqual(ExternalPluginCandidateStatus.ReadyForConsent, candidate.Status);
+            Assert.HasCount(1, candidate.Dependencies!);
+            Assert.AreEqual("lib\\Support.dll", candidate.Dependencies![0].RelativePath);
+            Assert.AreEqual(2, verifier.CallCount);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public async Task ScanAsync_DependencyHashMismatch_IsRejectedBeforeDependencyTrust()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "changed-dependency", "seanshell.changed", "Plugin.dll", PublisherHash);
+            var package = Path.Combine(root, "changed-dependency");
+            File.WriteAllBytes(Path.Combine(package, "Support.dll"), [5, 6, 7, 8]);
+            SetDependencies(
+                package,
+                $$"""[{"path":"Support.dll","sha256":"{{new string('A', 64)}}","kind":"managed"}]""");
+            var verifier = new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash);
+            var catalog = new ExternalPluginCatalog(root, verifier);
+
+            var candidate = (await catalog.ScanAsync()).Single();
+
+            Assert.AreEqual(ExternalPluginCandidateStatus.InvalidManifest, candidate.Status);
+            StringAssert.Contains(candidate.Detail, "does not match");
+            Assert.AreEqual(1, verifier.CallCount);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public async Task ScanAsync_DependencyFromDifferentPublisher_IsRejected()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "foreign-dependency", "seanshell.foreign", "Plugin.dll", PublisherHash);
+            var package = Path.Combine(root, "foreign-dependency");
+            var dependencyPath = Path.Combine(package, "Support.dll");
+            File.WriteAllBytes(dependencyPath, [5, 6, 7, 8]);
+            SetDependencies(
+                package,
+                $$"""[{"path":"Support.dll","sha256":"{{ComputeHash(dependencyPath)}}","kind":"native"}]""");
+            var verifier = new PathVerifier();
+            var catalog = new ExternalPluginCatalog(root, verifier);
+
+            var candidate = (await catalog.ScanAsync()).Single();
+
+            Assert.AreEqual(ExternalPluginCandidateStatus.UntrustedSignature, candidate.Status);
+            StringAssert.Contains(candidate.Detail, "publisher certificate");
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [TestMethod]
     public async Task ScanAsync_UnsignedPackage_IsRejected()
     {
         var root = CreateTemporaryDirectory();
@@ -173,6 +257,21 @@ public sealed class ExternalPluginCatalogTests
     private static string GetUnusedPath() =>
         Path.Combine(Path.GetTempPath(), "SeanShell.Tests", Guid.NewGuid().ToString("N"));
 
+    private static string ComputeHash(string path) =>
+        Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)));
+
+    private static void SetDependencies(string packageDirectory, string dependenciesJson)
+    {
+        var manifestPath = Path.Combine(packageDirectory, "plugin.json");
+        var manifest = File.ReadAllText(manifestPath);
+        manifest = manifest.Replace(
+            "\"publisherCertificateSha256\":",
+            $"\"dependencies\": {dependenciesJson},\r\n  \"publisherCertificateSha256\":",
+            StringComparison.Ordinal);
+        File.WriteAllText(manifestPath, manifest);
+    }
+
     private static void DeleteTemporaryDirectory(string path)
     {
         var testRoot = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "SeanShell.Tests")) +
@@ -231,5 +330,17 @@ public sealed class ExternalPluginCatalogTests
                 signerHash,
                 DateTimeOffset.UtcNow);
         }
+    }
+
+    private sealed class PathVerifier : IAuthenticodeVerifier
+    {
+        public AuthenticodeVerificationResult Verify(string filePath) =>
+            new(
+                AuthenticodeTrustStatus.Trusted,
+                "Fake trust result.",
+                filePath.EndsWith("Support.dll", StringComparison.OrdinalIgnoreCase)
+                    ? new string('B', 64)
+                    : PublisherHash,
+                DateTimeOffset.UtcNow);
     }
 }

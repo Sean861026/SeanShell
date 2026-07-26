@@ -2,7 +2,7 @@
 
 ## Status
 
-Protocol version 3 is a fail-closed, process-boundary preview. It supports a
+Protocol version 4 is a fail-closed, process-boundary preview. It supports a
 health handshake and a read-only `probe-metadata` operation. It does not load an
 assembly, inspect managed types, activate a plugin, or execute a command.
 
@@ -49,7 +49,7 @@ query text, arbitrary command strings, or persisted consent documents.
 
 ```json
 {
-  "protocolVersion": 3,
+  "protocolVersion": 4,
   "requestId": "32_character_lowercase_guid",
   "operation": "health",
   "grant": null,
@@ -69,7 +69,7 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
 
 ```json
 {
-  "protocolVersion": 3,
+  "protocolVersion": 4,
   "requestId": "32_character_lowercase_guid",
   "operation": "probe-metadata",
   "grant": {
@@ -80,7 +80,14 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
     "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
     "grantedCapabilities": 1,
     "issuedAtUtc": "2026-07-26T00:00:00+00:00",
-    "expiresAtUtc": "2026-07-26T00:00:15+00:00"
+    "expiresAtUtc": "2026-07-26T00:00:15+00:00",
+    "dependencies": [
+      {
+        "relativePath": "lib/Example.Support.dll",
+        "sha256": "64_HEXADECIMAL_CHARACTERS",
+        "kind": "managed"
+      }
+    ]
   },
   "sessionId": "32_character_lowercase_guid",
   "nonce": "64_HEXADECIMAL_CHARACTERS",
@@ -91,13 +98,17 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
 The broker rejects grants with unknown capability bits, invalid IDs or hashes,
 non-absolute paths, a lifetime over 30 seconds, future/expired timestamps,
 missing or oversized files, directory traversal, reparse points, or a SHA-256
-mismatch. It returns only normalized identity metadata and never returns a path.
+mismatch. A dependency allowlist is limited to 32 canonical package-relative
+DLL paths of at most 240 characters, 256 MiB per file, and 512 MiB total. Kinds
+are `managed` or `native`. The broker rejects duplicates, the entry assembly
+listed as its own dependency, traversal, reparse points, and hash changes. It
+returns only normalized identity metadata and never returns a path.
 
 ## Accepted response
 
 ```json
 {
-  "protocolVersion": 3,
+  "protocolVersion": 4,
   "requestId": "same_request_id",
   "accepted": true,
   "status": "Package metadata matched the short-lived capability grant; activation remains disabled.",
@@ -106,7 +117,9 @@ mismatch. It returns only normalized identity metadata and never returns a path.
     "pluginId": "example.publisher.plugin",
     "assemblySha256": "64_HEXADECIMAL_CHARACTERS",
     "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
-    "grantedCapabilities": 1
+    "grantedCapabilities": 1,
+    "dependencyCount": 1,
+    "dependencySetSha256": "64_HEXADECIMAL_CHARACTERS"
   },
   "sessionId": "same_session_id",
   "nonce": "same_nonce",
@@ -114,8 +127,10 @@ mismatch. It returns only normalized identity metadata and never returns a path.
 }
 ```
 
-The client first authenticates the response, then compares its envelope,
-metadata, started-process PID, exit code, and deadline. Any mismatch fails
+The dependency-set digest is SHA-256 over a length-prefixed, path-normalized,
+case-normalized sequence sorted by relative path. The client first authenticates
+the response, then compares its envelope, metadata, dependency count/digest,
+started-process PID, exit code, and deadline. Any mismatch fails
 closed. A captured frame cannot authenticate in a later broker process because
 that process receives a different random key.
 
@@ -136,7 +151,7 @@ publisher consent and never authorizes execution.
 
 Before code execution is added, the broker still needs:
 
-- dependency and native-library containment;
+- a load context and native resolver that deny every undeclared dependency;
 - bounded command/result DTOs with no delegate or shell string;
 - production certificate management and release-signing policy; and
 - adversarial tests against managed and native dependency escape.

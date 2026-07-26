@@ -33,7 +33,7 @@ optional, late-stage deployment mode, not an MVP requirement.
 - Packaged production composition starts the exact `SeanShell.App.exe` in
   `--plugin-broker` mode. The custom entry point selects this path before WinUI
   initialization. `SeanShell.PluginBroker` is a console test harness over the
-  same runtime. Protocol v3 accepts a health handshake and a short-lived,
+  same runtime. Protocol v4 accepts a health handshake and a short-lived,
   capability-bound metadata probe, but contains no loading or activation path.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
@@ -142,6 +142,12 @@ without opening or retaining process handles.
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects
   unknown capabilities, traversal and reparse points, and recomputes SHA-256.
+- External manifests may allowlist at most 32 managed/native dependency DLLs.
+  The host requires canonical package-relative paths, bounded individual and
+  aggregate size, declared SHA-256, Authenticode trust, and the same publisher
+  certificate as the entry assembly. The broker independently repeats
+  containment, reparse, size, and hash validation and returns only count plus a
+  canonical dependency-set digest. No dependency is loaded.
 - `PluginBrokerQuarantineManager` persists a separate schema-1 broker-health
   document. Three counted failures for one external plugin within ten minutes
   block new probes for thirty minutes; a successful probe clears the window.

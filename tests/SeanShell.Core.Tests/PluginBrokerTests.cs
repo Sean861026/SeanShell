@@ -149,6 +149,80 @@ public sealed class PluginBrokerTests
     }
 
     [TestMethod]
+    public async Task SessionAcceptsBoundedDependencyAllowlist()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var dependency = package.AddDependency("lib\\Support.dll");
+        var now = DateTimeOffset.UtcNow;
+        var request = Authenticate(CreateProbeRequest(package, now, [dependency]));
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now);
+
+        Assert.IsTrue(response.Accepted);
+        Assert.IsNotNull(response.Metadata);
+        Assert.AreEqual(1, response.Metadata.DependencyCount);
+        Assert.AreEqual(
+            PluginBrokerDependencySet.ComputeDigest([dependency]),
+            response.Metadata.DependencySetSha256);
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsDependencyChangedAfterGrant()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var dependency = package.AddDependency("Support.dll");
+        var now = DateTimeOffset.UtcNow;
+        var request = CreateProbeRequest(package, now, [dependency]);
+        await File.AppendAllTextAsync(
+            Path.Combine(package.DirectoryPath, dependency.RelativePath),
+            "changed");
+        request = Authenticate(request);
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now);
+
+        Assert.IsFalse(response.Accepted);
+        StringAssert.Contains(response.Status, "dependency changed");
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsDependencyTraversal()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var dependency = new PluginBrokerDependency(
+            "..\\Outside.dll",
+            new string('A', 64),
+            "managed");
+        var request = Authenticate(CreateProbeRequest(package, now, [dependency]));
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now);
+
+        Assert.IsFalse(response.Accepted);
+        StringAssert.Contains(response.Status, "invalid entry");
+    }
+
+    [TestMethod]
     public async Task SessionRejectsExpiredCapabilityGrant()
     {
         using var package = new TemporaryBrokerPackage();
@@ -344,14 +418,22 @@ public sealed class PluginBrokerTests
     public async Task ClientProbesMetadataInSeparateProcess()
     {
         using var package = new TemporaryBrokerPackage();
+        var dependency = package.AddDependency("native\\Support.dll") with
+        {
+            Kind = "native",
+        };
         var client = new PluginBrokerClient(FindBrokerExecutable());
-        var request = CreateProbeRequest(package, DateTimeOffset.UtcNow);
+        var request = CreateProbeRequest(
+            package,
+            DateTimeOffset.UtcNow,
+            [dependency]);
 
         var response = await client.ProbeMetadataAsync(request.Grant!);
 
         Assert.IsTrue(response.Accepted);
         Assert.IsNotNull(response.Metadata);
         Assert.AreEqual(request.Grant!.PluginId, response.Metadata.PluginId);
+        Assert.AreEqual(1, response.Metadata.DependencyCount);
         Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
     }
 
@@ -427,7 +509,8 @@ public sealed class PluginBrokerTests
 
     private static PluginBrokerRequest CreateProbeRequest(
         TemporaryBrokerPackage package,
-        DateTimeOffset issuedAtUtc) =>
+        DateTimeOffset issuedAtUtc,
+        PluginBrokerDependency[]? dependencies = null) =>
         new(
             PluginBrokerProtocol.CurrentVersion,
             PluginBrokerProtocol.CreateRequestId(),
@@ -440,7 +523,8 @@ public sealed class PluginBrokerTests
                 new string('A', 64),
                 GrantedCapabilities: 1,
                 issuedAtUtc,
-                issuedAtUtc + TimeSpan.FromSeconds(15)));
+                issuedAtUtc + TimeSpan.FromSeconds(15),
+                dependencies));
 
     private static string FindBrokerExecutable()
     {
@@ -497,6 +581,19 @@ public sealed class PluginBrokerTests
         public string AssemblyPath { get; }
 
         public string AssemblySha256 { get; }
+
+        public PluginBrokerDependency AddDependency(string relativePath)
+        {
+            var path = Path.Combine(DirectoryPath, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, [7, 8, 9, 10]);
+            return new PluginBrokerDependency(
+                relativePath,
+                Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(
+                        File.ReadAllBytes(path))),
+                "managed");
+        }
 
         public void Dispose()
         {

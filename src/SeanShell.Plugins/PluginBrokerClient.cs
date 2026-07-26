@@ -35,6 +35,7 @@ public sealed class PluginBrokerClient : IPluginBrokerProbeClient
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(grant);
+        var dependencies = grant.Dependencies ?? [];
         var request = new PluginBrokerRequest(
             PluginBrokerProtocol.CurrentVersion,
             PluginBrokerProtocol.CreateRequestId(),
@@ -51,7 +52,12 @@ public sealed class PluginBrokerClient : IPluginBrokerProbeClient
                 response.Metadata.PublisherCertificateSha256,
                 grant.PublisherCertificateSha256,
                 StringComparison.OrdinalIgnoreCase) ||
-            response.Metadata.GrantedCapabilities != grant.GrantedCapabilities)
+            response.Metadata.GrantedCapabilities != grant.GrantedCapabilities ||
+            response.Metadata.DependencyCount != dependencies.Length ||
+            !string.Equals(
+                response.Metadata.DependencySetSha256,
+                PluginBrokerDependencySet.ComputeDigest(dependencies),
+                StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException(
                 "The plugin broker returned metadata that does not match the capability grant.");

@@ -95,6 +95,13 @@ scan. Each package may contain a `plugin.json` of at most 64 KiB:
   "publisher": "Example Publisher",
   "capabilities": ["LauncherCommands"],
   "entryAssembly": "Example.Plugin.dll",
+  "dependencies": [
+    {
+      "path": "lib/Example.Support.dll",
+      "sha256": "64_HEXADECIMAL_CHARACTERS",
+      "kind": "managed"
+    }
+  ],
   "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS"
 }
 ```
@@ -104,6 +111,13 @@ its package directory, and use no reparse-point path component. The catalog
 computes its SHA-256 content hash, asks Windows to validate its Authenticode trust
 chain and revocation status, then compares the signer's SHA-256 certificate
 fingerprint with the manifest. Duplicate IDs are rejected.
+
+`dependencies` is optional and contains at most 32 unique package-relative DLLs.
+Each item has a path of at most 240 characters, a SHA-256 content identity, and
+kind `managed` or `native`. Individual files are limited to 256 MiB and the set
+to 512 MiB. The host rejects traversal, duplicate canonical paths, reparse
+points, hash changes, untrusted signatures, and any signer certificate different
+from the entry assembly publisher.
 
 Revocation checking covers the complete certificate chain except the root and may
 retrieve current revocation data from the network. Results are reported
@@ -137,13 +151,14 @@ revocation state immediately before every brokered activation rather than
 trusting an earlier diagnostic snapshot.
 
 The exact packaged `SeanShell.App.exe` starts as a separate child process in
-`--plugin-broker` mode and implements the version-3 health and metadata-probe
+`--plugin-broker` mode and implements the version-4 health and metadata-probe
 operations described in
 [plugin-broker-protocol.md](plugin-broker-protocol.md). The host repeats trust
 and consent validation before issuing a 15-second grant bound to the package
-paths, assembly SHA-256, publisher certificate, and exact capabilities. The
-broker rechecks containment, reparse points, size, lifetime, capability bits, and
-the file hash. A new random pipe-delivered session key authenticates both frames
+paths, assembly SHA-256, publisher certificate, exact capabilities, and the
+dependency allowlist. The broker rechecks containment, reparse points, size,
+lifetime, capability bits, and every file hash, then returns a path-free set
+digest. A new random pipe-delivered session key authenticates both frames
 for each one-shot process. The broker never receives the persisted consent
 document and is not a plugin host: there is no type, activation, method, or
 command payload.
