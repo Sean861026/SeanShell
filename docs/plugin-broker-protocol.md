@@ -149,9 +149,19 @@ publisher consent and never authorizes execution.
 
 ## Remaining activation blockers
 
+`SeanShell.PluginBroker.Runtime` now contains a collectible
+`PluginDependencyLoadContext`, but no protocol operation constructs it. The
+context repeats allowlist bounds, path/hash/reparse checks, rejects dependency
+names that collide with framework or explicitly shared assemblies, and throws
+instead of returning `null` for undeclared managed or native names. Managed
+assemblies load from the same open stream whose SHA-256 was checked, avoiding
+an unlocked path between verification and managed loading.
+
 Before code execution is added, the broker still needs:
 
-- a load context and native resolver that deny every undeclared dependency;
 - bounded command/result DTOs with no delegate or shell string;
+- a broker-owned staging and cleanup design for verified native bytes before
+  `LoadUnmanagedDllFromPath` is enabled;
 - production certificate management and release-signing policy; and
-- adversarial tests against managed and native dependency escape.
+- an explicit activation operation with per-command deadlines and crash
+  accounting.

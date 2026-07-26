@@ -202,7 +202,13 @@ and requested capabilities. A changed signer or expanded capability set requires
 new consent, and the dashboard can revoke a candidate or clear every stored
 decision even after a package is removed. No external DLL is loaded or executed.
 
-Dependency containment, bounded activation DTOs, and production release signing
+The broker runtime now contains an inactive, collectible load context that
+accepts only exact-hash manifest dependencies, trusted framework assemblies,
+and explicitly supplied shared contracts. Undeclared managed and native names
+fail closed, and managed DLLs load from the same verified open stream rather
+than reopening an unlocked path. It is deliberately not connected to a broker
+operation.
+Bounded activation DTOs, native-load staging, and production release signing
 must still ship before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
@@ -219,8 +225,8 @@ broker receives a one-process, 256 MiB, kill-on-close Windows Job Object before
 its suspended primary thread is resumed. Only the three redirected streams and
 a one-use session-key pipe are inherited. The broker then disables
 legacy extension points, unsafe image sources, and child-process creation before
-reading a request. The broker still never loads or activates a plugin, and the
-App does not use it to run external code. See the
+reading a request. The protocol still never loads or activates a plugin, and the
+App does not use the new load context to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
 
 An external manifest may declare up to 32 managed or native package DLLs.

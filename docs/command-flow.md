@@ -169,6 +169,19 @@ User-approved plugin ID
 
 There is still no command flow from metadata probing to plugin activation.
 
+The future activation path has one implemented but disconnected boundary:
+
+```text
+Validated dependency grant
+  -> construct collectible PluginDependencyLoadContext
+  -> repeat count / canonical path / unique path / size / reparse / hash checks
+  -> framework name: resolve only from the .NET runtime
+  -> explicit shared-contract name: return only the trusted supplied Assembly
+  -> declared managed name: hash bytes again, then LoadFromStream
+  -> declared native name: resolve exact package path (loading still disabled)
+  -> any other name or trusted-name collision: throw and stop
+```
+
 ## Git repository refresh
 
 ```text
