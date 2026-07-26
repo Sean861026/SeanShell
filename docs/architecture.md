@@ -138,6 +138,12 @@ without opening or retaining process handles.
   process, closes the job, and fails the request. Each launch receives a random
   256-bit key before resume; both request and response are HMAC-authenticated,
   correlated to the same session/nonce, and key buffers are cleared afterward.
+  `SeanShell.PluginBroker.Runtime` also owns an inactive, collectible dependency
+  load context for the future activation path. It admits only runtime framework
+  assemblies, explicitly supplied shared contracts, and exact-hash manifest
+  dependencies. Managed dependencies load from the verified open stream; undeclared
+  managed/native requests throw instead of falling through to host or platform
+  search. No current broker operation constructs this context.
   The preview broker handles one bounded frame and exits. Before a
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects

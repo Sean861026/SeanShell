@@ -54,6 +54,13 @@ installation failures must never be charged to a plugin. Do not add an
 activation operation until its dependency-containment, bounded DTO, and
 packaging design is reviewed.
 
+Resolver changes must prove that undeclared managed dependencies cannot fall
+back to assemblies already present in the host, undeclared native names are
+rejected, changed hashes fail at resolution time, shared contracts cannot be
+shadowed, and dependency count/path/size limits are repeated at the load
+boundary. The resolver must remain disconnected from protocol operations until
+the bounded activation DTO and native staging designs are reviewed.
+
 CI sets `SEANSHELL_BROKER_TEST_EXECUTABLE` to the freshly built
 `SeanShell.App.exe`, forcing all process-boundary tests through the same custom
 broker entry point used by packaged production composition. Local tests fall

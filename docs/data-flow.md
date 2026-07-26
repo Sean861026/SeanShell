@@ -193,6 +193,13 @@ The broker child uses `SeanShell.PluginBroker.Runtime` and never initializes
 WinUI. The standalone console broker used by tests delegates to the same runtime,
 so process-boundary tests exercise the same protocol and mitigation code.
 
+The runtime's inactive load context derives private lookup maps from the verified
+dependency grant. It exposes neither those maps nor package paths across the
+protocol. Managed resolution hashes and loads through one read-only file handle
+into the collectible context. Native resolution currently
+stops after exact-name/path/hash selection; it is not connected to an operation
+until broker-owned staging is designed.
+
 ## Dock and dashboard
 
 ```text

@@ -163,6 +163,15 @@ for each one-shot process. The broker never receives the persisted consent
 document and is not a plugin host: there is no type, activation, method, or
 command payload.
 
+The broker runtime includes a not-yet-wired collectible assembly load context
+for the future activation path. It resolves only exact-hash dependencies from
+the manifest, runtime framework assemblies, and an explicit set of shared
+contract assemblies. An undeclared managed dependency cannot fall back to a
+host DLL, and an undeclared native dependency cannot use the platform loader's
+name search. Managed dependencies are loaded from the verified open stream.
+Native loading remains disabled until those bytes can be staged under a
+broker-owned lifecycle.
+
 Single-project MSIX exposes only the App executable. The broker runtime is a
 UI-independent class library shared with a standalone console test harness.
 Production App composition never accepts a configurable broker path, and the
