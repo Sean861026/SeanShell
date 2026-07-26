@@ -57,6 +57,8 @@ public partial class App : Application
 
     public GamingDetectionPerformanceMonitor GamingDetectionPerformance { get; } = new();
 
+    public GamingSessionRecorder GamingSessions { get; }
+
     public ProcessCatalog Processes { get; } = new();
 
     public DesktopWindowService DesktopWindows { get; } = new();
@@ -79,6 +81,10 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
             "startup-health.json");
+        var gamingSessionPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SeanShell",
+            "gaming-sessions.json");
         _startupGuard = new StartupCrashLoopGuard(startupHealthPath);
         SettingsStore = new ShellSettingsStore(settingsPath);
         SettingsLoad = SettingsStore.Load();
@@ -92,6 +98,12 @@ public partial class App : Application
         GamingMode.ConfigureAutomaticDetection(
             SettingsLoad.Settings.AutomaticGamingModeEnabled,
             GameDetector.ParseRules(SettingsLoad.Settings.GameProcessRules));
+        var gamingSessionStore = new GamingSessionStore(gamingSessionPath);
+        GamingSessions = new GamingSessionRecorder(
+            gamingSessionStore,
+            gamingSessionStore.Load(),
+            Environment.OSVersion.VersionString,
+            typeof(App).Assembly.GetName().Version?.ToString() ?? "development");
 
         var developerWorkspaceRoots = GetDeveloperWorkspaceRoots();
         PluginHost = new PluginHost(

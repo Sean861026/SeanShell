@@ -242,6 +242,7 @@ Two-second process snapshot
   -> dashboard polling and optional plugins suspend
   -> dock hides and animations reduce
   -> last matched game exits and manual override is off
+  -> complete and atomically save local compatibility-session summary
   -> ShellStateStore returns to Normal mode
   -> suspended providers resume
 ```

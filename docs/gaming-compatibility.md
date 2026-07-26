@@ -20,6 +20,12 @@ samples and reports scan-duration P95 plus an estimated detector CPU percentage.
 The estimate uses SeanShell processor time observed during each scan and is
 intended for before/after comparisons, not as a replacement for a system profiler.
 
+After a detected process session ends, SeanShell atomically stores a local
+compatibility summary. The latest 20 records include only the configured
+executable names, timestamps, Windows and SeanShell versions, and detector
+metrics. Manual-only Gaming Mode is excluded. The Dashboard shows the latest
+summary; no session data is transmitted.
+
 ## Recommended rules
 
 Add the executable for the actual game, not its launcher. For example, prefer
@@ -42,6 +48,7 @@ For each game under test, record:
 | Disable manual mode while game runs | Automatic detection keeps gaming mode active |
 | Anti-cheat launch and play | No warning, kick, or blocked launch attributable to SeanShell |
 | Observe 60 detector samples | Record estimated CPU and scan P95 from the Gaming mode card |
+| Exit the matching process | Latest session summary appears and persists after restart |
 
 Compatibility results should include the game version, anti-cheat provider,
 Windows build, GPU driver, and SeanShell commit. A successful test is evidence for

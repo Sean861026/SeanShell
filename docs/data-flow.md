@@ -10,6 +10,8 @@ Windows process snapshot
   -> GameDetector
   -> detected process ID/name set
   -> GamingModeManager + manual override
+  -> GamingSessionRecorder
+  -> local schema-1 history (maximum 20 completed detected sessions)
   -> ShellStateStore
   -> ShellStateChanged event
   -> App, dashboard providers, dock, and plugins
@@ -26,6 +28,13 @@ gaming mode because it is the mechanism that restores normal mode; dashboard and
 Dock polling remain suspended. A bounded monitor records the last 60 scan
 durations and SeanShell processor-time deltas for in-app P95 and estimated-CPU
 diagnostics.
+
+Manual-only Gaming Mode does not create compatibility evidence. When detected
+processes transition from none to one or more, the session recorder captures the
+start time and resets detector diagnostics for a session-local sample window.
+After the last match exits, the recorder stores executable names, duration,
+Windows and SeanShell versions, and the final detector metrics. The JSON document
+uses a temporary file, write-through flush, replacement, and recovery backup.
 
 ## Launcher results
 

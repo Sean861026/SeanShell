@@ -28,6 +28,7 @@ public sealed partial class MainWindow : Window
     private readonly LauncherWindow _launcherWindow;
     private readonly GamingModeManager _gamingMode;
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
+    private readonly GamingSessionRecorder _gamingSessions;
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
@@ -61,6 +62,7 @@ public sealed partial class MainWindow : Window
         _settings = app.SettingsLoad.Settings;
         _gamingMode = app.GamingMode;
         _gamingDetectionPerformance = app.GamingDetectionPerformance;
+        _gamingSessions = app.GamingSessions;
         _pluginHost = app.PluginHost;
         _processCatalog = app.Processes;
         _desktopWindows = app.DesktopWindows;
@@ -99,6 +101,7 @@ public sealed partial class MainWindow : Window
 
         RegisterLauncherHotKey(_settings.LauncherShortcut);
         _shellState.StateChanged += OnShellStateChanged;
+        _gamingMode.StatusChanged += OnGamingSessionStatusChanged;
         Activated += OnActivated;
         Closed += OnClosed;
     }
@@ -152,6 +155,18 @@ public sealed partial class MainWindow : Window
     private void OnManualGamingModeChanged(bool enabled)
     {
         _gamingMode.SetManualMode(enabled);
+    }
+
+    private void OnGamingSessionStatusChanged(object? sender, GamingModeStatus status)
+    {
+        var transition = _gamingSessions.Observe(
+            status,
+            _gamingDetectionPerformance.Current,
+            DateTimeOffset.UtcNow);
+        if (transition == GamingSessionTransition.Started)
+        {
+            _gamingDetectionPerformance.Reset();
+        }
     }
 
     private async void OnPluginEnabledChanged(string pluginId, bool enabled)
@@ -650,6 +665,7 @@ public sealed partial class MainWindow : Window
         _gamingModeTimer.Stop();
         _launcherHotKey?.Dispose();
         _shellState.StateChanged -= OnShellStateChanged;
+        _gamingMode.StatusChanged -= OnGamingSessionStatusChanged;
         if (_accessibility is not null)
         {
             _accessibility.Changed -= OnAccessibilityChanged;

@@ -16,6 +16,7 @@ public sealed partial class MainPage : Page
     private int _displayCount;
     private readonly GamingModeManager _gamingMode;
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
+    private readonly GamingSessionRecorder _gamingSessions;
     private readonly LauncherPerformanceMonitor _launcherPerformance;
     private readonly PluginHost _pluginHost;
     private readonly HashSet<string> _pendingPluginIds = new(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +35,7 @@ public sealed partial class MainPage : Page
         _systemMetrics = app.SystemMetrics;
         _gamingMode = app.GamingMode;
         _gamingDetectionPerformance = app.GamingDetectionPerformance;
+        _gamingSessions = app.GamingSessions;
         _launcherPerformance = app.LauncherPerformance;
         _pluginHost = app.PluginHost;
         _displayCount = app.Displays.Capture().Count;
@@ -243,6 +245,8 @@ public sealed partial class MainPage : Page
         _gamingMode.StatusChanged += OnGamingModeStatusChanged;
         _gamingDetectionPerformance.Changed -= OnGamingDetectionPerformanceChanged;
         _gamingDetectionPerformance.Changed += OnGamingDetectionPerformanceChanged;
+        _gamingSessions.Changed -= OnGamingSessionsChanged;
+        _gamingSessions.Changed += OnGamingSessionsChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _pluginHost.DiagnosticsChanged += OnPluginDiagnosticsChanged;
         _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
@@ -250,6 +254,7 @@ public sealed partial class MainPage : Page
         ApplyShellState(_shellState.Current);
         ApplyGamingModeStatus(_gamingMode.Current);
         ApplyGamingDetectionPerformance();
+        ApplyGamingSessionHistory();
         ApplyPluginDiagnostics();
         ApplyLauncherPerformance();
         ApplyAdaptiveLayout(ActualWidth);
@@ -266,6 +271,7 @@ public sealed partial class MainPage : Page
         _shellState.StateChanged -= OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingModeStatusChanged;
         _gamingDetectionPerformance.Changed -= OnGamingDetectionPerformanceChanged;
+        _gamingSessions.Changed -= OnGamingSessionsChanged;
         _pluginHost.DiagnosticsChanged -= OnPluginDiagnosticsChanged;
         _launcherPerformance.Changed -= OnLauncherPerformanceChanged;
     }
@@ -434,6 +440,11 @@ public sealed partial class MainPage : Page
         DispatcherQueue.TryEnqueue(ApplyGamingDetectionPerformance);
     }
 
+    private void OnGamingSessionsChanged(object? sender, EventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(ApplyGamingSessionHistory);
+    }
+
     private void OnPluginDiagnosticsChanged(object? sender, EventArgs e)
     {
         DispatcherQueue.TryEnqueue(ApplyPluginDiagnostics);
@@ -476,6 +487,37 @@ public sealed partial class MainPage : Page
               $"{snapshot.LastScanDuration!.Value.TotalMilliseconds:F1} ms last · " +
               $"{snapshot.P95ScanDuration!.Value.TotalMilliseconds:F1} ms P95 " +
               $"({snapshot.SampleCount} samples)";
+    }
+
+    private void ApplyGamingSessionHistory()
+    {
+        var history = _gamingSessions.Current;
+        if (history.ActiveSessionStartedAt is not null)
+        {
+            GamingSessionHistory.Text =
+                $"Recording detected session since {history.ActiveSessionStartedAt.Value.ToLocalTime():t}";
+            return;
+        }
+
+        var latest = history.RecentSessions.FirstOrDefault();
+        if (latest is null)
+        {
+            GamingSessionHistory.Text = history.Warning is null
+                ? "Compatibility evidence: No detected session recorded yet"
+                : $"Compatibility evidence unavailable: {history.Warning}";
+            return;
+        }
+
+        var duration = latest.Duration.TotalHours >= 1
+            ? $"{latest.Duration.TotalHours:F1} h"
+            : $"{Math.Max(1, latest.Duration.TotalMinutes):F0} min";
+        var performance = latest.EstimatedDetectorCpuPercentage is null ||
+                          latest.DetectorP95Milliseconds is null
+            ? "detector metrics unavailable"
+            : $"{latest.EstimatedDetectorCpuPercentage.Value:F3}% CPU · " +
+              $"{latest.DetectorP95Milliseconds.Value:F1} ms P95";
+        GamingSessionHistory.Text =
+            $"Last session: {string.Join(", ", latest.GameNames)} · {duration} · {performance}";
     }
 
     private void ApplyPluginDiagnostics()
