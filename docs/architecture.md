@@ -56,6 +56,13 @@ Documents directory. Repository metadata is read by a
 cancellable `git status` child process during initialization or an explicit
 Launcher refresh. Launcher queries use the cached immutable snapshots.
 
+Pinned applications reuse `InstalledApplicationProvider`'s one-time Start Menu
+index. Settings contain at most eight ordered `app:` command IDs; the provider
+resolves only exact IDs that exist in that index and returns the original
+`ShellCommand` launch delegate. Missing shortcuts are omitted from the current
+Dock snapshot but remain in settings so a restored shortcut can reappear. The App
+distributes one immutable pinned-command list to every monitor-local Dock.
+
 The built-in .NET workspace plugin receives the same bounded developer roots. A
 breadth-first scan is capped at depth four and 24 solution/project files, skips
 build, dependency, reparse-point, and inaccessible directories, and never scans
@@ -195,10 +202,11 @@ flushes it to disk, and replaces the primary document while retaining
 shortcut values never reach the UI: the store loads the backup or safe defaults
 and returns a warning for the dashboard.
 
-Schema version 6 persists Dock auto-hide, the opt-in Companion Taskbar preference,
-one of three reviewed Launcher shortcuts, opt-in automatic game detection,
+Schema version 7 persists Dock auto-hide, the opt-in Companion Taskbar preference,
+up to eight ordered pinned application IDs, one of three reviewed Launcher shortcuts,
+opt-in automatic game detection,
 newline-delimited game process rules, normalized disabled plugin IDs, appearance,
-and display density. Versions 1 through 5 migrate in memory without losing
+and display density. Versions 1 through 6 migrate in memory without losing
 existing preferences; taskbar replacement always defaults off when migrating.
 Arbitrary key capture is intentionally excluded so SeanShell never needs a
 keyboard hook. A shortcut change is committed only after `RegisterHotKey`

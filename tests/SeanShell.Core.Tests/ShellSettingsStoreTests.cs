@@ -15,6 +15,7 @@ public sealed class ShellSettingsStoreTests
 
         Assert.IsTrue(result.Settings.DockAutoHide);
         Assert.IsFalse(result.Settings.ReplaceWindowsTaskbar);
+        Assert.AreEqual(string.Empty, result.Settings.PinnedApplicationIds);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
         Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
@@ -32,6 +33,8 @@ public sealed class ShellSettingsStoreTests
         {
             DockAutoHide = false,
             ReplaceWindowsTaskbar = true,
+            PinnedApplicationIds =
+                "app:C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Terminal.lnk",
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
             Theme = ShellThemePreference.Dark,
             DisplayDensity = ShellDisplayDensity.Compact,
@@ -61,6 +64,31 @@ public sealed class ShellSettingsStoreTests
 
         Assert.AreEqual(expected, result.Settings);
         Assert.IsTrue(result.WasRecovered);
+    }
+
+    [TestMethod]
+    public void SaveNormalizesPinnedApplicationIds()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new ShellSettingsStore(
+            Path.Combine(directory.Path, "settings.json"));
+        var ids = Enumerable
+            .Range(1, PinnedApplicationIdList.MaximumCount + 2)
+            .Select(index => $"app:C:\\App{index}.lnk")
+            .Append("system:settings");
+
+        store.Save(new ShellSettings
+        {
+            PinnedApplicationIds = string.Join('\n', ids),
+        });
+        var result = store.Load();
+
+        var pinned = PinnedApplicationIdList.Parse(
+            result.Settings.PinnedApplicationIds);
+        Assert.HasCount(PinnedApplicationIdList.MaximumCount, pinned);
+        Assert.IsFalse(result.Settings.PinnedApplicationIds.Contains(
+            "system:settings",
+            StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -236,6 +264,34 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(
             ShellDisplayDensity.Compact,
             result.Settings.DisplayDensity);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionSixSettingsWithNoPinnedApplications()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 6,
+              "dockAutoHide": true,
+              "replaceWindowsTaskbar": true,
+              "launcherShortcut": "altSpace",
+              "theme": "dark",
+              "displayDensity": "compact"
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(
+            ShellSettings.CurrentSchemaVersion,
+            result.Settings.SchemaVersion);
+        Assert.IsTrue(result.Settings.ReplaceWindowsTaskbar);
+        Assert.AreEqual(string.Empty, result.Settings.PinnedApplicationIds);
     }
 
     private sealed class TemporaryDirectory : IDisposable

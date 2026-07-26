@@ -2,13 +2,15 @@ namespace SeanShell.Core;
 
 public sealed record ShellSettings
 {
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 7;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
     public bool DockAutoHide { get; init; } = true;
 
     public bool ReplaceWindowsTaskbar { get; init; }
+
+    public string PinnedApplicationIds { get; init; } = string.Empty;
 
     public LauncherShortcut LauncherShortcut { get; init; } = LauncherShortcut.AltSpace;
 
