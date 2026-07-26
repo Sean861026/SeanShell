@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -17,23 +16,25 @@ internal sealed class SuspendedBrokerProcess : IDisposable
     private const uint ResumeThreadFailed = uint.MaxValue;
 
     private readonly SafeProcessHandle _nativeProcessHandle;
-    private readonly Process _process;
+    private readonly NativeProcessWaitHandle _waitHandle;
+    private readonly int _processId;
 
     private SuspendedBrokerProcess(
         SafeProcessHandle nativeProcessHandle,
-        Process process,
+        int processId,
         StreamWriter input,
         StreamReader output,
         StreamReader error)
     {
         _nativeProcessHandle = nativeProcessHandle;
-        _process = process;
+        _waitHandle = new NativeProcessWaitHandle(nativeProcessHandle);
+        _processId = processId;
         Input = input;
         Output = output;
         Error = error;
     }
 
-    public int Id => _process.Id;
+    public int Id => _processId;
 
     public int ExitCode
     {
@@ -76,7 +77,6 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         PipePair? stderr = null;
         SafeProcessHandle? nativeProcessHandle = null;
         SafeWaitHandle? primaryThreadHandle = null;
-        Process? process = null;
         StreamWriter? input = null;
         StreamReader? output = null;
         StreamReader? error = null;
@@ -133,7 +133,6 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             stderr.Child.Dispose();
 
             sandbox.Assign(nativeProcessHandle);
-            process = Process.GetProcessById(checked((int)processInformation.ProcessId));
             if (ResumeThread(primaryThreadHandle) == ResumeThreadFailed)
             {
                 throw new Win32Exception(
@@ -147,7 +146,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
 
             return new SuspendedBrokerProcess(
                 nativeProcessHandle,
-                process,
+                checked((int)processInformation.ProcessId),
                 input,
                 output,
                 error);
@@ -163,7 +162,6 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             input?.Dispose();
             output?.Dispose();
             error?.Dispose();
-            process?.Dispose();
             nativeProcessHandle?.Dispose();
             throw;
         }
@@ -176,8 +174,39 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         }
     }
 
-    public Task WaitForExitAsync(CancellationToken cancellationToken) =>
-        _process.WaitForExitAsync(cancellationToken);
+    public async Task WaitForExitAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (HasExited)
+        {
+            return;
+        }
+
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var registration = ThreadPool.RegisterWaitForSingleObject(
+            _waitHandle,
+            static (state, _) => ((TaskCompletionSource)state!).TrySetResult(),
+            completion,
+            Timeout.Infinite,
+            executeOnlyOnce: true);
+        using var cancellationRegistration = cancellationToken.Register(
+            static state =>
+            {
+                var (source, token) =
+                    ((TaskCompletionSource Source, CancellationToken Token))state!;
+                source.TrySetCanceled(token);
+            },
+            (completion, cancellationToken));
+        try
+        {
+            await completion.Task.ConfigureAwait(false);
+        }
+        finally
+        {
+            _ = registration.Unregister(null);
+        }
+    }
 
     public void Terminate()
     {
@@ -192,7 +221,7 @@ internal sealed class SuspendedBrokerProcess : IDisposable
         Input.Dispose();
         Output.Dispose();
         Error.Dispose();
-        _process.Dispose();
+        _waitHandle.Dispose();
         _nativeProcessHandle.Dispose();
     }
 
@@ -392,6 +421,16 @@ internal sealed class SuspendedBrokerProcess : IDisposable
             DeleteProcThreadAttributeList(Handle);
             Marshal.FreeHGlobal(_handleList);
             Marshal.FreeHGlobal(Handle);
+        }
+    }
+
+    private sealed class NativeProcessWaitHandle : WaitHandle
+    {
+        public NativeProcessWaitHandle(SafeProcessHandle processHandle)
+        {
+            SafeWaitHandle = new SafeWaitHandle(
+                processHandle.DangerousGetHandle(),
+                ownsHandle: false);
         }
     }
 
