@@ -55,6 +55,8 @@ public partial class App : Application
 
     public GamingModeManager GamingMode { get; }
 
+    public GamingDetectionPerformanceMonitor GamingDetectionPerformance { get; } = new();
+
     public ProcessCatalog Processes { get; } = new();
 
     public DesktopWindowService DesktopWindows { get; } = new();

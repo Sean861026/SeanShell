@@ -4,7 +4,9 @@
 
 ```text
 Windows process snapshot
-  -> ProcessSnapshot[]
+  -> configured-name filter
+  -> matching ProcessSnapshot[]
+  -> 60-sample performance diagnostics
   -> GameDetector
   -> detected process ID/name set
   -> GamingModeManager + manual override
@@ -17,10 +19,13 @@ Windows process snapshot
 when the mode changes, preventing repeated process scans from causing unnecessary UI
 updates.
 
-`ProcessCatalog` disposes every temporary `Process` object immediately and skips
-processes that exit or become inaccessible during enumeration. The detector runs
-every two seconds even in gaming mode because it is the mechanism that restores
-normal mode; dashboard and Dock polling remain suspended.
+`ProcessCatalog` disposes every temporary `Process` object immediately, skips
+processes that exit or become inaccessible during enumeration, and creates
+snapshots only for configured names. The detector runs every two seconds even in
+gaming mode because it is the mechanism that restores normal mode; dashboard and
+Dock polling remain suspended. A bounded monitor records the last 60 scan
+durations and SeanShell processor-time deltas for in-app P95 and estimated-CPU
+diagnostics.
 
 ## Launcher results
 

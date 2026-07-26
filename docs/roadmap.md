@@ -50,7 +50,10 @@
 - [x] Source-aware manual and rule-based gaming mode
 - [x] Persisted opt-in process rules with schema v1 to v2 migration
 - [x] Pause/resume policy for dashboard sampling and all Dock windows
-- [ ] Measure automatic detector CPU use during representative game sessions
+- [x] Add bounded automatic-detector CPU and P95 scan diagnostics
+- [ ] Record detector diagnostics during representative game sessions
+- Current local Release idle sample: 0.042% estimated detector CPU and 14.3 ms
+  scan P95 over 28 samples with configured rules and no active match.
 - Compatibility matrix for Steam and anti-cheat-enabled games
 - No injection, graphics hooks, overlays, or input interception
 

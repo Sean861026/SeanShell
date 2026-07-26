@@ -234,7 +234,8 @@ normal-mode transition displays them later.
 
 ```text
 Two-second process snapshot
-  -> GameDetector matches normalized executable rules
+  -> retain only processes matching normalized executable rules
+  -> record bounded scan-duration and processor-time diagnostics
   -> GamingModeManager replaces its active detected-game set
   -> combine detected games with the manual session override
   -> either source active: ShellStateStore enters Gaming mode

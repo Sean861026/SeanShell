@@ -163,6 +163,12 @@ gaming mode remains active while either source is active. This prevents a game
 exit from cancelling a manual override, and prevents disabling the manual toggle
 from cancelling a still-running detected game.
 
+Automatic detection takes one disposable process-list pass every two seconds and
+retains snapshots only for configured executable names. Its performance monitor
+keeps at most 60 samples and exposes scan P95 plus estimated detector CPU use to
+the dashboard. The estimate is diagnostic evidence for representative sessions,
+not a system-wide profiler.
+
 ## Deployment
 
 The initial app uses single-project MSIX packaging and a debug identity generated

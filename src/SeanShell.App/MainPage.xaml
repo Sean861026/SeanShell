@@ -514,6 +514,10 @@
                                     x:Name="GamingDetectionStatus"
                                     Style="{StaticResource SeanSecondaryTextStyle}"
                                     Text="Automatic detection is off" />
+                                <TextBlock
+                                    x:Name="GamingDetectionPerformance"
+                                    Style="{StaticResource SeanCaptionTextStyle}"
+                                    Text="Detector performance: Not measured" />
                             </StackPanel>
                         </Grid>
                         <Expander Header="Configure gaming mode">
