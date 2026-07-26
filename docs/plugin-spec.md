@@ -136,11 +136,14 @@ external consent. A future loader must revalidate the exact file and online
 revocation state immediately before every brokered activation rather than
 trusting an earlier diagnostic snapshot.
 
-The separate `SeanShell.PluginBroker` process currently implements only the
-version-1 health handshake described in
-[plugin-broker-protocol.md](plugin-broker-protocol.md). Its request model has no
-assembly path, type, activation, or command payload. Consent is not forwarded to
-the broker, and the broker is not a plugin host.
+The separate `SeanShell.PluginBroker` process implements the version-2 health and
+metadata-probe operations described in
+[plugin-broker-protocol.md](plugin-broker-protocol.md). The host repeats trust
+and consent validation before issuing a 15-second grant bound to the package
+paths, assembly SHA-256, publisher certificate, and exact capabilities. The
+broker rechecks containment, reparse points, size, lifetime, capability bits, and
+the file hash. It never receives the persisted consent document and is not a
+plugin host: there is no type, activation, method, or command payload.
 
 The current in-process timeout bounds how long SeanShell waits; it cannot forcibly
 terminate synchronous plugin code that ignores cancellation. This is acceptable

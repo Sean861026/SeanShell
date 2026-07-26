@@ -2,10 +2,11 @@
 
 ## Status
 
-Protocol version 1 is a fail-closed process-boundary preview. It proves that the
-host can start, identify, time-limit, and terminate a separate SeanShell broker.
-It does not provide plugin discovery, assembly loading, dependency resolution,
-activation, or command execution.
+Protocol version 2 is a fail-closed process-boundary preview. It supports a
+health handshake and a read-only `probe-metadata` operation. The probe proves
+that a freshly trusted and approved package still has the exact bytes and
+capabilities authorized by the host. It does not load an assembly, inspect
+managed types, activate a plugin, or execute a command.
 
 ## Transport
 
@@ -13,59 +14,91 @@ activation, or command execution.
 - One request and one response per broker process.
 - Maximum decoded frame length: 65,536 characters.
 - The host closes standard input after sending its request.
-- The host applies a two-second handshake timeout and terminates the broker
-  process tree if the exchange fails or is cancelled.
+- The host applies a two-second timeout and terminates the process tree when the
+  exchange fails or is cancelled.
 - The broker exits `0` only for an accepted request and `2` for a rejected frame.
+- Responses are accepted only when protocol version, request ID, process ID,
+  operation-specific metadata, and exit code all match.
 
-The App never sends secrets, file contents, environment values, Plugin paths, or
-user query text through this protocol.
+The protocol never carries file contents, environment values, launcher query
+text, arbitrary command strings, persisted consent documents, or secrets.
 
-## Version 1 request
+## Health request
 
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "requestId": "32_character_lowercase_guid",
-  "operation": "health"
+  "operation": "health",
+  "grant": null
 }
 ```
 
-`health` is the only accepted operation. Operation matching is ordinal and
-case-sensitive. Unknown operations receive a fixed rejection message that does
-not echo untrusted input.
+A health request containing a grant is rejected.
 
-There is intentionally no field for an assembly path, type, method, argument,
-capability token, or trust decision. Requests such as `activate` and
-`load-assembly` cannot be represented as supported behavior.
+## Metadata probe request
 
-## Version 1 response
+Immediately before creating the request, the host:
+
+1. rescans the bounded package directory;
+2. revalidates Authenticode and online publisher revocation;
+3. confirms the exact publisher and capability consent; and
+4. creates a single-package grant valid for 15 seconds.
 
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
+  "requestId": "32_character_lowercase_guid",
+  "operation": "probe-metadata",
+  "grant": {
+    "pluginId": "example.publisher.plugin",
+    "packageDirectoryPath": "absolute_package_directory",
+    "entryAssemblyPath": "absolute_package_dll",
+    "assemblySha256": "64_HEXADECIMAL_CHARACTERS",
+    "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
+    "grantedCapabilities": 1,
+    "issuedAtUtc": "2026-07-26T00:00:00+00:00",
+    "expiresAtUtc": "2026-07-26T00:00:15+00:00"
+  }
+}
+```
+
+The broker rejects grants with unknown capability bits, invalid IDs or hashes,
+non-absolute paths, a lifetime over 30 seconds, future/expired timestamps,
+missing or oversized files, directory traversal, reparse points, or a SHA-256
+mismatch. It returns only normalized identity metadata and never returns a path.
+
+## Accepted metadata response
+
+```json
+{
+  "protocolVersion": 2,
   "requestId": "same_request_id",
   "accepted": true,
-  "status": "Broker handshake ready; external activation is disabled.",
-  "brokerProcessId": 12345
+  "status": "Package metadata matched the short-lived capability grant; activation remains disabled.",
+  "brokerProcessId": 12345,
+  "metadata": {
+    "pluginId": "example.publisher.plugin",
+    "assemblySha256": "64_HEXADECIMAL_CHARACTERS",
+    "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
+    "grantedCapabilities": 1
+  }
 }
 ```
 
-The host accepts a handshake only when the process exits successfully, the
-protocol and request ID match, `accepted` is true, and `brokerProcessId` equals
-the process it started. Every other outcome fails closed.
+The client compares every metadata field to its request. A mismatch, rejection,
+timeout, nonzero exit, or unexpected process ID fails closed.
 
-## Before activation can be added
+## Remaining activation blockers
 
-The next protocol version must define:
+`probe-metadata` is not an activation token and does not make persisted consent
+safe to send to arbitrary broker instances. Before code execution is added, the
+broker still needs:
 
-- package revalidation immediately before broker launch;
-- a short-lived, single-package capability grant rather than the persisted
-  consent document itself;
-- Windows process mitigation and resource policy;
+- Windows process mitigations and resource limits;
 - dependency and native-library containment;
-- bounded command/result DTOs with no arbitrary delegate or shell string;
-- broker crash accounting and automatic quarantine; and
-- packaging/signing rules for the broker binary.
-
-External activation remains blocked until those controls and representative
-adversarial tests ship.
+- a broker-authenticated, single-use activation channel;
+- bounded command/result DTOs with no delegate or shell string;
+- broker crash accounting and automatic quarantine;
+- packaging and signing rules for the broker executable; and
+- adversarial tests against managed and native dependency escape.

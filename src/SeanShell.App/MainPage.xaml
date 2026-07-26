@@ -521,6 +521,10 @@
                                                 Style="{StaticResource SeanCaptionTextStyle}"
                                                 Text="Diagnostic only: every recheck validates the signature and online publisher revocation status. SeanShell never loads or executes these assemblies."
                                                 TextWrapping="Wrap" />
+                                            <TextBlock
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="Broker protocol v2 can match an approved package hash to a 15-second capability grant in a separate process. Activation and command execution remain unavailable."
+                                                TextWrapping="Wrap" />
                                         </StackPanel>
                                         <TextBlock
                                             x:Name="ExternalPluginEmptyState"

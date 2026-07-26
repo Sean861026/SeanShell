@@ -23,6 +23,47 @@ public sealed class PluginBrokerClient
     public async Task<PluginBrokerResponse> CheckHealthAsync(
         CancellationToken cancellationToken = default)
     {
+        var request = new PluginBrokerRequest(
+            PluginBrokerProtocol.CurrentVersion,
+            PluginBrokerProtocol.CreateRequestId(),
+            PluginBrokerProtocol.HealthOperation);
+        return await SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<PluginBrokerResponse> ProbeMetadataAsync(
+        PluginBrokerGrant grant,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        var request = new PluginBrokerRequest(
+            PluginBrokerProtocol.CurrentVersion,
+            PluginBrokerProtocol.CreateRequestId(),
+            PluginBrokerProtocol.MetadataProbeOperation,
+            grant);
+        var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (response.Metadata is null ||
+            !string.Equals(response.Metadata.PluginId, grant.PluginId, StringComparison.Ordinal) ||
+            !string.Equals(
+                response.Metadata.AssemblySha256,
+                grant.AssemblySha256,
+                StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(
+                response.Metadata.PublisherCertificateSha256,
+                grant.PublisherCertificateSha256,
+                StringComparison.OrdinalIgnoreCase) ||
+            response.Metadata.GrantedCapabilities != grant.GrantedCapabilities)
+        {
+            throw new InvalidDataException(
+                "The plugin broker returned metadata that does not match the capability grant.");
+        }
+
+        return response;
+    }
+
+    private async Task<PluginBrokerResponse> SendAsync(
+        PluginBrokerRequest request,
+        CancellationToken cancellationToken)
+    {
         if (!File.Exists(_brokerExecutablePath))
         {
             throw new FileNotFoundException(
@@ -30,10 +71,6 @@ public sealed class PluginBrokerClient
                 _brokerExecutablePath);
         }
 
-        var request = new PluginBrokerRequest(
-            PluginBrokerProtocol.CurrentVersion,
-            PluginBrokerProtocol.CreateRequestId(),
-            PluginBrokerProtocol.HealthOperation);
         using var timeoutCancellation = new CancellationTokenSource(_timeout);
         using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
@@ -74,7 +111,7 @@ public sealed class PluginBrokerClient
                 response.BrokerProcessId != process.Id)
             {
                 throw new InvalidDataException(
-                    $"The plugin broker handshake was rejected. {response.Status}");
+                    $"The plugin broker request was rejected. {response.Status}");
             }
 
             return response;

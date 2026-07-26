@@ -5,4 +5,5 @@ public sealed record PluginBrokerResponse(
     string RequestId,
     bool Accepted,
     string Status,
-    int BrokerProcessId);
+    int BrokerProcessId,
+    PluginBrokerMetadata? Metadata = null);
