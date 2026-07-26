@@ -30,6 +30,8 @@ public sealed partial class MainWindow : Window
     private readonly PluginHost _pluginHost;
     private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
+    private SystemAccessibilityService? _accessibility;
+    private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1);
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
     private IReadOnlyList<DockWindow> _dockWindows;
@@ -100,6 +102,10 @@ public sealed partial class MainWindow : Window
     private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
+        _accessibility = new SystemAccessibilityService();
+        _accessibility.Changed += OnAccessibilityChanged;
+        _systemAccessibility = _accessibility.Current;
+        ApplySystemAccessibility(_systemAccessibility);
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.ShowDock();
@@ -123,12 +129,12 @@ public sealed partial class MainWindow : Window
             if (state.Mode == ShellMode.Gaming)
             {
                 _dockRefreshTimer.Stop();
-                SetReducedEffects(true);
+                UpdateReducedEffects();
                 await _pluginHost.SuspendAsync().ConfigureAwait(true);
             }
             else
             {
-                SetReducedEffects(false);
+                UpdateReducedEffects();
                 _dockRefreshTimer.Start();
                 _ = RefreshDockWindowsAsync();
                 await _pluginHost.ResumeAsync().ConfigureAwait(true);
@@ -289,8 +295,26 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void SetReducedEffects(bool enabled)
+    private void OnAccessibilityChanged(object? sender, SystemAccessibilitySnapshot snapshot)
     {
+        DispatcherQueue.TryEnqueue(() => ApplySystemAccessibility(snapshot));
+    }
+
+    private void ApplySystemAccessibility(SystemAccessibilitySnapshot snapshot)
+    {
+        _systemAccessibility = snapshot;
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.ApplyTextScaleFactor(snapshot.TextScaleFactor);
+        }
+
+        UpdateReducedEffects();
+    }
+
+    private void UpdateReducedEffects()
+    {
+        var enabled = _shellState.Current.Mode == ShellMode.Gaming ||
+            _systemAccessibility.ReducedEffects;
         SystemBackdrop = enabled ? null : new MicaBackdrop();
         WindowRoot.Background = enabled
             ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
@@ -384,7 +408,11 @@ public sealed partial class MainWindow : Window
         {
             foreach (var monitor in monitors)
             {
-                windows.Add(new DockWindow(_desktopWindows, _shellState, monitor));
+                windows.Add(new DockWindow(
+                    _desktopWindows,
+                    _shellState,
+                    monitor,
+                    _systemAccessibility.TextScaleFactor));
             }
 
             return windows;
@@ -604,6 +632,11 @@ public sealed partial class MainWindow : Window
         _gamingModeTimer.Stop();
         _launcherHotKey?.Dispose();
         _shellState.StateChanged -= OnShellStateChanged;
+        if (_accessibility is not null)
+        {
+            _accessibility.Changed -= OnAccessibilityChanged;
+            _accessibility.Dispose();
+        }
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.Shutdown();
