@@ -208,8 +208,12 @@ and explicitly supplied shared contracts. Undeclared managed and native names
 fail closed, and managed DLLs load from the same verified open stream rather
 than reopening an unlocked path. It is deliberately not connected to a broker
 operation.
-Bounded activation DTOs, native-load staging, and production release signing
-must still ship before external plugins can be accepted for execution. See the
+The runtime also defines strict, bounded command query, descriptor, invocation,
+and result DTOs with no delegate, executable path, argument list, URL, or shell
+field. Command invocation is an opaque ID bound to the descriptor-set SHA-256.
+These DTOs are not part of any enabled broker operation. Native-load staging,
+activation lifecycle/deadlines, and production release signing must still ship
+before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 

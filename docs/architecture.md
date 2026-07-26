@@ -144,6 +144,9 @@ without opening or retaining process handles.
   dependencies. Managed dependencies load from the verified open stream; undeclared
   managed/native requests throw instead of falling through to host or platform
   search. No current broker operation constructs this context.
+  The protocol assembly separately defines strict bounded command DTOs and a
+  canonical descriptor-set digest. They contain only display text, opaque IDs,
+  fixed outcomes, and hashes; no enabled request/response references them.
   The preview broker handles one bounded frame and exits. Before a
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects

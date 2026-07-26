@@ -200,6 +200,11 @@ into the collectible context. Native resolution currently
 stops after exact-name/path/hash selection; it is not connected to an operation
 until broker-owned staging is designed.
 
+Reserved command DTO data is limited to query/display text, opaque command IDs,
+keywords, fixed outcomes, and SHA-256. A strict standalone codec validates both
+serialization directions and rejects unknown fields. No command DTO currently
+enters the authenticated protocol frame or reaches `PluginHost`.
+
 ## Dock and dashboard
 
 ```text
