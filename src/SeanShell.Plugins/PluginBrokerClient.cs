@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using SeanShell.PluginBroker.Protocol;
 
 namespace SeanShell.Plugins;
@@ -76,33 +75,18 @@ public sealed class PluginBrokerClient
             cancellationToken,
             timeoutCancellation.Token);
         using var sandbox = BrokerProcessSandbox.Create();
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo(_brokerExecutablePath)
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-            },
-        };
-        var started = false;
+        using var process = SuspendedBrokerProcess.Start(_brokerExecutablePath, sandbox);
 
         try
         {
-            if (!process.Start())
-            {
-                throw new InvalidOperationException("The plugin broker could not be started.");
-            }
-
-            started = true;
-            sandbox.Assign(process);
-            await process.StandardInput.WriteLineAsync(PluginBrokerProtocol.Serialize(request))
+            await process.Input.WriteLineAsync(PluginBrokerProtocol.Serialize(request))
                 .ConfigureAwait(false);
-            process.StandardInput.Close();
-            var frame = await PluginBrokerProtocol.ReadFrameAsync(
-                process.StandardOutput,
-                linkedCancellation.Token).ConfigureAwait(false);
+            process.Input.Close();
+            var frameTask = PluginBrokerProtocol.ReadFrameAsync(
+                process.Output,
+                linkedCancellation.Token);
+            var frame = await frameTask.WaitAsync(linkedCancellation.Token)
+                .ConfigureAwait(false);
             var response = PluginBrokerProtocol.DeserializeResponse(frame);
             await process.WaitForExitAsync(linkedCancellation.Token).ConfigureAwait(false);
 
@@ -127,16 +111,7 @@ public sealed class PluginBrokerClient
         }
         finally
         {
-            if (started && !process.HasExited)
-            {
-                try
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-                catch (InvalidOperationException)
-                {
-                }
-            }
+            process.Terminate();
         }
     }
 }

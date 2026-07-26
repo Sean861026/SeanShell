@@ -122,12 +122,15 @@ without opening or retaining process handles.
   implemented.
 - The broker client starts an exact executable without a command shell, redirects
   only standard input/output, validates the response against the started process,
-  and applies a two-second timeout. Before writing the request, it assigns the
-  process to a one-process, 256 MiB Windows Job Object configured to kill its
-  members when closed. The broker disables legacy extension points, remote and
-  low-integrity image loading, and child-process creation before reading stdin.
-  Any setup failure closes the job and fails the request. The preview broker
-  handles one bounded frame and exits. Before a
+  and applies a two-second timeout. It creates the process with its primary
+  thread suspended and an explicit inheritance list containing only the three
+  redirected standard-stream handles. It then assigns the process to a
+  one-process, 256 MiB Windows Job Object configured to kill its members when
+  closed before resuming the primary thread. The broker disables legacy
+  extension points, remote and low-integrity image loading, and child-process
+  creation before reading stdin. Any setup failure terminates the still-suspended
+  process, closes the job, and fails the request. The preview broker handles one
+  bounded frame and exits. Before a
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects
   unknown capabilities, traversal and reparse points, and recomputes SHA-256.

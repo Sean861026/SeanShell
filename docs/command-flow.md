@@ -124,8 +124,10 @@ User revokes one candidate or all stored consent
 
 ```text
 Host creates a protocol-v2 health request
-  -> launch SeanShell.PluginBroker as a separate process
+  -> CreateProcessW starts SeanShell.PluginBroker with CREATE_SUSPENDED
+  -> inherit only redirected stdin / stdout / stderr handles
   -> assign broker to one-process / 256 MiB / kill-on-close Job Object
+  -> ResumeThread only after successful Job assignment
   -> broker applies extension-point, image-load, and child-process mitigations
   -> write one bounded JSON frame
   -> broker accepts exact operation "health" without a grant

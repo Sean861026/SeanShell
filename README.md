@@ -211,9 +211,11 @@ An independent `SeanShell.PluginBroker` executable now proves a fail-closed
 process boundary. Protocol v2 accepts bounded `health` and read-only
 `probe-metadata` requests; the host verifies the response PID/request ID within
 two seconds. Every broker receives a one-process, 256 MiB, kill-on-close Windows
-Job Object, then disables legacy extension points, unsafe image sources, and
-child-process creation before reading a request. The broker still never loads or
-activates a plugin, and the App does not use it to run external code. See the
+Job Object before its suspended primary thread is resumed. Only the three
+redirected standard-stream handles are inherited. The broker then disables
+legacy extension points, unsafe image sources, and child-process creation before
+reading a request. The broker still never loads or activates a plugin, and the
+App does not use it to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
 
 ## Documentation

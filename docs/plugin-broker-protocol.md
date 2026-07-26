@@ -9,12 +9,14 @@ capabilities authorized by the host. It does not load an assembly, inspect
 managed types, activate a plugin, or execute a command.
 
 The transport version remains 2 because this stage changes process containment,
-not the JSON schema. Before sending a request, the host assigns the broker to a
-Windows Job Object limited to one active process and 256 MiB committed memory.
-Closing the last job handle terminates the broker. Before reading a request, the
-broker disables legacy extension points, remote and low-integrity image loading,
-and child-process creation. Failure to establish either side of this profile
-fails closed.
+not the JSON schema. The host creates the broker with its primary thread
+suspended and permits inheritance of only the three redirected standard-stream
+handles. It assigns the process to a Windows Job Object limited to one active
+process and 256 MiB committed memory before resuming that thread. Closing the
+last job handle terminates the broker. Before reading a request, the broker
+disables legacy extension points, remote and low-integrity image loading, and
+child-process creation. Failure to establish either side of this profile fails
+closed.
 
 ## Transport
 
@@ -105,7 +107,6 @@ safe to send to arbitrary broker instances. Before code execution is added, the
 broker still needs:
 
 - dependency and native-library containment;
-- creation of the broker suspended so no startup work precedes Job assignment;
 - a broker-authenticated, single-use activation channel;
 - bounded command/result DTOs with no delegate or shell string;
 - broker crash accounting and automatic quarantine;
