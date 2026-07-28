@@ -304,8 +304,10 @@ Dock refresh timer
   -> otherwise: restore when minimized and request foreground activation
 
 User opens an entry context menu
-  -> visible entry: offer Minimize
-  -> minimized entry: offer Restore
+  -> single-window entry: expose actions directly
+  -> multi-window group: expose one title/state submenu per window
+  -> selected visible window: offer Activate and Minimize
+  -> selected minimized window: offer Activate and Restore
   -> selected toggle: perform the named bounded window operation
   -> selected Close window: post WM_CLOSE
   -> target application may close, cancel, or prompt for unsaved work

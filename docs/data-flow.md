@@ -218,7 +218,9 @@ EnumWindows + DWM visibility
   -> SW_MINIMIZE or SW_RESTORE + SetForegroundWindow
 
 Dock window context selection
-  -> fixed Minimize / Restore action or graceful Close request
+  -> single window: direct action menu
+  -> grouped windows: native per-window submenus
+  -> Activate, Minimize / Restore, or graceful Close request
   -> ShowWindow or PostMessage(WM_CLOSE)
 
 WM_GETICON / class icon / process executable Shell icon
@@ -239,6 +241,8 @@ Monitor-local DesktopWindowSnapshot[]
   -> multiple windows: native MenuFlyout picker
   -> selected window handle
   -> SW_RESTORE + SetForegroundWindow
+  -> group context request: native submenu per window handle
+  -> bounded activate, minimize / restore, or WM_CLOSE operation
 
 Pinned count + monitor-local window count + monitor work area
   -> TaskbarDockLayout
