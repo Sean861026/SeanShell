@@ -414,7 +414,7 @@ public sealed partial class DockWindow : Window
 
         if (item.WindowCount > 1)
         {
-            ShowWindowPicker(item, element);
+            ShowGroupWindowContextMenu(item, element);
             args.Handled = true;
             return;
         }
@@ -471,6 +471,86 @@ public sealed partial class DockWindow : Window
         args.Handled = true;
     }
 
+    private void ShowGroupWindowContextMenu(
+        DockItemViewModel item,
+        FrameworkElement anchor)
+    {
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+
+        var flyout = new MenuFlyout();
+        for (var index = 0; index < item.Windows.Count; index++)
+        {
+            var window = item.Windows[index];
+            var windowMenu = new MenuFlyoutSubItem
+            {
+                Text = GetWindowDisplayTitle(item, index),
+                Icon = CreateWindowStateIcon(window),
+            };
+
+            var activateItem = new MenuFlyoutItem
+            {
+                Text = "Activate",
+                Icon = new FontIcon
+                {
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                        "Segoe Fluent Icons"),
+                    Glyph = "\uE8A7",
+                },
+            };
+            activateItem.Click += (_, _) =>
+                _ = _windowService.RestoreAndActivate(window.Handle);
+            windowMenu.Items.Add(activateItem);
+
+            var toggleAction =
+                TaskbarWindowActionResolver.ResolveContextToggle(window.IsMinimized);
+            var toggleItem = new MenuFlyoutItem
+            {
+                Text = toggleAction == TaskbarWindowAction.Minimize
+                    ? "Minimize"
+                    : "Restore",
+                Icon = new FontIcon
+                {
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                        "Segoe Fluent Icons"),
+                    Glyph = toggleAction == TaskbarWindowAction.Minimize
+                        ? "\uE921"
+                        : "\uE923",
+                },
+            };
+            toggleItem.Click += (_, _) =>
+            {
+                _ = toggleAction == TaskbarWindowAction.Minimize
+                    ? _windowService.Minimize(window.Handle)
+                    : _windowService.RestoreAndActivate(window.Handle);
+            };
+            windowMenu.Items.Add(toggleItem);
+            windowMenu.Items.Add(new MenuFlyoutSeparator());
+
+            var closeItem = new MenuFlyoutItem
+            {
+                Text = "Close window",
+                Icon = new FontIcon
+                {
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                        "Segoe Fluent Icons"),
+                    Glyph = "\uE8BB",
+                },
+            };
+            closeItem.Click += (_, _) =>
+                _ = _windowService.RequestClose(window.Handle);
+            windowMenu.Items.Add(closeItem);
+            flyout.Items.Add(windowMenu);
+        }
+
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(anchor);
+    }
+
     private void ShowWindowPicker(
         DockItemViewModel item,
         FrameworkElement anchor)
@@ -487,27 +567,10 @@ public sealed partial class DockWindow : Window
                 : window.IsMinimized
                     ? "Minimized"
                     : "Running";
-            var matchingTitleCount = item.Windows.Count(candidate =>
-                candidate.Title.Equals(
-                    window.Title,
-                    StringComparison.CurrentCultureIgnoreCase));
-            var matchingTitleIndex = item.Windows
-                .Take(index + 1)
-                .Count(candidate => candidate.Title.Equals(
-                    window.Title,
-                    StringComparison.CurrentCultureIgnoreCase));
-            var title = matchingTitleCount > 1
-                ? $"{window.Title} ({matchingTitleIndex} of {matchingTitleCount})"
-                : window.Title;
             var windowItem = new MenuFlyoutItem
             {
-                Text = $"{title} — {state}",
-                Icon = new FontIcon
-                {
-                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                        "Segoe Fluent Icons"),
-                    Glyph = window.IsForeground ? "\uE73E" : "\uE8A7",
-                },
+                Text = $"{GetWindowDisplayTitle(item, index)} — {state}",
+                Icon = CreateWindowStateIcon(window),
             };
             windowItem.Click += (_, _) =>
                 _ = _windowService.RestoreAndActivate(window.Handle);
@@ -521,6 +584,37 @@ public sealed partial class DockWindow : Window
         };
         flyout.ShowAt(anchor);
     }
+
+    private static string GetWindowDisplayTitle(
+        DockItemViewModel item,
+        int index)
+    {
+        var window = item.Windows[index];
+        var matchingTitleCount = item.Windows.Count(candidate =>
+            candidate.Title.Equals(
+                window.Title,
+                StringComparison.CurrentCultureIgnoreCase));
+        if (matchingTitleCount == 1)
+        {
+            return window.Title;
+        }
+
+        var matchingTitleIndex = item.Windows
+            .Take(index + 1)
+            .Count(candidate => candidate.Title.Equals(
+                window.Title,
+                StringComparison.CurrentCultureIgnoreCase));
+        return $"{window.Title} ({matchingTitleIndex} of {matchingTitleCount})";
+    }
+
+    private static FontIcon CreateWindowStateIcon(
+        DesktopWindowSnapshot window) =>
+        new()
+        {
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                "Segoe Fluent Icons"),
+            Glyph = window.IsForeground ? "\uE73E" : "\uE8A7",
+        };
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)
     {

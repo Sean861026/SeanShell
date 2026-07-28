@@ -82,7 +82,11 @@ group preserves direct taskbar toggle behavior. A multi-window group displays a
 numeric badge and opens a native `MenuFlyout` containing every title and state.
 The native control owns keyboard focus, arrow navigation, Enter activation, and
 Escape dismissal; SeanShell does not add a global input hook. Grouping reduces
-visual density while retaining individual window handles for activation.
+visual density while retaining individual window handles for activation. Its
+context menu mirrors that same window list as native submenus, each containing
+Activate, Minimize or Restore, and graceful Close window commands. Duplicate
+titles receive a stable ordinal in both menus so every handle remains
+distinguishable without process injection.
 
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
@@ -118,11 +122,13 @@ another or minimized window receives `SW_RESTORE` when needed followed by
 `SetForegroundWindow`. This reproduces normal taskbar toggle semantics without
 injecting code or attaching input queues.
 
-The Dock context menu exposes only bounded window operations. Minimize and
-restore reuse the same service boundary; Close posts `WM_CLOSE` to the window
-instead of terminating its process, preserving the application's opportunity to
-cancel or prompt for unsaved work. While the menu is open, Dock auto-hide is
-paused and resumes after the flyout closes.
+The Dock context menus expose only bounded window operations. A single-window
+item presents them directly; a multi-window group nests the same operations
+under one submenu per window. Minimize and restore reuse the same service
+boundary; Close posts `WM_CLOSE` to the window instead of terminating its
+process, preserving the application's opportunity to cancel or prompt for
+unsaved work. While a menu is open, Dock auto-hide is paused and resumes after
+the flyout closes.
 
 `NativeApplicationIconReader` stays in the Windows boundary. The background
 window capture asks each process for its `WM_GETICON` or class icon and falls
