@@ -6,7 +6,7 @@ namespace SeanShell.Windows;
 
 internal sealed class NativeApplicationIconReader
 {
-    private const int DefaultIconSize = 32;
+    private const int TargetIconSize = ApplicationIconSnapshot.PreferredDimension;
     private const int GclpHicon = -14;
     private const int GclpHiconSmall = -34;
     private const uint IconSmall = 0;
@@ -17,6 +17,9 @@ internal sealed class NativeApplicationIconReader
     private const uint ProcessQueryLimitedInformation = 0x1000;
     private const uint ShgfiIcon = 0x000000100;
     private const uint ShgfiLargeIcon = 0x000000000;
+    private const uint ShgfiSystemIconIndex = 0x000004000;
+    private const int ShellImageListExtraLarge = 2;
+    private const int ImageListDrawTransparent = 0x00000001;
     private const uint DibRgbColors = 0;
     private const uint BiRgb = 0;
     private const uint DiNormal = 0x0003;
@@ -40,6 +43,19 @@ internal sealed class NativeApplicationIconReader
             return null;
         }
 
+        var extraLargeIcon = GetExtraLargeFileIcon(path);
+        if (extraLargeIcon != 0)
+        {
+            try
+            {
+                return Render(extraLargeIcon);
+            }
+            finally
+            {
+                _ = DestroyIcon(extraLargeIcon);
+            }
+        }
+
         var result = SHGetFileInfo(
             path,
             0,
@@ -58,6 +74,44 @@ internal sealed class NativeApplicationIconReader
         finally
         {
             _ = DestroyIcon(fileInfo.IconHandle);
+        }
+    }
+
+    private static nint GetExtraLargeFileIcon(string path)
+    {
+        var result = SHGetFileInfo(
+            path,
+            0,
+            out var fileInfo,
+            checked((uint)Marshal.SizeOf<ShFileInfo>()),
+            ShgfiSystemIconIndex);
+        if (result == 0)
+        {
+            return 0;
+        }
+
+        var interfaceId = typeof(IImageList).GUID;
+        var status = SHGetImageList(
+            ShellImageListExtraLarge,
+            ref interfaceId,
+            out var imageList);
+        if (status < 0 || imageList is null)
+        {
+            return 0;
+        }
+
+        try
+        {
+            return imageList.GetIcon(
+                       fileInfo.IconIndex,
+                       ImageListDrawTransparent,
+                       out var iconHandle) >= 0
+                ? iconHandle
+                : 0;
+        }
+        finally
+        {
+            _ = Marshal.FinalReleaseComObject(imageList);
         }
     }
 
@@ -92,8 +146,8 @@ internal sealed class NativeApplicationIconReader
             Header = new BitmapInfoHeader
             {
                 Size = checked((uint)Marshal.SizeOf<BitmapInfoHeader>()),
-                Width = DefaultIconSize,
-                Height = -DefaultIconSize,
+                Width = TargetIconSize,
+                Height = -TargetIconSize,
                 Planes = 1,
                 BitCount = 32,
                 Compression = BiRgb,
@@ -126,8 +180,8 @@ internal sealed class NativeApplicationIconReader
                     0,
                     0,
                     iconHandle,
-                    DefaultIconSize,
-                    DefaultIconSize,
+                    TargetIconSize,
+                    TargetIconSize,
                     0,
                     0,
                     DiNormal))
@@ -135,12 +189,12 @@ internal sealed class NativeApplicationIconReader
                 return null;
             }
 
-            var buffer = new byte[DefaultIconSize * DefaultIconSize * 4];
+            var buffer = new byte[TargetIconSize * TargetIconSize * 4];
             Marshal.Copy(pixels, buffer, 0, buffer.Length);
             RepairLegacyAlpha(buffer);
             return new ApplicationIconSnapshot(
-                DefaultIconSize,
-                DefaultIconSize,
+                TargetIconSize,
+                TargetIconSize,
                 buffer);
         }
         finally
@@ -252,6 +306,36 @@ internal sealed class NativeApplicationIconReader
         public string TypeName;
     }
 
+    [ComImport]
+    [Guid("46EB5926-582E-4017-9FDF-E8998DAA0950")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IImageList
+    {
+        [PreserveSig]
+        int Add(nint image, nint mask, out int index);
+
+        [PreserveSig]
+        int ReplaceIcon(int index, nint icon, out int newIndex);
+
+        [PreserveSig]
+        int SetOverlayImage(int image, int overlay);
+
+        [PreserveSig]
+        int Replace(int index, nint image, nint mask);
+
+        [PreserveSig]
+        int AddMasked(nint image, uint maskColor, out int index);
+
+        [PreserveSig]
+        int Draw(nint parameters);
+
+        [PreserveSig]
+        int Remove(int index);
+
+        [PreserveSig]
+        int GetIcon(int index, int flags, out nint icon);
+    }
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SendMessageTimeout(
@@ -276,6 +360,12 @@ internal sealed class NativeApplicationIconReader
         out ShFileInfo fileInfo,
         uint fileInfoSize,
         uint flags);
+
+    [DllImport("shell32.dll")]
+    private static extern int SHGetImageList(
+        int imageList,
+        ref Guid interfaceId,
+        [MarshalAs(UnmanagedType.Interface)] out IImageList? result);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
