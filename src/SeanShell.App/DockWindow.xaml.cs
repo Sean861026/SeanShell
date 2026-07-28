@@ -33,6 +33,8 @@ public sealed partial class DockWindow : Window
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
     private int _expandedDockWidth;
+    private IReadOnlyList<ShellCommand> _pinnedApplications = [];
+    private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
     private DockBounds? _reservedArea;
 
     public DockWindow(
@@ -256,6 +258,7 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        _monitorWindows = windows;
         Items.Clear();
         foreach (var window in windows)
         {
@@ -266,7 +269,7 @@ public sealed partial class DockWindow : Window
         DockCountText.Text = Items.Count == 1 ? "1 window" : $"{Items.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RefreshExpandedWidth();
+        RefreshPinnedItems();
     }
 
     public void ApplyPinnedApplications(
@@ -274,21 +277,14 @@ public sealed partial class DockWindow : Window
     {
         if (_allowClose ||
             applications.Select(static command => command.Id).SequenceEqual(
-                PinnedItems.Select(static item => item.Id),
+                _pinnedApplications.Select(static command => command.Id),
                 StringComparer.OrdinalIgnoreCase))
         {
             return;
         }
 
-        PinnedItems.Clear();
-        foreach (var application in applications)
-        {
-            PinnedItems.Add(new PinnedDockItemViewModel(application));
-        }
-
-        PinnedSeparator.Visibility =
-            PinnedItems.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        RefreshExpandedWidth();
+        _pinnedApplications = applications.ToArray();
+        RefreshPinnedItems();
     }
 
     public void SetWindowSnapshotUnavailable(string message)
@@ -298,12 +294,13 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        _monitorWindows = [];
         Items.Clear();
         WindowList.SelectedItem = null;
         DockCountText.Text = "Unavailable";
         EmptyStateText.Text = $"Dock unavailable: {message}";
         EmptyState.Visibility = Visibility.Visible;
-        RefreshExpandedWidth();
+        RefreshPinnedItems();
     }
 
     private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
@@ -327,6 +324,30 @@ public sealed partial class DockWindow : Window
 
         _expandedDockWidth = expandedDockWidth;
         SetCollapsed(_collapsed);
+    }
+
+    private void RefreshPinnedItems()
+    {
+        var visibleApplications = _pinnedApplications
+            .Where(application => !_monitorWindows.Any(
+                window => TaskbarPinWindowMatcher.IsMatch(application, window)))
+            .ToArray();
+        if (!visibleApplications
+            .Select(static command => command.Id)
+            .SequenceEqual(
+                PinnedItems.Select(static item => item.Id),
+                StringComparer.OrdinalIgnoreCase))
+        {
+            PinnedItems.Clear();
+            foreach (var application in visibleApplications)
+            {
+                PinnedItems.Add(new PinnedDockItemViewModel(application));
+            }
+        }
+
+        PinnedSeparator.Visibility =
+            PinnedItems.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        RefreshExpandedWidth();
     }
 
     private void OnDockPointerEntered(object sender, PointerRoutedEventArgs e)

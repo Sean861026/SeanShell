@@ -140,6 +140,7 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
             Keywords = [title, parent ?? string.Empty, "app", "application", "program"],
             Glyph = "\uE8B7",
             IconSourcePath = path,
+            ApplicationProcessName = ShellShortcutTargetResolver.GetProcessName(path),
         };
     }
 

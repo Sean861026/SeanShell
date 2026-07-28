@@ -241,6 +241,12 @@ Pinned Start Menu shortcut path
   -> validated ApplicationIconSnapshot
   -> shared Dock icon source
 
+Pinned `.lnk` shortcut
+  -> one-time Shell Link target resolution
+  -> explicit executable process name
+  -> TaskbarPinWindowMatcher + monitor-local window snapshot
+  -> standalone pin or coalesced live window item
+
 GetSystemTimes + GlobalMemoryStatusEx
   -> SystemMetricsSnapshot
   -> dashboard CPU/RAM cards
