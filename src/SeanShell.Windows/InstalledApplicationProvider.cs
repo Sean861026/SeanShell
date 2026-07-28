@@ -6,6 +6,10 @@ namespace SeanShell.Windows;
 public sealed class InstalledApplicationProvider : ILauncherCommandProvider
 {
     private readonly object _gate = new();
+    private readonly object _iconGate = new();
+    private readonly Dictionary<string, ApplicationIconSnapshot?> _iconCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private readonly NativeApplicationIconReader _iconReader = new();
     private Task<IReadOnlyList<ShellCommand>>? _indexTask;
 
     public ValueTask<IReadOnlyList<ShellCommand>> GetCommandsAsync(
@@ -37,10 +41,41 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
         var byId = index.ToDictionary(
             static command => command.Id,
             StringComparer.OrdinalIgnoreCase);
-        return requestedIds
+        var selected = requestedIds
             .Where(byId.ContainsKey)
-            .Select(id => byId[id])
             .ToArray();
+        return await Task.Run(
+                () => selected
+                    .Select(id => AddIcon(byId[id]))
+                    .ToArray(),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private ShellCommand AddIcon(ShellCommand command)
+    {
+        if (command.Icon is not null ||
+            string.IsNullOrWhiteSpace(command.IconSourcePath))
+        {
+            return command;
+        }
+
+        ApplicationIconSnapshot? icon;
+        lock (_iconGate)
+        {
+            if (!_iconCache.TryGetValue(command.IconSourcePath, out icon))
+            {
+                if (_iconCache.Count >= PinnedApplicationIdList.MaximumCount * 4)
+                {
+                    _iconCache.Clear();
+                }
+
+                icon = _iconReader.ReadFileIcon(command.IconSourcePath);
+                _iconCache[command.IconSourcePath] = icon;
+            }
+        }
+
+        return icon is null ? command : command with { Icon = icon };
     }
 
     private Task<IReadOnlyList<ShellCommand>> GetOrCreateIndexTask()
@@ -104,6 +139,7 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
             Kind = ShellCommandKind.Application,
             Keywords = [title, parent ?? string.Empty, "app", "application", "program"],
             Glyph = "\uE8B7",
+            IconSourcePath = path,
         };
     }
 

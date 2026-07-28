@@ -102,8 +102,10 @@ dock lists ordinary visible application windows on that display. Clicking the
 active window minimizes it; clicking another or minimized window restores and
 activates it, matching standard taskbar toggle behavior. A window's context menu
 offers Minimize or Restore plus a standard close request, allowing the target
-application to show its own unsaved-work prompt. In Overlay mode it sits above
-the Windows taskbar. In the
+application to show its own unsaved-work prompt. Running windows and pinned Start
+Menu applications use their Windows-provided icons in a stable 26-pixel slot;
+SeanShell falls back to a Fluent glyph when Windows cannot supply one. In Overlay
+mode it sits above the Windows taskbar. In the
 opt-in Companion Taskbar mode, it hides every Windows taskbar and becomes the
 visible window-switching surface. The dashboard samples CPU, physical memory,
 and the current window count every two seconds. Gaming mode stops this polling
@@ -147,8 +149,9 @@ reservations before revealing the native system area, entering Gaming Mode,
 disabling replacement, or exiting; Windows also drops them automatically if a
 Dock process is terminated.
 
-Additional visual effects and production icon work follow these functional
-replacement surfaces.
+Production iconography now begins with native application icons while keeping
+SeanShell controls in the Segoe Fluent Icons family. Additional effects remain
+subordinate to replacement reliability and accessibility.
 
 ## Gaming mode preview
 

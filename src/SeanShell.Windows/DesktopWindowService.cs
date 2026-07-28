@@ -18,6 +18,8 @@ public sealed class DesktopWindowService
     private const uint WmClose = 0x0010;
     private const uint MonitorDefaultToNearest = 2;
     private readonly object _cacheGate = new();
+    private readonly Dictionary<int, ApplicationIconSnapshot?> _iconCache = [];
+    private readonly NativeApplicationIconReader _iconReader = new();
     private IReadOnlyList<DesktopWindowSnapshot> _cachedWindows = [];
     private long _cacheExpiresAt;
 
@@ -37,7 +39,7 @@ public sealed class DesktopWindowService
         }
     }
 
-    private static IReadOnlyList<DesktopWindowSnapshot> CaptureCore()
+    private IReadOnlyList<DesktopWindowSnapshot> CaptureCore()
     {
         var windows = new List<DesktopWindowSnapshot>();
         var shellWindow = GetShellWindow();
@@ -69,15 +71,45 @@ public sealed class DesktopWindowService
                 title,
                 IsIconic(handle),
                 MonitorFromWindow(handle, MonitorDefaultToNearest),
-                handle == foregroundWindow));
+                handle == foregroundWindow,
+                GetApplicationIcon(handle, checked((int)processId))));
 
             return true;
         }, 0);
+
+        var activeProcessIds = windows
+            .Select(static window => window.ProcessId)
+            .ToHashSet();
+        foreach (var cachedProcessId in _iconCache.Keys
+                     .Where(processId => !activeProcessIds.Contains(processId))
+                     .ToArray())
+        {
+            _iconCache.Remove(cachedProcessId);
+        }
 
         return windows
             .OrderBy(static window => window.ProcessName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(static window => window.Title, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private ApplicationIconSnapshot? GetApplicationIcon(
+        nint windowHandle,
+        int processId)
+    {
+        if (_iconCache.TryGetValue(processId, out var icon))
+        {
+            return icon;
+        }
+
+        if (_iconCache.Count >= 128)
+        {
+            _iconCache.Clear();
+        }
+
+        icon = _iconReader.ReadWindowIcon(windowHandle, processId);
+        _iconCache[processId] = icon;
+        return icon;
     }
 
     public bool ToggleTaskbarWindow(nint handle)
