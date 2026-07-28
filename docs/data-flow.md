@@ -319,6 +319,7 @@ Start Menu shortcut roots
   -> TaskbarDockPinResolver + monitor-local window group
   -> zero, one, or multiple native Dock pin choices
   -> PinnedApplicationIdList (ordered, distinct, maximum eight)
+  -> optional PinnedApplicationOrder adjacent swap
   -> ShellSettings.PinnedApplicationIds
   -> exact cache lookup
   -> available ShellCommand[]
@@ -329,6 +330,8 @@ The local settings file contains shortcut command IDs, which include local Start
 Menu paths. No pin data is uploaded. The application index is shared from its
 one-time cache; normal Dock refreshes do not query the filesystem. Missing IDs
 produce no executable command and stay persisted for later recovery.
+Order changes remain local and propagate through the same immutable pinned-command
+snapshot distributed to every Dock.
 
 ## Clock and system-area state
 

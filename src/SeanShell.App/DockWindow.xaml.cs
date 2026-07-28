@@ -81,6 +81,9 @@ public sealed partial class DockWindow : Window
 
     public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
 
+    public event Func<ShellCommand, PinnedApplicationMoveDirection, Task<bool>>?
+        PinMoveRequested;
+
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
         if (density != ShellDisplayDensity.Compact)
@@ -684,9 +687,11 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
 
-        var unpinItem = CreatePinMenuItem(item.Command, shouldPin: false);
         var flyout = new MenuFlyout();
-        flyout.Items.Add(unpinItem);
+        AddPinnedApplicationActions(
+            flyout.Items,
+            item.Command,
+            includeLeadingSeparator: false);
         flyout.Closed += (_, _) =>
         {
             _contextMenuOpen = false;
@@ -705,8 +710,10 @@ public sealed partial class DockWindow : Window
             dockItem.Windows);
         if (pinnedApplication is not null)
         {
-            items.Add(new MenuFlyoutSeparator());
-            items.Add(CreatePinMenuItem(pinnedApplication, shouldPin: false));
+            AddPinnedApplicationActions(
+                items,
+                pinnedApplication,
+                includeLeadingSeparator: true);
             return;
         }
 
@@ -745,6 +752,26 @@ public sealed partial class DockWindow : Window
         items.Add(pinMenu);
     }
 
+    private void AddPinnedApplicationActions(
+        IList<MenuFlyoutItemBase> items,
+        ShellCommand application,
+        bool includeLeadingSeparator)
+    {
+        if (includeLeadingSeparator)
+        {
+            items.Add(new MenuFlyoutSeparator());
+        }
+
+        items.Add(CreatePinMenuItem(application, shouldPin: false));
+        items.Add(new MenuFlyoutSeparator());
+        items.Add(CreateMoveMenuItem(
+            application,
+            PinnedApplicationMoveDirection.Left));
+        items.Add(CreateMoveMenuItem(
+            application,
+            PinnedApplicationMoveDirection.Right));
+    }
+
     private MenuFlyoutItem CreatePinMenuItem(
         ShellCommand command,
         bool shouldPin)
@@ -767,6 +794,33 @@ public sealed partial class DockWindow : Window
             Glyph = shouldPin ? "\uE718" : "\uE77A",
         };
 
+    private MenuFlyoutItem CreateMoveMenuItem(
+        ShellCommand application,
+        PinnedApplicationMoveDirection direction)
+    {
+        var applicationIds = _pinnedApplications
+            .Select(static command => command.Id)
+            .ToArray();
+        var isLeft = direction == PinnedApplicationMoveDirection.Left;
+        var item = new MenuFlyoutItem
+        {
+            Text = isLeft ? "Move left" : "Move right",
+            Icon = new FontIcon
+            {
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                    "Segoe Fluent Icons"),
+                Glyph = isLeft ? "\uE76B" : "\uE76C",
+            },
+            IsEnabled = PinnedApplicationOrder.CanMove(
+                applicationIds,
+                application.Id,
+                direction),
+        };
+        item.Click += async (_, _) =>
+            await RequestPinMoveAsync(application, direction).ConfigureAwait(true);
+        return item;
+    }
+
     private async Task RequestPinChangeAsync(
         ShellCommand command,
         bool shouldPin)
@@ -788,6 +842,31 @@ public sealed partial class DockWindow : Window
         catch (Exception exception)
         {
             DockCountText.Text = shouldPin ? "Pin failed" : "Unpin failed";
+            ToolTipService.SetToolTip(DockCountText, exception.Message);
+        }
+    }
+
+    private async Task RequestPinMoveAsync(
+        ShellCommand application,
+        PinnedApplicationMoveDirection direction)
+    {
+        var handler = PinMoveRequested;
+        if (handler is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await handler(application, direction).ConfigureAwait(true))
+            {
+                throw new InvalidOperationException(
+                    "The pinned application order was not changed.");
+            }
+        }
+        catch (Exception exception)
+        {
+            DockCountText.Text = "Move failed";
             ToolTipService.SetToolTip(DockCountText, exception.Message);
         }
     }

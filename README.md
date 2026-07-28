@@ -143,9 +143,11 @@ Search for an installed App in Launcher and use its pin button to add or remove
 it. A running app with an explicitly matched Start Menu shortcut can also be
 pinned from its Dock context menu; multiple matching shortcuts appear in a
 submenu instead of being guessed. Running and standalone pinned items both expose
-Unpin from Dock. Pins reuse the cached Start Menu index, persist locally, and do
-not add background filesystem polling. A temporarily missing shortcut is omitted
-without deleting the pin, allowing it to return after the shortcut is restored.
+Unpin from Dock plus keyboard-accessible Move left and Move right commands.
+Reordering is persisted and synchronized across every display. Pins reuse the
+cached Start Menu index, persist locally, and do not add background filesystem
+polling. A temporarily missing shortcut is omitted without deleting the pin,
+allowing it to return after the shortcut is restored.
 For desktop `.lnk` shortcuts, SeanShell resolves the target executable once
 during indexing. When that process owns a window on a Dock's display, the
 standalone pin is suppressed and the live window item carries its running,
