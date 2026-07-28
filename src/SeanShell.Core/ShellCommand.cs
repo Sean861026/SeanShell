@@ -11,4 +11,8 @@ public sealed record ShellCommand(
     public IReadOnlyList<string> Keywords { get; init; } = [];
 
     public string Glyph { get; init; } = "\uE8B7";
+
+    public string? IconSourcePath { get; init; }
+
+    public ApplicationIconSnapshot? Icon { get; init; }
 }

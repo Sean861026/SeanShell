@@ -71,10 +71,19 @@
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 IsHitTestVisible="False"
                                 ToolTipService.ToolTip="{Binding Title}">
-                                <FontIcon
-                                    FontFamily="Segoe Fluent Icons"
-                                    FontSize="17"
-                                    Glyph="{Binding Glyph}" />
+                                <Grid Width="26" Height="26">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons"
+                                        FontSize="17"
+                                        Glyph="{Binding Glyph}"
+                                        Visibility="{Binding FallbackIconVisibility}" />
+                                    <Image
+                                        Width="26"
+                                        Height="26"
+                                        Source="{Binding Icon}"
+                                        Stretch="Uniform"
+                                        Visibility="{Binding IconVisibility}" />
+                                </Grid>
                             </Button>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -120,13 +129,22 @@
                                     <Border
                                         Width="36"
                                         Height="36"
-                                        Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                         CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                         VerticalAlignment="Center">
-                                        <FontIcon
-                                            FontFamily="Segoe Fluent Icons"
-                                            FontSize="16"
-                                            Glyph="&#xE8A7;" />
+                                        <Grid>
+                                            <FontIcon
+                                                FontFamily="Segoe Fluent Icons"
+                                                FontSize="16"
+                                                Glyph="&#xE8A7;"
+                                                Visibility="{Binding FallbackIconVisibility}" />
+                                            <Image
+                                                Width="26"
+                                                Height="26"
+                                                Source="{Binding Icon}"
+                                                Stretch="Uniform"
+                                                Visibility="{Binding IconVisibility}" />
+                                        </Grid>
                                     </Border>
                                     <StackPanel
                                         Grid.Column="1"

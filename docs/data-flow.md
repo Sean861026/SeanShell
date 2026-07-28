@@ -221,6 +221,17 @@ Dock window context selection
   -> fixed Minimize / Restore action or graceful Close request
   -> ShowWindow or PostMessage(WM_CLOSE)
 
+WM_GETICON / class icon / process executable Shell icon
+  -> bounded process-ID icon cache
+  -> validated 32x32 BGRA ApplicationIconSnapshot
+  -> UI-thread shared WriteableBitmap
+  -> fixed 26px Dock icon slot or Fluent fallback
+
+Pinned Start Menu shortcut path
+  -> SHGetFileInfo only when the bounded pin list is loaded
+  -> validated ApplicationIconSnapshot
+  -> shared Dock icon source
+
 GetSystemTimes + GlobalMemoryStatusEx
   -> SystemMetricsSnapshot
   -> dashboard CPU/RAM cards

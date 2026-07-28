@@ -95,6 +95,22 @@ instead of terminating its process, preserving the application's opportunity to
 cancel or prompt for unsaved work. While the menu is open, Dock auto-hide is
 paused and resumes after the flyout closes.
 
+`NativeApplicationIconReader` stays in the Windows boundary. The background
+window capture asks each process for its `WM_GETICON` or class icon and falls
+back to the executable's Shell icon. A bounded process-ID cache prevents the
+two-second Dock refresh from repeating native extraction and evicts processes
+that no longer own a visible Dock window, preventing stale PID reuse. Pinned
+Start Menu commands resolve and path-cache their shortcut icons on a background
+thread only when the bounded pin list is loaded, not during every Launcher query.
+
+The reader renders each native `HICON` into a validated 32-by-32 BGRA snapshot
+and releases every owned Shell/GDI handle. On the UI thread,
+`ApplicationIconSourceCache` converts that immutable snapshot once into a shared
+WinUI `WriteableBitmap`. Dock templates reserve a stable 26-pixel slot and show
+either the native icon or a Segoe Fluent fallback, never both. Process paths and
+pixel data remain session-local and are not written to SeanShell settings or
+telemetry.
+
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded
 window of the 50 most recent successful provider/ranking durations. Cancelled and

@@ -7,4 +7,5 @@ public sealed record DesktopWindowSnapshot(
     string Title,
     bool IsMinimized,
     nint MonitorHandle,
-    bool IsForeground = false);
+    bool IsForeground = false,
+    ApplicationIconSnapshot? Icon = null);
