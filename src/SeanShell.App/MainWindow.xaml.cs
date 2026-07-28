@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly DispatcherQueueTimer _dockRefreshTimer;
+    private readonly DispatcherQueueTimer _clockRefreshTimer;
     private readonly DispatcherQueueTimer _taskbarRefreshTimer;
     private readonly InstalledApplicationProvider _installedApplications;
     private readonly LauncherWindow _launcherWindow;
@@ -46,6 +47,7 @@ public sealed partial class MainWindow : Window
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
+    private bool _taskbarAccessRevealed;
     private GlobalHotKey? _launcherHotKey;
     private LauncherShortcut? _registeredShortcut;
     private ShellSettings _settings;
@@ -113,6 +115,10 @@ public sealed partial class MainWindow : Window
         _dockRefreshTimer.Interval = TimeSpan.FromSeconds(2);
         _dockRefreshTimer.Tick += OnDockRefreshTimerTick;
 
+        _clockRefreshTimer = DispatcherQueue.CreateTimer();
+        _clockRefreshTimer.Interval = TimeSpan.FromSeconds(15);
+        _clockRefreshTimer.Tick += OnClockRefreshTimerTick;
+
         _taskbarRefreshTimer = DispatcherQueue.CreateTimer();
         _taskbarRefreshTimer.Interval = TimeSpan.FromSeconds(2);
         _taskbarRefreshTimer.Tick += OnTaskbarRefreshTimerTick;
@@ -144,6 +150,8 @@ public sealed partial class MainWindow : Window
         }
 
         ApplyTaskbarReplacementOnStartup();
+        RefreshClock();
+        _clockRefreshTimer.Start();
         _dockRefreshTimer.Start();
         _ = RefreshDockWindowsAsync();
         _ = RefreshPinnedApplicationsAsync();
@@ -161,6 +169,7 @@ public sealed partial class MainWindow : Window
         {
             if (state.Mode == ShellMode.Gaming)
             {
+                ResumeTaskbarReplacementForGaming();
                 _dockRefreshTimer.Stop();
                 UpdateReducedEffects();
                 await _pluginHost.SuspendAsync().ConfigureAwait(true);
@@ -380,6 +389,7 @@ public sealed partial class MainWindow : Window
             : _taskbarReplacement.Disable();
         if (result.Success)
         {
+            _taskbarAccessRevealed = false;
             if (enabled)
             {
                 _taskbarRefreshTimer.Start();
@@ -389,6 +399,7 @@ public sealed partial class MainWindow : Window
                 _taskbarRefreshTimer.Stop();
             }
 
+            UpdateDockSystemAreaState();
             if (RootFrame.Content is MainPage appliedPage)
             {
                 appliedPage.SetTaskbarReplacementApplied(
@@ -400,6 +411,8 @@ public sealed partial class MainWindow : Window
         }
 
         _taskbarRefreshTimer.Stop();
+        _taskbarAccessRevealed = false;
+        UpdateDockSystemAreaState();
         _settings = _settings with { ReplaceWindowsTaskbar = false };
         _ = PersistSettings();
         if (RootFrame.Content is MainPage failedPage)
@@ -419,7 +432,9 @@ public sealed partial class MainWindow : Window
         var result = _taskbarReplacement.Enable();
         if (result.Success)
         {
+            _taskbarAccessRevealed = false;
             _taskbarRefreshTimer.Start();
+            UpdateDockSystemAreaState();
             if (RootFrame.Content is MainPage mainPage)
             {
                 mainPage.SetTaskbarReplacementApplied(
@@ -431,6 +446,8 @@ public sealed partial class MainWindow : Window
         }
 
         _settings = _settings with { ReplaceWindowsTaskbar = false };
+        _taskbarAccessRevealed = false;
+        UpdateDockSystemAreaState();
         _ = PersistSettings();
         if (RootFrame.Content is MainPage failedPage)
         {
@@ -592,7 +609,13 @@ public sealed partial class MainWindow : Window
                     monitor,
                     _systemAccessibility.TextScaleFactor);
                 dockWindow.LauncherRequested += OnLauncherRequested;
+                dockWindow.SystemAreaRequested += OnSystemAreaRequested;
                 dockWindow.ApplyPinnedApplications(_pinnedApplications);
+                dockWindow.ApplyClock(DateTimeOffset.Now);
+                dockWindow.SetSystemAreaAccessState(
+                    _settings.ReplaceWindowsTaskbar &&
+                    _taskbarReplacement.IsEnabled,
+                    _taskbarAccessRevealed);
                 windows.Add(dockWindow);
             }
 
@@ -614,23 +637,120 @@ public sealed partial class MainWindow : Window
         await RefreshDockWindowsAsync().ConfigureAwait(true);
     }
 
+    private void OnClockRefreshTimerTick(
+        DispatcherQueueTimer sender,
+        object args) =>
+        RefreshClock();
+
+    private void RefreshClock()
+    {
+        var timestamp = DateTimeOffset.Now;
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.ApplyClock(timestamp);
+        }
+    }
+
     private void OnTaskbarRefreshTimerTick(
         DispatcherQueueTimer sender,
         object args)
     {
         var result = _taskbarReplacement.EnsureHidden();
-        if (result.Success || RootFrame.Content is not MainPage mainPage)
+        if (result.Success)
         {
             return;
         }
 
-        if (!_taskbarReplacement.IsEnabled)
+        FailTaskbarReplacement(
+            result.Error ??
+            "Windows did not keep the native taskbars hidden.");
+    }
+
+    private void OnSystemAreaRequested(object? sender, EventArgs e)
+    {
+        if (!_settings.ReplaceWindowsTaskbar ||
+            !_taskbarReplacement.IsEnabled)
+        {
+            UpdateDockSystemAreaState();
+            return;
+        }
+
+        var result = _taskbarAccessRevealed
+            ? _taskbarReplacement.EnsureHidden()
+            : _taskbarReplacement.Reveal();
+        if (!result.Success)
+        {
+            FailTaskbarReplacement(
+                result.Error ??
+                "Windows did not change taskbar visibility.");
+            return;
+        }
+
+        _taskbarAccessRevealed = !_taskbarAccessRevealed;
+        if (_taskbarAccessRevealed)
         {
             _taskbarRefreshTimer.Stop();
-            _settings = _settings with { ReplaceWindowsTaskbar = false };
-            _ = PersistSettings();
-            mainPage.SetTaskbarReplacementFailed(
-                result.Error ?? "The recovery guard is unavailable.");
+        }
+        else
+        {
+            _taskbarRefreshTimer.Start();
+        }
+
+        UpdateDockSystemAreaState();
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetSystemAreaAccessApplied(
+                _taskbarAccessRevealed,
+                result.TaskbarCount);
+        }
+    }
+
+    private void ResumeTaskbarReplacementForGaming()
+    {
+        if (!_taskbarAccessRevealed ||
+            !_settings.ReplaceWindowsTaskbar)
+        {
+            return;
+        }
+
+        var result = _taskbarReplacement.EnsureHidden();
+        if (!result.Success)
+        {
+            FailTaskbarReplacement(
+                result.Error ??
+                "Windows did not resume taskbar replacement.");
+            return;
+        }
+
+        _taskbarAccessRevealed = false;
+        _taskbarRefreshTimer.Start();
+        UpdateDockSystemAreaState();
+    }
+
+    private void FailTaskbarReplacement(string message)
+    {
+        _taskbarRefreshTimer.Stop();
+        _taskbarAccessRevealed = false;
+        _settings = _settings with { ReplaceWindowsTaskbar = false };
+        _ = PersistSettings();
+        _ = _taskbarReplacement.Disable();
+        UpdateDockSystemAreaState();
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetTaskbarReplacementFailed(message);
+        }
+    }
+
+    private void UpdateDockSystemAreaState()
+    {
+        var available =
+            _settings.ReplaceWindowsTaskbar &&
+            _taskbarReplacement.IsEnabled;
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.SetSystemAreaAccessState(
+                available,
+                _taskbarAccessRevealed);
         }
     }
 
@@ -934,6 +1054,7 @@ public sealed partial class MainWindow : Window
         _taskbarRefreshTimer.Stop();
         _ = _taskbarReplacement.Disable();
         _displayChangeTimer.Stop();
+        _clockRefreshTimer.Stop();
         _dockRefreshTimer.Stop();
         if (_displayChangeObserver is not null)
         {

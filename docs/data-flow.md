@@ -284,6 +284,26 @@ Menu paths. No pin data is uploaded. Normal Dock refreshes do not query the
 filesystem. Missing IDs produce no executable command and stay persisted for
 later recovery.
 
+## Clock and system-area state
+
+```text
+DateTimeOffset.Now
+  -> one MainWindow clock snapshot every 15 seconds
+  -> CultureInfo.CurrentCulture short time/date
+  -> every Dock
+
+Dock system-area selection
+  -> MainWindow session-only reveal flag
+  -> TaskbarReplacementSession.Reveal / EnsureHidden
+  -> verified Windows taskbar visibility
+  -> every Dock system-area button state
+```
+
+The reveal flag is never persisted. No notification content, tray icon metadata,
+or user interaction is captured. The system-area button changes only native
+taskbar visibility and leaves Explorer responsible for all notification-area
+behavior.
+
 ## Git repository snapshots
 
 ```text

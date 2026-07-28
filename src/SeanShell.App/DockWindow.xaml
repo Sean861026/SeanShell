@@ -166,15 +166,50 @@
                     </StackPanel>
                 </Grid>
 
-                <Border
+                <StackPanel
                     Grid.Column="4"
-                    Style="{StaticResource SeanStatusPillStyle}"
+                    Orientation="Horizontal"
+                    Spacing="{StaticResource SeanSpace8}"
                     VerticalAlignment="Center">
-                    <TextBlock
-                        x:Name="DockCountText"
-                        Style="{StaticResource SeanCaptionTextStyle}"
-                        Text="Loading" />
-                </Border>
+                    <Border
+                        Style="{StaticResource SeanStatusPillStyle}"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="DockCountText"
+                            Style="{StaticResource SeanCaptionTextStyle}"
+                            Text="Loading" />
+                    </Border>
+                    <Button
+                        x:Name="SystemAreaButton"
+                        Width="40"
+                        Height="40"
+                        AutomationProperties.Name="Show Windows system area"
+                        Click="OnSystemAreaClicked"
+                        ToolTipService.ToolTip="Show the Windows taskbar for notification and system tray access"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            x:Name="SystemAreaGlyph"
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="16"
+                            Glyph="&#xE7F4;" />
+                    </Button>
+                    <StackPanel
+                        MinWidth="76"
+                        AutomationProperties.Name="Current date and time"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="ClockTimeText"
+                            HorizontalAlignment="Right"
+                            FontWeight="SemiBold"
+                            Text="--:--" />
+                        <TextBlock
+                            x:Name="ClockDateText"
+                            HorizontalAlignment="Right"
+                            Style="{StaticResource SeanCaptionTextStyle}"
+                            Text="--/--/----" />
+                    </StackPanel>
+                </StackPanel>
             </Grid>
         </Border>
 

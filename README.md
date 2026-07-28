@@ -128,9 +128,16 @@ background filesystem polling. A temporarily missing shortcut is omitted without
 deleting the pin, allowing it to return after the shortcut is restored.
 
 Explorer remains running for notifications, system tray services, input methods,
-file associations, and recovery. User-facing clock and retained tray/notification
-access are the next replacement-first milestones; visual effects and production
-icon work follow those functional surfaces.
+file associations, and recovery. Every Dock now shows the current time and date
+using the user's Windows regional formats. While Companion Taskbar mode is active,
+its system-area button can reveal every native Windows taskbar for direct
+notification and system-tray access without simulating input or enumerating tray
+icons. Selecting it again resumes replacement; entering Gaming Mode also
+re-hides the native taskbars. The reveal state is session-only and never weakens
+crash recovery.
+
+Additional visual effects and production icon work follow these functional
+replacement surfaces.
 
 ## Gaming mode preview
 

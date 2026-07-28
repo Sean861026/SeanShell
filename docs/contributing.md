@@ -41,6 +41,9 @@ Companion Taskbar changes must keep Explorer running, start an independent
 recovery guard before hiding any taskbar, and verify graceful and forced-exit
 restoration on every connected display. Do not change the configured Winlogon
 shell until a separate reviewed recovery design and compatibility gate exist.
+System-area access must use verified taskbar visibility transitions; do not
+enumerate another application's tray icons or synthesize global input merely to
+open Windows shell surfaces.
 
 External package contributions must remain data-only until the brokered loading
 milestone. Do not add reflection, `Assembly.Load`, dependency resolution, or type

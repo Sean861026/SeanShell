@@ -117,7 +117,9 @@
 - [x] Multi-display, restart, graceful-exit, and forced-exit recovery checks
 - [x] Pinned applications and Launcher/Start affordance in every Dock
 - [x] Persisted bounded pin list with schema v7 migration and missing-shortcut recovery
-- [ ] User-facing clock and safe access to retained Windows tray/notification surfaces
+- [x] Regional-format clock and date on every Dock
+- [x] User-initiated native system-area reveal without input simulation or tray enumeration
+- [x] Automatic replacement resume when Gaming Mode starts
 - [ ] Reserve/recalculate monitor work area without depending on a visible Windows taskbar
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions

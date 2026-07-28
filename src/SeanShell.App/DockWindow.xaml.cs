@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using SeanShell.Core;
@@ -12,7 +14,7 @@ namespace SeanShell.App;
 
 public sealed partial class DockWindow : Window
 {
-    private const int DockWidth = 840;
+    private const int DockWidth = 1000;
     private const int DockHeight = 92;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
@@ -64,6 +66,8 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler? LauncherRequested;
 
+    public event EventHandler? SystemAreaRequested;
+
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
         if (density != ShellDisplayDensity.Compact)
@@ -101,6 +105,33 @@ public sealed partial class DockWindow : Window
     {
         _textScaleFactor = textScaleFactor;
         SetCollapsed(_collapsed);
+    }
+
+    public void ApplyClock(DateTimeOffset timestamp)
+    {
+        var local = timestamp.LocalDateTime;
+        var culture = CultureInfo.CurrentCulture;
+        ClockTimeText.Text = local.ToString("t", culture);
+        ClockDateText.Text = local.ToString("d", culture);
+        AutomationProperties.SetName(
+            ClockTimeText,
+            $"Current date and time: {local.ToString("F", culture)}");
+    }
+
+    public void SetSystemAreaAccessState(bool available, bool revealed)
+    {
+        SystemAreaButton.Visibility =
+            available ? Visibility.Visible : Visibility.Collapsed;
+        var label = revealed
+            ? "Resume SeanShell taskbar replacement"
+            : "Show Windows system area";
+        AutomationProperties.SetName(SystemAreaButton, label);
+        ToolTipService.SetToolTip(
+            SystemAreaButton,
+            revealed
+                ? "Hide the Windows taskbar and resume SeanShell replacement"
+                : "Show the Windows taskbar for notification and system tray access");
+        SystemAreaGlyph.Glyph = "\uE7F4";
     }
 
     public void Shutdown()
@@ -273,6 +304,12 @@ public sealed partial class DockWindow : Window
     private void OnLauncherClicked(object sender, RoutedEventArgs e)
     {
         LauncherRequested?.Invoke(this, EventArgs.Empty);
+        ScheduleAutoHide();
+    }
+
+    private void OnSystemAreaClicked(object sender, RoutedEventArgs e)
+    {
+        SystemAreaRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
     }
 
