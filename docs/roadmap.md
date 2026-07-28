@@ -130,6 +130,7 @@
 - [x] Window context actions for minimize, restore, and graceful close
 - [x] Process-based multi-window grouping with an accessible native window picker
 - [x] Per-window context actions inside multi-window groups
+- [x] Safe Open new instance action for explicitly matched running applications
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement

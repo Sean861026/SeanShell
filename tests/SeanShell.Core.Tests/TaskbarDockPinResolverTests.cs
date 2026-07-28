@@ -26,7 +26,7 @@ public sealed class TaskbarDockPinResolverTests
     }
 
     [TestMethod]
-    public void FindPinCandidatesKeepsDistinctMatchingShortcutsInIndexOrder()
+    public void FindApplicationCandidatesKeepsDistinctMatchingShortcutsInIndexOrder()
     {
         var applications = new[]
         {
@@ -36,7 +36,7 @@ public sealed class TaskbarDockPinResolverTests
             CreateCommand("app:terminal", "Terminal", "WindowsTerminal"),
         };
 
-        var result = TaskbarDockPinResolver.FindPinCandidates(
+        var result = TaskbarDockPinResolver.FindApplicationCandidates(
             applications,
             [CreateWindow("code", "Repository")]);
 
@@ -57,6 +57,21 @@ public sealed class TaskbarDockPinResolverTests
         var result = TaskbarDockPinResolver.FindPinCandidates(
             applications,
             [CreateWindow("target", "Window")]);
+
+        Assert.IsEmpty(result);
+    }
+
+    [TestMethod]
+    public void FindApplicationCandidatesRejectsNonApplicationCommands()
+    {
+        var command = CreateCommand("command:refresh", "Refresh", "Code") with
+        {
+            Kind = ShellCommandKind.Plugin,
+        };
+
+        var result = TaskbarDockPinResolver.FindApplicationCandidates(
+            [command],
+            [CreateWindow("Code", "Repository")]);
 
         Assert.IsEmpty(result);
     }

@@ -311,10 +311,15 @@ User opens an entry context menu
   -> selected toggle: perform the named bounded window operation
   -> selected Close window: post WM_CLOSE
   -> target application may close, cancel, or prompt for unsaved work
+  -> explicit cached application identity: offer Open new instance
+  -> multiple shortcut identities: require a native submenu selection
+  -> execute the original cached shortcut command
 ```
 
 Windows foreground restrictions remain authoritative; SeanShell does not bypass
-them with thread input attachment or injection.
+them with thread input attachment or injection. An application may reuse its
+existing process or window when its own single-instance policy handles the
+shortcut.
 
 ## Multi-monitor dock and auto-hide
 

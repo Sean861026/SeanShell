@@ -66,6 +66,10 @@ shares the already cached application index so Dock context menus can offer
 bounded pin candidates without rescanning the filesystem. `TaskbarDockPinResolver`
 requires an explicit shortcut process identity, preserves ambiguous matches as
 separate choices, and never infers identity from a window title.
+The same resolved application candidates power Open new instance from running
+window context menus. SeanShell executes the original cached `ShellCommand`; it
+does not construct an executable path or force applications that enforce a
+single-instance policy to create another process.
 `PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
 Boundary commands are disabled before dispatch, and a successful move atomically
 persists the ordered ID list before refreshing every Dock.
@@ -139,7 +143,9 @@ under one submenu per window. Minimize and restore reuse the same service
 boundary; Close posts `WM_CLOSE` to the window instead of terminating its
 process, preserving the application's opportunity to cancel or prompt for
 unsaved work. While a menu is open, Dock auto-hide is paused and resumes after
-the flyout closes.
+the flyout closes. Open new instance remains an application-level action outside
+the per-window submenu because it launches the matched shortcut rather than
+operating on a specific window handle.
 
 `NativeApplicationIconReader` stays in the Windows boundary. The background
 window capture asks each process for its `WM_GETICON` or class icon and falls

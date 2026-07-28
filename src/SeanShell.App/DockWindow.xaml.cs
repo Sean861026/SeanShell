@@ -479,6 +479,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(toggleItem);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(closeItem);
+        AddOpenNewInstanceAction(flyout.Items, item);
         AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
@@ -561,6 +562,7 @@ public sealed partial class DockWindow : Window
             flyout.Items.Add(windowMenu);
         }
 
+        AddOpenNewInstanceAction(flyout.Items, item);
         AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
@@ -750,6 +752,81 @@ public sealed partial class DockWindow : Window
         }
 
         items.Add(pinMenu);
+    }
+
+    private void AddOpenNewInstanceAction(
+        IList<MenuFlyoutItemBase> items,
+        DockItemViewModel dockItem)
+    {
+        var candidates = TaskbarDockPinResolver.FindApplicationCandidates(
+            _availableApplications,
+            dockItem.Windows);
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        items.Add(new MenuFlyoutSeparator());
+        if (candidates.Count == 1)
+        {
+            items.Add(CreateOpenNewInstanceMenuItem(candidates[0]));
+            return;
+        }
+
+        var openMenu = new MenuFlyoutSubItem
+        {
+            Text = "Open new instance",
+            Icon = CreateOpenNewInstanceIcon(),
+        };
+        foreach (var candidate in candidates)
+        {
+            var candidateItem = new MenuFlyoutItem
+            {
+                Text = candidate.Title,
+            };
+            candidateItem.Click += async (_, _) =>
+                await OpenNewInstanceAsync(candidate).ConfigureAwait(true);
+            openMenu.Items.Add(candidateItem);
+        }
+
+        items.Add(openMenu);
+    }
+
+    private MenuFlyoutItem CreateOpenNewInstanceMenuItem(
+        ShellCommand application)
+    {
+        var item = new MenuFlyoutItem
+        {
+            Text = "Open new instance",
+            Icon = CreateOpenNewInstanceIcon(),
+        };
+        item.Click += async (_, _) =>
+            await OpenNewInstanceAsync(application).ConfigureAwait(true);
+        return item;
+    }
+
+    private static FontIcon CreateOpenNewInstanceIcon() =>
+        new()
+        {
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                "Segoe Fluent Icons"),
+            Glyph = "\uE8A7",
+        };
+
+    private async Task OpenNewInstanceAsync(ShellCommand application)
+    {
+        try
+        {
+            await application.ExecuteAsync(CancellationToken.None)
+                .ConfigureAwait(true);
+        }
+        catch (Exception exception)
+        {
+            DockCountText.Text = "Launch failed";
+            ToolTipService.SetToolTip(
+                DockCountText,
+                $"Unable to open {application.Title}: {exception.Message}");
+        }
     }
 
     private void AddPinnedApplicationActions(
