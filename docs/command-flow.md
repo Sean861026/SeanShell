@@ -387,16 +387,23 @@ User searches for an installed application and selects Pin
   -> resolve available pinned commands from the existing index
   -> distribute the same ordered command list to every Dock
 
+User opens a running application's Dock context menu
+  -> compare its process name only with explicit cached shortcut identities
+  -> no match: do not offer a pin action
+  -> one match: offer Pin to Dock
+  -> multiple matches: offer a native candidate submenu
+  -> selected candidate follows the same verified persistence flow
+
 User selects a pinned Dock application
   -> execute the original installed-application ShellCommand
   -> Windows Shell opens the exact indexed shortcut
 
-User selects Unpin
+User selects Unpin in Launcher, on a standalone pin, or on its running item
   -> remove the exact app ID
   -> atomically persist and refresh every Dock
 ```
 
-Selecting the pin button does not execute the result. A missing Start Menu
+Selecting a pin command does not execute the result. A missing Start Menu
 shortcut is not launched or displayed and is not removed from settings, allowing
 the pin to recover if the shortcut returns.
 

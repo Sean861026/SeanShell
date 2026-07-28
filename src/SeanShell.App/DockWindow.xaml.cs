@@ -33,6 +33,7 @@ public sealed partial class DockWindow : Window
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
     private int _expandedDockWidth;
+    private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
     private DockBounds? _reservedArea;
@@ -77,6 +78,8 @@ public sealed partial class DockWindow : Window
     public event EventHandler? LauncherRequested;
 
     public event EventHandler? SystemAreaRequested;
+
+    public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
 
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
@@ -287,6 +290,17 @@ public sealed partial class DockWindow : Window
         RefreshPinnedItems();
     }
 
+    public void ApplyAvailableApplications(
+        IReadOnlyList<ShellCommand> applications)
+    {
+        if (_allowClose)
+        {
+            return;
+        }
+
+        _availableApplications = applications.ToArray();
+    }
+
     public void SetWindowSnapshotUnavailable(string message)
     {
         if (_allowClose)
@@ -462,6 +476,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(toggleItem);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(closeItem);
+        AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
             _contextMenuOpen = false;
@@ -543,6 +558,7 @@ public sealed partial class DockWindow : Window
             flyout.Items.Add(windowMenu);
         }
 
+        AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
             _contextMenuOpen = false;
@@ -652,6 +668,127 @@ public sealed partial class DockWindow : Window
         finally
         {
             ScheduleAutoHide();
+        }
+    }
+
+    private void OnPinnedApplicationContextRequested(
+        UIElement sender,
+        ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement element ||
+            element.DataContext is not PinnedDockItemViewModel item)
+        {
+            return;
+        }
+
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+
+        var unpinItem = CreatePinMenuItem(item.Command, shouldPin: false);
+        var flyout = new MenuFlyout();
+        flyout.Items.Add(unpinItem);
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(element);
+        args.Handled = true;
+    }
+
+    private void AddPinAction(
+        IList<MenuFlyoutItemBase> items,
+        DockItemViewModel dockItem)
+    {
+        var pinnedApplication = TaskbarDockPinResolver.FindPinnedApplication(
+            _pinnedApplications,
+            dockItem.Windows);
+        if (pinnedApplication is not null)
+        {
+            items.Add(new MenuFlyoutSeparator());
+            items.Add(CreatePinMenuItem(pinnedApplication, shouldPin: false));
+            return;
+        }
+
+        var candidates = TaskbarDockPinResolver.FindPinCandidates(
+            _availableApplications,
+            dockItem.Windows);
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        items.Add(new MenuFlyoutSeparator());
+        if (candidates.Count == 1)
+        {
+            items.Add(CreatePinMenuItem(candidates[0], shouldPin: true));
+            return;
+        }
+
+        var pinMenu = new MenuFlyoutSubItem
+        {
+            Text = "Pin to Dock",
+            Icon = CreatePinIcon(shouldPin: true),
+        };
+        foreach (var candidate in candidates)
+        {
+            var candidateItem = new MenuFlyoutItem
+            {
+                Text = candidate.Title,
+            };
+            candidateItem.Click += async (_, _) =>
+                await RequestPinChangeAsync(candidate, shouldPin: true)
+                    .ConfigureAwait(true);
+            pinMenu.Items.Add(candidateItem);
+        }
+
+        items.Add(pinMenu);
+    }
+
+    private MenuFlyoutItem CreatePinMenuItem(
+        ShellCommand command,
+        bool shouldPin)
+    {
+        var item = new MenuFlyoutItem
+        {
+            Text = shouldPin ? "Pin to Dock" : "Unpin from Dock",
+            Icon = CreatePinIcon(shouldPin),
+        };
+        item.Click += async (_, _) =>
+            await RequestPinChangeAsync(command, shouldPin).ConfigureAwait(true);
+        return item;
+    }
+
+    private static FontIcon CreatePinIcon(bool shouldPin) =>
+        new()
+        {
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                "Segoe Fluent Icons"),
+            Glyph = shouldPin ? "\uE718" : "\uE77A",
+        };
+
+    private async Task RequestPinChangeAsync(
+        ShellCommand command,
+        bool shouldPin)
+    {
+        var handler = PinChangedRequested;
+        if (handler is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await handler(command, shouldPin).ConfigureAwait(true))
+            {
+                throw new InvalidOperationException(
+                    "The pinned application preference was not changed.");
+            }
+        }
+        catch (Exception exception)
+        {
+            DockCountText.Text = shouldPin ? "Pin failed" : "Unpin failed";
+            ToolTipService.SetToolTip(DockCountText, exception.Message);
         }
     }
 

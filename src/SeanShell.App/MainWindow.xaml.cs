@@ -44,6 +44,7 @@ public sealed partial class MainWindow : Window
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
     private IReadOnlyList<DockWindow> _dockWindows;
+    private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
@@ -154,6 +155,7 @@ public sealed partial class MainWindow : Window
         _clockRefreshTimer.Start();
         _dockRefreshTimer.Start();
         _ = RefreshDockWindowsAsync();
+        _ = RefreshAvailableApplicationsAsync();
         _ = RefreshPinnedApplicationsAsync();
         UpdateGamingModeMonitor();
         await _pluginHost.InitializeAsync().ConfigureAwait(true);
@@ -626,6 +628,7 @@ public sealed partial class MainWindow : Window
             _monitors = monitors;
             foreach (var dockWindow in previous)
             {
+                dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
                 dockWindow.Shutdown();
             }
 
@@ -679,6 +682,8 @@ public sealed partial class MainWindow : Window
                     _systemAccessibility.TextScaleFactor);
                 dockWindow.LauncherRequested += OnLauncherRequested;
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
+                dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
+                dockWindow.ApplyAvailableApplications(_availableApplications);
                 dockWindow.ApplyPinnedApplications(_pinnedApplications);
                 dockWindow.ApplyClock(DateTimeOffset.Now);
                 dockWindow.SetSystemAreaAccessState(
@@ -1017,6 +1022,27 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async Task RefreshAvailableApplicationsAsync()
+    {
+        try
+        {
+            _availableApplications = await _installedApplications
+                .GetCommandsAsync(string.Empty, CancellationToken.None)
+                .ConfigureAwait(true);
+            foreach (var dockWindow in _dockWindows)
+            {
+                dockWindow.ApplyAvailableApplications(_availableApplications);
+            }
+        }
+        catch (Exception exception)
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetPinnedApplicationsUnavailable(exception.Message);
+            }
+        }
+    }
+
     private void OnLauncherShortcutChanged(LauncherShortcut shortcut)
     {
         if (_registeredShortcut == shortcut)
@@ -1211,6 +1237,7 @@ public sealed partial class MainWindow : Window
         }
         foreach (var dockWindow in _dockWindows)
         {
+            dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.Shutdown();
         }
 

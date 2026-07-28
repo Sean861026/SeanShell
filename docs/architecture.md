@@ -61,7 +61,11 @@ index. Settings contain at most eight ordered `app:` command IDs; the provider
 resolves only exact IDs that exist in that index and returns the original
 `ShellCommand` launch delegate. Missing shortcuts are omitted from the current
 Dock snapshot but remain in settings so a restored shortcut can reappear. The App
-distributes one immutable pinned-command list to every monitor-local Dock.
+distributes one immutable pinned-command list to every monitor-local Dock. It also
+shares the already cached application index so Dock context menus can offer
+bounded pin candidates without rescanning the filesystem. `TaskbarDockPinResolver`
+requires an explicit shortcut process identity, preserves ambiguous matches as
+separate choices, and never infers identity from a window title.
 
 The Dock is icon-first rather than a row of text cards. Each taskbar item keeps a
 fixed hit target and icon slot while `TaskbarItemVisualStateResolver` maps the
@@ -94,7 +98,9 @@ one-time application index. Each monitor-local Dock uses
 `TaskbarPinWindowMatcher` to suppress a standalone pin only when that explicit
 identity matches a live window process. It never guesses from titles. Unsupported
 URL, ClickOnce, packaged, or unresolved shortcuts therefore fail open as normal
-pins instead of coalescing unrelated applications.
+pins instead of coalescing unrelated applications. A coalesced running item
+retains Unpin from Dock, while a standalone pin exposes the same command from its
+own context menu.
 
 The built-in .NET workspace plugin receives the same bounded developer roots. A
 breadth-first scan is capped at depth four and 24 solution/project files, skips
