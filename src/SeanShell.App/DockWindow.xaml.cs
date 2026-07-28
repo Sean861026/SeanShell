@@ -30,6 +30,7 @@ public sealed partial class DockWindow : Window
     private bool _allowClose;
     private bool _autoHide = true;
     private bool _collapsed;
+    private bool _contextMenuOpen;
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
     private DockBounds? _reservedArea;
@@ -213,7 +214,9 @@ public sealed partial class DockWindow : Window
 
     private void ScheduleAutoHide()
     {
-        if (!_autoHide || _shellState.Current.Mode == ShellMode.Gaming)
+        if (!_autoHide ||
+            _contextMenuOpen ||
+            _shellState.Current.Mode == ShellMode.Gaming)
         {
             return;
         }
@@ -338,6 +341,67 @@ public sealed partial class DockWindow : Window
             _ = _windowService.ToggleTaskbarWindow(item.Handle);
             ScheduleAutoHide();
         }
+    }
+
+    private void OnWindowContextRequested(
+        UIElement sender,
+        ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement element ||
+            element.DataContext is not DockItemViewModel item)
+        {
+            return;
+        }
+
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+
+        var toggleAction =
+            TaskbarWindowActionResolver.ResolveContextToggle(item.IsMinimized);
+        var toggleItem = new MenuFlyoutItem
+        {
+            Text = toggleAction == TaskbarWindowAction.Minimize
+                ? "Minimize"
+                : "Restore",
+            Icon = new FontIcon
+            {
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                    "Segoe Fluent Icons"),
+                Glyph = toggleAction == TaskbarWindowAction.Minimize
+                    ? "\uE921"
+                    : "\uE923",
+            },
+        };
+        toggleItem.Click += (_, _) =>
+        {
+            _ = toggleAction == TaskbarWindowAction.Minimize
+                ? _windowService.Minimize(item.Handle)
+                : _windowService.RestoreAndActivate(item.Handle);
+        };
+
+        var closeItem = new MenuFlyoutItem
+        {
+            Text = "Close window",
+            Icon = new FontIcon
+            {
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                    "Segoe Fluent Icons"),
+                Glyph = "\uE8BB",
+            },
+        };
+        closeItem.Click += (_, _) => _ = _windowService.RequestClose(item.Handle);
+
+        var flyout = new MenuFlyout();
+        flyout.Items.Add(toggleItem);
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(closeItem);
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(element);
+        args.Handled = true;
     }
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)

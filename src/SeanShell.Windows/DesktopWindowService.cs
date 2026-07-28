@@ -15,6 +15,7 @@ public sealed class DesktopWindowService
     private const int DwmwaCloaked = 14;
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
+    private const uint WmClose = 0x0010;
     private const uint MonitorDefaultToNearest = 2;
     private readonly object _cacheGate = new();
     private IReadOnlyList<DesktopWindowSnapshot> _cachedWindows = [];
@@ -91,8 +92,28 @@ public sealed class DesktopWindowService
             IsIconic(handle));
         if (action == TaskbarWindowAction.Minimize)
         {
-            _ = ShowWindow(handle, SwMinimize);
-            return true;
+            return Minimize(handle);
+        }
+
+        return RestoreAndActivate(handle);
+    }
+
+    public bool Minimize(nint handle)
+    {
+        if (!IsWindow(handle))
+        {
+            return false;
+        }
+
+        _ = ShowWindow(handle, SwMinimize);
+        return true;
+    }
+
+    public bool RestoreAndActivate(nint handle)
+    {
+        if (!IsWindow(handle))
+        {
+            return false;
         }
 
         if (IsIconic(handle))
@@ -102,6 +123,9 @@ public sealed class DesktopWindowService
 
         return SetForegroundWindow(handle);
     }
+
+    public bool RequestClose(nint handle) =>
+        IsWindow(handle) && PostMessage(handle, WmClose, 0, 0);
 
     private static bool IsTaskbarWindow(nint handle)
     {
@@ -186,6 +210,14 @@ public sealed class DesktopWindowService
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetForegroundWindow(nint handle);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PostMessage(
+        nint handle,
+        uint message,
+        nint wParam,
+        nint lParam);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(nint handle, StringBuilder text, int maximumCount);

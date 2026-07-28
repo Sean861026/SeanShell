@@ -122,6 +122,7 @@
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
+- [x] Window context actions for minimize, restore, and graceful close
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement

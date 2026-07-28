@@ -29,4 +29,17 @@ public sealed class TaskbarWindowActionResolverTests
 
         Assert.AreEqual(TaskbarWindowAction.RestoreAndActivate, action);
     }
+
+    [TestMethod]
+    [DataRow(false, TaskbarWindowAction.Minimize)]
+    [DataRow(true, TaskbarWindowAction.RestoreAndActivate)]
+    public void ContextToggleMatchesVisibleWindowState(
+        bool isMinimized,
+        TaskbarWindowAction expected)
+    {
+        var action =
+            TaskbarWindowActionResolver.ResolveContextToggle(isMinimized);
+
+        Assert.AreEqual(expected, action);
+    }
 }

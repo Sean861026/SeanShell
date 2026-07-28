@@ -214,7 +214,12 @@ EnumWindows + DWM visibility
   -> monitor filter per Dock
   -> dock view models and horizontal Dock lists
   -> user selection
-  -> SetForegroundWindow
+  -> live foreground/minimized state
+  -> SW_MINIMIZE or SW_RESTORE + SetForegroundWindow
+
+Dock window context selection
+  -> fixed Minimize / Restore action or graceful Close request
+  -> ShowWindow or PostMessage(WM_CLOSE)
 
 GetSystemTimes + GlobalMemoryStatusEx
   -> SystemMetricsSnapshot

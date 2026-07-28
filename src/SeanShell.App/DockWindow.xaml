@@ -110,6 +110,7 @@
                                 <Grid
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ColumnSpacing="{StaticResource SeanSpace8}"
+                                    ContextRequested="OnWindowContextRequested"
                                     Opacity="{Binding ContentOpacity}"
                                     ToolTipService.ToolTip="{Binding Title}">
                                     <Grid.ColumnDefinitions>
