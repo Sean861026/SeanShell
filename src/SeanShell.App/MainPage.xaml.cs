@@ -209,6 +209,18 @@ public sealed partial class MainPage : Page
             InfoBarSeverity.Success);
     }
 
+    public void SetSystemAreaAccessApplied(bool revealed, int taskbarCount)
+    {
+        SetSettingsStatus(
+            revealed
+                ? "Windows system area available"
+                : "SeanShell taskbar replacement resumed",
+            revealed
+                ? $"Temporarily showing {taskbarCount} Windows taskbar window(s) for notification and system tray access. Use the Dock button again to resume replacement."
+                : $"SeanShell hid {taskbarCount} Windows taskbar window(s) and resumed replacement.",
+            InfoBarSeverity.Informational);
+    }
+
     public void SetTaskbarReplacementFailed(string message)
     {
         var wasApplyingSettings = _applyingSettings;

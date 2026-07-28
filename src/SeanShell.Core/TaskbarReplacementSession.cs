@@ -110,6 +110,19 @@ public sealed class TaskbarReplacementSession : IDisposable
         return _controller.HideAll();
     }
 
+    public TaskbarOperationResult Reveal()
+    {
+        if (!IsEnabled)
+        {
+            return new TaskbarOperationResult(
+                false,
+                0,
+                "Taskbar replacement is not enabled.");
+        }
+
+        return _controller.ShowAll();
+    }
+
     public TaskbarOperationResult Disable()
     {
         IsEnabled = false;

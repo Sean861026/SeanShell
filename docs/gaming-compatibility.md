@@ -51,6 +51,7 @@ For each game under test, record:
 | Exit the matching process | Latest session summary appears and persists after restart |
 | Enable Companion Taskbar before launch | Every Windows taskbar stays hidden without affecting game input or rendering |
 | Force-close SeanShell during the check | Recovery guard restores every Windows taskbar |
+| Reveal the Windows system area, then enter Gaming Mode | Native taskbars re-hide before SeanShell Docks suspend |
 
 Compatibility results should include the game version, anti-cheat provider,
 Windows build, GPU driver, and SeanShell commit. A successful test is evidence for

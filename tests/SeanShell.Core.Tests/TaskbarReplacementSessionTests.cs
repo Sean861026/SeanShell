@@ -94,6 +94,37 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
+    public void RevealShowsTaskbarsWithoutDisablingReplacementSession()
+    {
+        var calls = new List<string>();
+        var controller = new StubController(calls);
+        using var session = new TaskbarReplacementSession(
+            controller,
+            new StubGuard(calls));
+        Assert.IsTrue(session.Enable().Success);
+
+        var result = session.Reveal();
+
+        Assert.IsTrue(result.Success);
+        Assert.IsTrue(session.IsEnabled);
+        Assert.AreEqual("show", calls[^1]);
+    }
+
+    [TestMethod]
+    public void RevealFailsWhenReplacementIsNotEnabled()
+    {
+        var calls = new List<string>();
+        using var session = new TaskbarReplacementSession(
+            new StubController(calls),
+            new StubGuard(calls));
+
+        var result = session.Reveal();
+
+        Assert.IsFalse(result.Success);
+        Assert.IsEmpty(calls);
+    }
+
+    [TestMethod]
     public void GuardArgumentsRequireExactPositiveOwnerPid()
     {
         Assert.IsTrue(TaskbarRecoveryArguments.TryParseOwnerProcessId(

@@ -390,6 +390,33 @@ Selecting the pin button does not execute the result. A missing Start Menu
 shortcut is not launched or displayed and is not removed from settings, allowing
 the pin to recover if the shortcut returns.
 
+## Clock and Windows system-area access
+
+```text
+MainWindow 15-second clock timer
+  -> capture one local timestamp
+  -> each Dock formats system short-time and short-date patterns
+
+User selects the Dock system-area button
+  -> require active Companion Taskbar replacement
+  -> show and verify primary and secondary Windows taskbars
+  -> keep the recovery guard and persisted replacement preference active
+  -> pause the two-second re-hide check
+  -> user accesses Explorer notification and system-tray surfaces directly
+
+User selects the button again
+  -> hide and verify every Windows taskbar
+  -> resume the two-second re-hide check
+
+Gaming Mode starts while the system area is revealed
+  -> hide and verify every Windows taskbar
+  -> clear the session-only reveal state
+  -> hide SeanShell Docks and suspend optional providers
+```
+
+Failure of either visibility transition fails safe by restoring native taskbars,
+disabling the replacement preference, and keeping Explorer active.
+
 ## Gaming mode
 
 ```text

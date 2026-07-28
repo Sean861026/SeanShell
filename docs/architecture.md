@@ -108,6 +108,18 @@ for that process to exit and restores every taskbar. The App repeats the hide
 check every two seconds while replacement is enabled so an Explorer restart
 cannot silently bring the Windows taskbar back over the dock.
 
+The session also exposes a bounded `Reveal` transition that shows native taskbar
+windows without disabling the recovery guard or changing the persisted Companion
+preference. MainWindow pauses its re-hide timer only after a successful
+user-initiated reveal. A second selection or entry into Gaming Mode calls
+`EnsureHidden` and resumes the timer. This preserves direct access to Explorer's
+notification area without unsupported tray enumeration, global input synthesis,
+or shell-process injection.
+
+MainWindow owns one 15-second clock timer and distributes the same local timestamp
+to every Dock. Each Dock formats short time and short date through
+`CultureInfo.CurrentCulture`, so Windows regional preferences remain authoritative.
+
 ## Reliability boundaries
 
 - Explorer remains the shell-service and recovery fallback in Overlay and
