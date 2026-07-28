@@ -399,6 +399,7 @@ MainWindow 15-second clock timer
 
 User selects the Dock system-area button
   -> require active Companion Taskbar replacement
+  -> remove each Dock AppBar work-area reservation
   -> show and verify primary and secondary Windows taskbars
   -> keep the recovery guard and persisted replacement preference active
   -> pause the two-second re-hide check
@@ -406,16 +407,39 @@ User selects the Dock system-area button
 
 User selects the button again
   -> hide and verify every Windows taskbar
+  -> register a bottom AppBar reservation for each display
   -> resume the two-second re-hide check
 
 Gaming Mode starts while the system area is revealed
   -> hide and verify every Windows taskbar
   -> clear the session-only reveal state
+  -> ensure all Dock AppBar reservations are removed
   -> hide SeanShell Docks and suspend optional providers
 ```
 
 Failure of either visibility transition fails safe by restoring native taskbars,
 disabling the replacement preference, and keeping Explorer active.
+
+## Per-display work-area reservation
+
+```text
+Companion Taskbar replacement succeeds
+  -> calculate scaled Dock height + vertical margin
+  -> ABM_NEW for each Dock HWND
+  -> ABM_QUERYPOS on that monitor's bottom edge
+  -> restore the requested height against the approved bottom edge
+  -> ABM_SETPOS + native window position + ABM_WINDOWPOSCHANGED
+  -> return the Dock to its centered visual rectangle
+  -> Windows publishes the reduced per-monitor work area
+
+Replacement disabled / system area revealed / Gaming Mode / shutdown
+  -> ABM_REMOVE for every registered Dock
+  -> Windows restores the available monitor work area
+```
+
+The taskbar controller reissues a pending visibility transition every 50
+milliseconds for at most two seconds. Final visibility, not the first
+`ShowWindow` return value, determines success.
 
 ## Gaming mode
 

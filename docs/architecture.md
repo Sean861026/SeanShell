@@ -120,6 +120,24 @@ MainWindow owns one 15-second clock timer and distributes the same local timesta
 to every Dock. Each Dock formats short time and short date through
 `CultureInfo.CurrentCulture`, so Windows regional preferences remain authoritative.
 
+Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
+started and native taskbars are hidden, the reservation follows the documented
+`ABM_NEW`, `ABM_QUERYPOS`, and `ABM_SETPOS` sequence for that Dock window and
+display. The approved rectangle is briefly applied to the native window before
+the Dock returns to its centered visual bounds. Windows can then recalculate each
+monitor's work area without requiring the native taskbar to remain visible.
+
+The reservation requests the Dock's full DPI-scaled height plus its vertical
+margin. It does not subtract the native taskbar's transitional inset. Revealing
+the system area, entering Gaming Mode, disabling replacement, rebuilding Docks,
+and shutdown all remove the reservation first. Destroying a Dock HWND also makes
+Windows discard its AppBar registration after a forced exit.
+
+Taskbar visibility can settle asynchronously, especially on a secondary display.
+`WindowsTaskbarController` reissues the requested transition for a bounded
+two-second window and fails safe to the native taskbar if the final state still
+does not match.
+
 ## Reliability boundaries
 
 - Explorer remains the shell-service and recovery fallback in Overlay and

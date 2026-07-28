@@ -8,6 +8,8 @@ public sealed class WindowsTaskbarController : ITaskbarController
 {
     private const int SwHide = 0;
     private const int SwShow = 5;
+    private const int VisibilityPollAttempts = 40;
+    private const int VisibilityPollIntervalMilliseconds = 50;
     private const string PrimaryTaskbarClass = "Shell_TrayWnd";
     private const string SecondaryTaskbarClass = "Shell_SecondaryTrayWnd";
 
@@ -31,6 +33,24 @@ public sealed class WindowsTaskbarController : ITaskbarController
         foreach (var taskbar in taskbars)
         {
             _ = ShowWindow(taskbar, visible ? SwShow : SwHide);
+        }
+
+        for (var attempt = 0; attempt < VisibilityPollAttempts; attempt++)
+        {
+            var pending = taskbars
+                .Where(taskbar => IsWindowVisible(taskbar) != visible)
+                .ToArray();
+            if (pending.Length == 0)
+            {
+                break;
+            }
+
+            foreach (var taskbar in pending)
+            {
+                _ = ShowWindow(taskbar, visible ? SwShow : SwHide);
+            }
+
+            Thread.Sleep(VisibilityPollIntervalMilliseconds);
         }
 
         var mismatched = taskbars.Count(

@@ -136,6 +136,13 @@ icons. Selecting it again resumes replacement; entering Gaming Mode also
 re-hides the native taskbars. The reveal state is session-only and never weakens
 crash recovery.
 
+While replacement is active, each Dock registers a bottom-edge Windows AppBar
+reservation on its display. Maximized applications therefore stop above the Dock
+instead of rendering underneath it. SeanShell releases these per-display
+reservations before revealing the native system area, entering Gaming Mode,
+disabling replacement, or exiting; Windows also drops them automatically if a
+Dock process is terminated.
+
 Additional visual effects and production icon work follow these functional
 replacement surfaces.
 

@@ -44,6 +44,9 @@ shell until a separate reviewed recovery design and compatibility gate exist.
 System-area access must use verified taskbar visibility transitions; do not
 enumerate another application's tray icons or synthesize global input merely to
 open Windows shell surfaces.
+Work-area changes must use registered per-display AppBars, remove every
+registration on normal shutdown paths, and retain forced-exit recovery through
+HWND destruction. Do not write persistent global work-area coordinates.
 
 External package contributions must remain data-only until the brokered loading
 milestone. Do not add reflection, `Assembly.Load`, dependency resolution, or type
