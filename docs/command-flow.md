@@ -401,6 +401,12 @@ User selects a pinned Dock application
 User selects Unpin in Launcher, on a standalone pin, or on its running item
   -> remove the exact app ID
   -> atomically persist and refresh every Dock
+
+User selects Move left or Move right on a pinned item
+  -> reject a missing ID or an outer-boundary move
+  -> swap the exact ID with its adjacent neighbor
+  -> atomically persist the ordered ID list
+  -> resolve and refresh every monitor-local Dock
 ```
 
 Selecting a pin command does not execute the result. A missing Start Menu

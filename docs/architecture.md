@@ -66,6 +66,9 @@ shares the already cached application index so Dock context menus can offer
 bounded pin candidates without rescanning the filesystem. `TaskbarDockPinResolver`
 requires an explicit shortcut process identity, preserves ambiguous matches as
 separate choices, and never infers identity from a window title.
+`PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
+Boundary commands are disabled before dispatch, and a successful move atomically
+persists the ordered ID list before refreshing every Dock.
 
 The Dock is icon-first rather than a row of text cards. Each taskbar item keeps a
 fixed hit target and icon slot while `TaskbarItemVisualStateResolver` maps the
@@ -100,7 +103,9 @@ identity matches a live window process. It never guesses from titles. Unsupporte
 URL, ClickOnce, packaged, or unresolved shortcuts therefore fail open as normal
 pins instead of coalescing unrelated applications. A coalesced running item
 retains Unpin from Dock, while a standalone pin exposes the same command from its
-own context menu.
+own context menu. Both surfaces also expose Move left and Move right against the
+same global pin order, including when another display coalesces a pin with its
+running window.
 
 The built-in .NET workspace plugin receives the same bounded developer roots. A
 breadth-first scan is capped at depth four and 24 solution/project files, skips
