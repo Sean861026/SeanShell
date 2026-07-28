@@ -63,6 +63,17 @@ resolves only exact IDs that exist in that index and returns the original
 Dock snapshot but remain in settings so a restored shortcut can reappear. The App
 distributes one immutable pinned-command list to every monitor-local Dock.
 
+The Dock is icon-first rather than a row of text cards. Each taskbar item keeps a
+fixed hit target and icon slot while `TaskbarItemVisualStateResolver` maps the
+foreground/minimized snapshot to one of three stable presentations: a wide
+accent active underline, a compact running marker, or a compact minimized marker
+with reduced icon emphasis. Tooltips and automation names preserve the window
+title, process, and state that are intentionally omitted from the visual surface.
+`TaskbarDockLayout` derives a bounded expanded width from the current pinned and
+running item counts, capped to both the preferred maximum and the monitor work
+area. This keeps sparse Docks compact while preserving horizontal scrolling for
+dense sessions and small displays.
+
 The built-in .NET workspace plugin receives the same bounded developer roots. A
 breadth-first scan is capped at depth four and 24 solution/project files, skips
 build, dependency, reparse-point, and inaccessible directories, and never scans
