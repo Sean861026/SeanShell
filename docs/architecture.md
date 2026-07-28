@@ -74,6 +74,16 @@ running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
 dense sessions and small displays.
 
+`TaskbarWindowGrouper` combines monitor-local windows by case-insensitive process
+name and keeps the foreground window first inside each group. Generic Windows
+host processes remain separate because their process name is not a safe
+application identity. A single-window
+group preserves direct taskbar toggle behavior. A multi-window group displays a
+numeric badge and opens a native `MenuFlyout` containing every title and state.
+The native control owns keyboard focus, arrow navigation, Enter activation, and
+Escape dismissal; SeanShell does not add a global input hook. Grouping reduces
+visual density while retaining individual window handles for activation.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses

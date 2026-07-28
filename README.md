@@ -102,7 +102,10 @@ dock lists ordinary visible application windows on that display as native,
 icon-first taskbar items. A wide accent underline identifies the foreground
 window; compact neutral markers distinguish background and minimized windows.
 Full titles, process names, and states remain available to accessibility tools
-and pointer tooltips. Clicking the
+and pointer tooltips. Multiple top-level windows owned by the same process share
+one Dock icon with a numeric badge. Selecting that group opens a native,
+keyboard-navigable window picker; arrow keys and Enter choose a window, and
+Escape dismisses it. Clicking a single-window item directly
 active window minimizes it; clicking another or minimized window restores and
 activates it, matching standard taskbar toggle behavior. A window's context menu
 offers Minimize or Restore plus a standard close request, allowing the target

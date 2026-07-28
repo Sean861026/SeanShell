@@ -232,6 +232,14 @@ Foreground + minimized flags
   -> active / running / minimized indicator
   -> fixed 48px icon-first taskbar item
 
+Monitor-local DesktopWindowSnapshot[]
+  -> TaskbarWindowGrouper by process name
+  -> one Dock icon + numeric window-count badge per group
+  -> single window: direct taskbar toggle
+  -> multiple windows: native MenuFlyout picker
+  -> selected window handle
+  -> SW_RESTORE + SetForegroundWindow
+
 Pinned count + monitor-local window count + monitor work area
   -> TaskbarDockLayout
   -> bounded floating Dock width
