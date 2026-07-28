@@ -101,6 +101,7 @@
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
+- [x] BaseAlt Mica Dock surface with reduced-effects-aware hover and press motion
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] Icon-first taskbar presentation with distinct active, running, and minimized indicators
 - [x] Persisted system, light, and dark appearance preference with schema v4 migration

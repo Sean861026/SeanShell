@@ -36,8 +36,11 @@ Raw colors must not be embedded in individual views.
 - Keyboard focus must remain visible and follow visual reading order.
 - Normal text should meet WCAG AA contrast in light and dark themes.
 - Text must remain usable with Windows text scaling and high-contrast themes.
-- Future micro-interactions should take roughly 120–200 ms, use opacity or
-  translation, and be disabled or simplified by reduced-motion and Gaming Mode.
+- Dock hover feedback uses a 120 ms scale/translation transition; press feedback
+  uses 80 ms. Both resolve to an identity transform with no transition when
+  Windows requests reduced effects or Gaming Mode is active.
+- Backdrop surfaces use BaseAlt Mica with semantic Layer/Card fallback brushes;
+  raw tint colors are not embedded in the Dock.
 
 ## Planned surfaces
 

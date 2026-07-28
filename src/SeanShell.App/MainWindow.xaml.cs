@@ -575,6 +575,10 @@ public sealed partial class MainWindow : Window
             ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
             : null;
         _launcherWindow.SetReducedEffects(enabled);
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.SetReducedEffects(enabled);
+        }
     }
 
     private void TryObserveDisplayChanges()

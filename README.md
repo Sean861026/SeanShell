@@ -116,6 +116,10 @@ remain separate choices in a native submenu. Running windows and pinned Start
 Menu applications use their Windows-provided icons in a stable 26-pixel slot;
 SeanShell falls back to a Fluent glyph when Windows cannot supply one. Pinned
 items, running items, and the system area share a compact 48-pixel visual rhythm.
+The floating surface uses the active Windows BaseAlt Mica and semantic Layer
+brushes. Pointer hover lifts and scales an icon slightly, while press feedback
+contracts it; both transitions are removed when Windows requests reduced effects
+or Gaming Mode is active.
 The floating surface grows with its bounded item count and contracts to a compact
 minimum rather than retaining unused horizontal space. In Overlay mode it sits
 above the Windows taskbar. In the
