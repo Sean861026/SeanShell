@@ -83,6 +83,12 @@ refresh loop, captures one immutable window snapshot, and distributes it to ever
 monitor-local Dock. Docks filter that shared snapshot by monitor and never start
 their own enumeration task.
 
+Dock window clicks resolve against live foreground and minimized state rather
+than the cached snapshot. An active visible window receives `SW_MINIMIZE`;
+another or minimized window receives `SW_RESTORE` when needed followed by
+`SetForegroundWindow`. This reproduces normal taskbar toggle semantics without
+injecting code or attaching input queues.
+
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded
 window of the 50 most recent successful provider/ranking durations. Cancelled and

@@ -13,6 +13,7 @@ public sealed class DesktopWindowService
     private const long WsExAppWindow = 0x00040000L;
     private const long WsExToolWindow = 0x00000080L;
     private const int DwmwaCloaked = 14;
+    private const int SwMinimize = 6;
     private const int SwRestore = 9;
     private const uint MonitorDefaultToNearest = 2;
     private readonly object _cacheGate = new();
@@ -78,16 +79,25 @@ public sealed class DesktopWindowService
             .ToArray();
     }
 
-    public bool Activate(nint handle)
+    public bool ToggleTaskbarWindow(nint handle)
     {
         if (!IsWindow(handle))
         {
             return false;
         }
 
+        var action = TaskbarWindowActionResolver.Resolve(
+            handle == GetForegroundWindow(),
+            IsIconic(handle));
+        if (action == TaskbarWindowAction.Minimize)
+        {
+            _ = ShowWindow(handle, SwMinimize);
+            return true;
+        }
+
         if (IsIconic(handle))
         {
-            ShowWindow(handle, SwRestore);
+            _ = ShowWindow(handle, SwRestore);
         }
 
         return SetForegroundWindow(handle);
