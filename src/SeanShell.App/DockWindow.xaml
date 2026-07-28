@@ -22,7 +22,7 @@
         <Border
             x:Name="ExpandedDock"
             Padding="6,6,6,6"
-            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            Background="{ThemeResource LayerFillColorAltBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
             CornerRadius="16">
@@ -72,6 +72,10 @@
                                 Height="44"
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 ContextRequested="OnPinnedApplicationContextRequested"
+                                PointerEntered="OnDockItemPointerEntered"
+                                PointerExited="OnDockItemPointerExited"
+                                PointerPressed="OnDockItemPointerPressed"
+                                PointerReleased="OnDockItemPointerReleased"
                                 ToolTipService.ToolTip="{Binding Title}">
                                 <Border
                                     Width="40"
@@ -133,6 +137,10 @@
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ContextRequested="OnWindowContextRequested"
                                     Opacity="{Binding ContentOpacity}"
+                                    PointerEntered="OnDockItemPointerEntered"
+                                    PointerExited="OnDockItemPointerExited"
+                                    PointerPressed="OnDockItemPointerPressed"
+                                    PointerReleased="OnDockItemPointerReleased"
                                     ToolTipService.ToolTip="{Binding ToolTipText}">
                                     <Border
                                         Width="40"

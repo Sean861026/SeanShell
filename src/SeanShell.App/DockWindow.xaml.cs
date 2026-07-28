@@ -1,11 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Numerics;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using SeanShell.Core;
 using SeanShell.Windows;
 using Windows.Graphics;
@@ -32,6 +36,7 @@ public sealed partial class DockWindow : Window
     private bool _contextMenuOpen;
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
+    private bool _reducedEffects;
     private int _expandedDockWidth;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
@@ -123,6 +128,18 @@ public sealed partial class DockWindow : Window
     {
         _textScaleFactor = textScaleFactor;
         SetCollapsed(_collapsed);
+    }
+
+    public void SetReducedEffects(bool enabled)
+    {
+        _reducedEffects = enabled;
+        SystemBackdrop = enabled
+            ? null
+            : new MicaBackdrop { Kind = MicaKind.BaseAlt };
+        ExpandedDock.Background = Application.Current.Resources[
+            enabled
+                ? "CardBackgroundFillColorDefaultBrush"
+                : "LayerFillColorAltBrush"] as Brush;
     }
 
     public WorkAreaReservationResult SetWorkAreaReservation(bool enabled)
@@ -381,6 +398,71 @@ public sealed partial class DockWindow : Window
     {
         _pointerInside = false;
         ScheduleAutoHide();
+    }
+
+    private void OnDockItemPointerEntered(
+        object sender,
+        PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
+        }
+    }
+
+    private void OnDockItemPointerExited(
+        object sender,
+        PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            ApplyDockItemMotion(element, isPointerOver: false, isPressed: false);
+        }
+    }
+
+    private void OnDockItemPointerPressed(
+        object sender,
+        PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element &&
+            e.GetCurrentPoint(element).Properties.IsLeftButtonPressed)
+        {
+            ApplyDockItemMotion(element, isPointerOver: true, isPressed: true);
+        }
+    }
+
+    private void OnDockItemPointerReleased(
+        object sender,
+        PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
+        }
+    }
+
+    private void ApplyDockItemMotion(
+        FrameworkElement element,
+        bool isPointerOver,
+        bool isPressed)
+    {
+        var motion = DockItemMotion.Resolve(
+            isPointerOver,
+            isPressed,
+            _reducedEffects);
+        element.CenterPoint = new Vector3(
+            (float)(element.ActualWidth / 2),
+            (float)(element.ActualHeight / 2),
+            0);
+        var duration = TimeSpan.FromMilliseconds(motion.DurationMilliseconds);
+        element.ScaleTransition = motion.DurationMilliseconds == 0
+            ? null
+            : new Vector3Transition { Duration = duration };
+        element.TranslationTransition = motion.DurationMilliseconds == 0
+            ? null
+            : new Vector3Transition { Duration = duration };
+        element.Scale = new Vector3(motion.Scale, motion.Scale, 1);
+        element.Translation = new Vector3(0, motion.TranslationY, 0);
     }
 
     private void OnDockGotFocus(object sender, RoutedEventArgs e)

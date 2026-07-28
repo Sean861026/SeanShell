@@ -238,6 +238,11 @@ Foreground + minimized flags
   -> active / running / minimized indicator
   -> fixed 48px icon-first taskbar item
 
+Pointer entered / pressed / released
+  -> DockItemMotion + reduced-effects state
+  -> bounded scale, vertical translation, and transition duration
+  -> WinUI Scale / Translation transitions
+
 Monitor-local DesktopWindowSnapshot[]
   -> TaskbarWindowGrouper by process name
   -> one Dock icon + numeric window-count badge per group
