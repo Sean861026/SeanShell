@@ -36,4 +36,20 @@ public sealed class ApplicationIconSnapshotTests
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(
             () => new ApplicationIconSnapshot(1, dimension, []));
     }
+
+    [TestMethod]
+    public void PreferredDimensionHasBoundedBgraFootprint()
+    {
+        var byteCount = ApplicationIconSnapshot.PreferredDimension *
+            ApplicationIconSnapshot.PreferredDimension *
+            4;
+        var snapshot = new ApplicationIconSnapshot(
+            ApplicationIconSnapshot.PreferredDimension,
+            ApplicationIconSnapshot.PreferredDimension,
+            new byte[byteCount]);
+
+        Assert.AreEqual(48, snapshot.Width);
+        Assert.AreEqual(48, snapshot.Height);
+        Assert.AreEqual(9_216, snapshot.BgraPixels.Length);
+    }
 }

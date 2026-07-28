@@ -178,8 +178,10 @@ disabling replacement, or exiting; Windows also drops them automatically if a
 Dock process is terminated.
 
 Production iconography now begins with native application icons while keeping
-SeanShell controls in the Segoe Fluent Icons family. Additional effects remain
-subordinate to replacement reliability and accessibility.
+SeanShell controls in the Segoe Fluent Icons family. Windows ExtraLarge Shell
+icons are retained as 48×48 BGRA sources and rendered into the stable 26px slot,
+improving high-DPI downsampling without changing Dock geometry. Additional
+effects remain subordinate to replacement reliability and accessibility.
 
 ## Gaming mode preview
 

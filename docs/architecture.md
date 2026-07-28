@@ -163,13 +163,17 @@ that no longer own a visible Dock window, preventing stale PID reuse. Pinned
 Start Menu commands resolve and path-cache their shortcut icons on a background
 thread only when the bounded pin list is loaded, not during every Launcher query.
 
-The reader renders each native `HICON` into a validated 32-by-32 BGRA snapshot
-and releases every owned Shell/GDI handle. On the UI thread,
+The reader asks the Windows ExtraLarge system image list for file and shortcut
+icons, then falls back to `SHGetFileInfo` when that interface is unavailable.
+Window/class icons remain the first source for live windows. Every resulting
+`HICON` is rendered into a validated 48-by-48 BGRA snapshot and each owned
+Shell/GDI handle is released. On the UI thread,
 `ApplicationIconSourceCache` converts that immutable snapshot once into a shared
 WinUI `WriteableBitmap`. Dock templates reserve a stable 26-pixel slot and show
 either the native icon or a Segoe Fluent fallback, never both. Process paths and
 pixel data remain session-local and are not written to SeanShell settings or
-telemetry.
+telemetry. At 9,216 bytes per icon, the existing 128-process and 32-shortcut
+cache caps bound raw pixel storage to roughly 1.4 MB.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded

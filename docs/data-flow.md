@@ -228,8 +228,10 @@ Dock window context selection
   -> original ShellCommand launch delegate
 
 WM_GETICON / class icon / process executable Shell icon
+  -> ExtraLarge Shell image list for file and shortcut sources
+  -> SHGetFileInfo fallback
   -> bounded process-ID icon cache
-  -> validated 32x32 BGRA ApplicationIconSnapshot
+  -> validated 48x48 BGRA ApplicationIconSnapshot
   -> UI-thread shared WriteableBitmap
   -> fixed 26px Dock icon slot or Fluent fallback
 
