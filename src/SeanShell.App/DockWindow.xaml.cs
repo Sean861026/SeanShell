@@ -335,7 +335,7 @@ public sealed partial class DockWindow : Window
     {
         if (e.ClickedItem is DockItemViewModel item)
         {
-            _ = _windowService.Activate(item.Handle);
+            _ = _windowService.ToggleTaskbarWindow(item.Handle);
             ScheduleAutoHide();
         }
     }

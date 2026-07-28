@@ -98,8 +98,10 @@ current session; query text is never retained or written to disk.
 ## Dock and live dashboard preview
 
 The M2 preview adds a compact always-on-top dock on each connected display. Each
-dock lists ordinary visible application windows on that display and switches to
-a selected window. In Overlay mode it sits above the Windows taskbar. In the
+dock lists ordinary visible application windows on that display. Clicking the
+active window minimizes it; clicking another or minimized window restores and
+activates it, matching standard taskbar toggle behavior. In Overlay mode it sits
+above the Windows taskbar. In the
 opt-in Companion Taskbar mode, it hides every Windows taskbar and becomes the
 visible window-switching surface. The dashboard samples CPU, physical memory,
 and the current window count every two seconds. Gaming mode stops this polling
