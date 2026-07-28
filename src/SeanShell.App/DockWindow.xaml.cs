@@ -241,32 +241,32 @@ public sealed partial class DockWindow : Window
         }
 
         var windows = DesktopWindowFilter.ForMonitor(snapshot, _monitor.Handle);
-        if (windows.Count == Items.Count && windows
+        if (windows.Count == _monitorWindows.Count && windows
             .Select(static window => (
                 window.Handle,
                 window.Title,
                 window.ProcessName,
                 window.IsMinimized,
                 window.IsForeground))
-            .SequenceEqual(Items.Select(static item => (
-                item.Handle,
-                item.Title,
-                item.ProcessName,
-                item.IsMinimized,
-                item.IsForeground))))
+            .SequenceEqual(_monitorWindows.Select(static window => (
+                window.Handle,
+                window.Title,
+                window.ProcessName,
+                window.IsMinimized,
+                window.IsForeground))))
         {
             return;
         }
 
         _monitorWindows = windows;
         Items.Clear();
-        foreach (var window in windows)
+        foreach (var group in TaskbarWindowGrouper.Group(windows))
         {
-            Items.Add(new DockItemViewModel(window));
+            Items.Add(new DockItemViewModel(group));
         }
 
         WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
-        DockCountText.Text = Items.Count == 1 ? "1 window" : $"{Items.Count} windows";
+        DockCountText.Text = windows.Count == 1 ? "1 window" : $"{windows.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         RefreshPinnedItems();
@@ -384,10 +384,21 @@ public sealed partial class DockWindow : Window
 
     private void OnWindowClicked(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is DockItemViewModel item)
+        if (e.ClickedItem is not DockItemViewModel item)
         {
-            _ = _windowService.ToggleTaskbarWindow(item.Handle);
+            return;
+        }
+
+        if (item.WindowCount == 1)
+        {
+            _ = _windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle);
             ScheduleAutoHide();
+            return;
+        }
+
+        if (WindowList.ContainerFromItem(item) is FrameworkElement anchor)
+        {
+            ShowWindowPicker(item, anchor);
         }
     }
 
@@ -401,11 +412,19 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        if (item.WindowCount > 1)
+        {
+            ShowWindowPicker(item, element);
+            args.Handled = true;
+            return;
+        }
+
+        var window = item.PrimaryWindow;
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
 
         var toggleAction =
-            TaskbarWindowActionResolver.ResolveContextToggle(item.IsMinimized);
+            TaskbarWindowActionResolver.ResolveContextToggle(window.IsMinimized);
         var toggleItem = new MenuFlyoutItem
         {
             Text = toggleAction == TaskbarWindowAction.Minimize
@@ -423,8 +442,8 @@ public sealed partial class DockWindow : Window
         toggleItem.Click += (_, _) =>
         {
             _ = toggleAction == TaskbarWindowAction.Minimize
-                ? _windowService.Minimize(item.Handle)
-                : _windowService.RestoreAndActivate(item.Handle);
+                ? _windowService.Minimize(window.Handle)
+                : _windowService.RestoreAndActivate(window.Handle);
         };
 
         var closeItem = new MenuFlyoutItem
@@ -437,7 +456,7 @@ public sealed partial class DockWindow : Window
                 Glyph = "\uE8BB",
             },
         };
-        closeItem.Click += (_, _) => _ = _windowService.RequestClose(item.Handle);
+        closeItem.Click += (_, _) => _ = _windowService.RequestClose(window.Handle);
 
         var flyout = new MenuFlyout();
         flyout.Items.Add(toggleItem);
@@ -450,6 +469,57 @@ public sealed partial class DockWindow : Window
         };
         flyout.ShowAt(element);
         args.Handled = true;
+    }
+
+    private void ShowWindowPicker(
+        DockItemViewModel item,
+        FrameworkElement anchor)
+    {
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+
+        var flyout = new MenuFlyout();
+        for (var index = 0; index < item.Windows.Count; index++)
+        {
+            var window = item.Windows[index];
+            var state = window.IsForeground
+                ? "Active"
+                : window.IsMinimized
+                    ? "Minimized"
+                    : "Running";
+            var matchingTitleCount = item.Windows.Count(candidate =>
+                candidate.Title.Equals(
+                    window.Title,
+                    StringComparison.CurrentCultureIgnoreCase));
+            var matchingTitleIndex = item.Windows
+                .Take(index + 1)
+                .Count(candidate => candidate.Title.Equals(
+                    window.Title,
+                    StringComparison.CurrentCultureIgnoreCase));
+            var title = matchingTitleCount > 1
+                ? $"{window.Title} ({matchingTitleIndex} of {matchingTitleCount})"
+                : window.Title;
+            var windowItem = new MenuFlyoutItem
+            {
+                Text = $"{title} — {state}",
+                Icon = new FontIcon
+                {
+                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
+                        "Segoe Fluent Icons"),
+                    Glyph = window.IsForeground ? "\uE73E" : "\uE8A7",
+                },
+            };
+            windowItem.Click += (_, _) =>
+                _ = _windowService.RestoreAndActivate(window.Handle);
+            flyout.Items.Add(windowItem);
+        }
+
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(anchor);
     }
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)

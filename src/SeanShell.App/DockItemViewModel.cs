@@ -4,24 +4,36 @@ using SeanShell.Core;
 
 namespace SeanShell.App;
 
-public sealed class DockItemViewModel(DesktopWindowSnapshot window)
+public sealed class DockItemViewModel(TaskbarWindowGroup group)
 {
     private readonly TaskbarItemVisualState _visualState =
         TaskbarItemVisualStateResolver.Resolve(
-            window.IsForeground,
-            window.IsMinimized);
+            group.IsForeground,
+            group.IsMinimized);
 
-    public nint Handle { get; } = window.Handle;
+    public IReadOnlyList<DesktopWindowSnapshot> Windows { get; } = group.Windows;
 
-    public string ProcessName { get; } = window.ProcessName;
+    public DesktopWindowSnapshot PrimaryWindow { get; } = group.PrimaryWindow;
 
-    public string Title { get; } = window.Title;
+    public string ProcessName { get; } = group.ProcessName;
 
-    public bool IsForeground { get; } = window.IsForeground;
+    public string Title =>
+        WindowCount == 1 ? PrimaryWindow.Title : ProcessName;
 
-    public bool IsMinimized { get; } = window.IsMinimized;
+    public string ToolTipText => WindowCount == 1
+        ? PrimaryWindow.Title
+        : $"{ProcessName} — {WindowCount} windows";
 
-    public ImageSource? Icon { get; } = ApplicationIconSourceCache.Get(window.Icon);
+    public bool IsForeground { get; } = group.IsForeground;
+
+    public bool IsMinimized { get; } = group.IsMinimized;
+
+    public int WindowCount => Windows.Count;
+
+    public ImageSource? Icon { get; } =
+        ApplicationIconSourceCache.Get(
+            group.PrimaryWindow.Icon ??
+            group.Windows.FirstOrDefault(static window => window.Icon is not null)?.Icon);
 
     public Visibility IconVisibility =>
         Icon is null ? Visibility.Collapsed : Visibility.Visible;
@@ -46,11 +58,19 @@ public sealed class DockItemViewModel(DesktopWindowSnapshot window)
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+    public Visibility CountBadgeVisibility =>
+        WindowCount > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+    public string CountText => WindowCount.ToString(
+        System.Globalization.CultureInfo.CurrentCulture);
+
     public string StateText => IsForeground
         ? "Active"
         : IsMinimized
             ? "Minimized"
             : "Running";
 
-    public string AccessibleName => $"Switch to {Title}, {ProcessName}, {StateText}";
+    public string AccessibleName => WindowCount == 1
+        ? $"Switch to {Title}, {ProcessName}, {StateText}"
+        : $"{ProcessName}, {WindowCount} windows, {StateText}. Open window picker";
 }

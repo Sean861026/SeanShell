@@ -133,7 +133,7 @@
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ContextRequested="OnWindowContextRequested"
                                     Opacity="{Binding ContentOpacity}"
-                                    ToolTipService.ToolTip="{Binding Title}">
+                                    ToolTipService.ToolTip="{Binding ToolTipText}">
                                     <Border
                                         Width="40"
                                         Height="40"
@@ -153,6 +153,25 @@
                                                 Stretch="Uniform"
                                                 Visibility="{Binding IconVisibility}" />
                                         </Grid>
+                                    </Border>
+                                    <Border
+                                        MinWidth="17"
+                                        Height="17"
+                                        Padding="4,0"
+                                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="9"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        Visibility="{Binding CountBadgeVisibility}">
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            FontSize="10"
+                                            FontWeight="SemiBold"
+                                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                            Text="{Binding CountText}"
+                                            VerticalAlignment="Center" />
                                     </Border>
                                     <Border
                                         Width="20"
