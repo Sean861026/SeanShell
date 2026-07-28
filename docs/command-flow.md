@@ -299,8 +299,16 @@ Dock refresh timer
   -> exclude cloaked, tool, owned, shell, and SeanShell windows
   -> display up to twelve window entries
   -> user selects an entry
-  -> restore it when minimized
-  -> request foreground activation
+  -> query live foreground and minimized state
+  -> active + visible: request minimize
+  -> otherwise: restore when minimized and request foreground activation
+
+User opens an entry context menu
+  -> visible entry: offer Minimize
+  -> minimized entry: offer Restore
+  -> selected toggle: perform the named bounded window operation
+  -> selected Close window: post WM_CLOSE
+  -> target application may close, cancel, or prompt for unsaved work
 ```
 
 Windows foreground restrictions remain authoritative; SeanShell does not bypass

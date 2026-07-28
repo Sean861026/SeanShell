@@ -89,6 +89,12 @@ another or minimized window receives `SW_RESTORE` when needed followed by
 `SetForegroundWindow`. This reproduces normal taskbar toggle semantics without
 injecting code or attaching input queues.
 
+The Dock context menu exposes only bounded window operations. Minimize and
+restore reuse the same service boundary; Close posts `WM_CLOSE` to the window
+instead of terminating its process, preserving the application's opportunity to
+cancel or prompt for unsaved work. While the menu is open, Dock auto-hide is
+paused and resumes after the flyout closes.
+
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded
 window of the 50 most recent successful provider/ranking durations. Cancelled and

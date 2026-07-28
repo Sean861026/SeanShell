@@ -14,4 +14,9 @@ public static class TaskbarWindowActionResolver
         isForeground && !isMinimized
             ? TaskbarWindowAction.Minimize
             : TaskbarWindowAction.RestoreAndActivate;
+
+    public static TaskbarWindowAction ResolveContextToggle(bool isMinimized) =>
+        isMinimized
+            ? TaskbarWindowAction.RestoreAndActivate
+            : TaskbarWindowAction.Minimize;
 }
