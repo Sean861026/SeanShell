@@ -222,6 +222,10 @@ Dock window context selection
   -> grouped windows: native per-window submenus
   -> Activate, Minimize / Restore, or graceful Close request
   -> ShowWindow or PostMessage(WM_CLOSE)
+  -> explicit Start Menu process identity
+  -> zero, one, or multiple cached application commands
+  -> Open new instance selection
+  -> original ShellCommand launch delegate
 
 WM_GETICON / class icon / process executable Shell icon
   -> bounded process-ID icon cache

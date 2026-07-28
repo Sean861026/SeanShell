@@ -110,7 +110,9 @@ per window with Activate, Minimize or Restore, and graceful Close window actions
 Clicking a single-window item directly toggles it: the active window minimizes,
 while another or minimized window restores and activates. A window's context menu
 offers Minimize or Restore plus a standard close request, allowing the target
-application to show its own unsaved-work prompt. Running windows and pinned Start
+application to show its own unsaved-work prompt. When an explicit Start Menu
+identity is available, it also offers Open new instance; ambiguous shortcuts
+remain separate choices in a native submenu. Running windows and pinned Start
 Menu applications use their Windows-provided icons in a stable 26-pixel slot;
 SeanShell falls back to a Fluent glyph when Windows cannot supply one. Pinned
 items, running items, and the system area share a compact 48-pixel visual rhythm.

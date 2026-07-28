@@ -16,6 +16,11 @@ public static class TaskbarDockPinResolver
 
     public static IReadOnlyList<ShellCommand> FindPinCandidates(
         IEnumerable<ShellCommand> availableApplications,
+        IReadOnlyList<DesktopWindowSnapshot> windows) =>
+        FindApplicationCandidates(availableApplications, windows);
+
+    public static IReadOnlyList<ShellCommand> FindApplicationCandidates(
+        IEnumerable<ShellCommand> availableApplications,
         IReadOnlyList<DesktopWindowSnapshot> windows)
     {
         ArgumentNullException.ThrowIfNull(availableApplications);
