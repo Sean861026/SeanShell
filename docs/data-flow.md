@@ -304,6 +304,22 @@ or user interaction is captured. The system-area button changes only native
 taskbar visibility and leaves Explorer responsible for all notification-area
 behavior.
 
+## Dock work-area reservation
+
+```text
+Display monitor handle + Dock HWND
+  -> scaled Dock height + vertical margin
+  -> WorkAreaReservationLayout
+  -> AppBarWorkAreaReservation
+  -> Windows-approved AppBar rectangle
+  -> Dock placement area
+  -> per-monitor work area used by maximized applications
+```
+
+Reservation geometry is process-local and is never persisted. Windows owns the
+desktop work-area state. Removing the AppBar or destroying its Dock HWND restores
+that state; SeanShell does not write global work-area coordinates.
+
 ## Git repository snapshots
 
 ```text

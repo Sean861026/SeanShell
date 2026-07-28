@@ -19,9 +19,11 @@ public sealed partial class DockWindow : Window
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
     private const int CompactDockHeight = 88;
+    private const int WorkAreaVerticalMargin = 24;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
+    private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
     private readonly bool _compactDensity;
     private double _textScaleFactor = 1;
@@ -30,6 +32,7 @@ public sealed partial class DockWindow : Window
     private bool _collapsed;
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
+    private DockBounds? _reservedArea;
 
     public DockWindow(
         DesktopWindowService windowService,
@@ -107,6 +110,32 @@ public sealed partial class DockWindow : Window
         SetCollapsed(_collapsed);
     }
 
+    public WorkAreaReservationResult SetWorkAreaReservation(bool enabled)
+    {
+        if (!enabled)
+        {
+            var released = _workAreaReservation.Release();
+            if (released.Success)
+            {
+                _reservedArea = null;
+                SetCollapsed(_collapsed);
+            }
+
+            return released;
+        }
+
+        var dockHeight = AccessibilityLayout.ScaleDockHeight(
+            _compactDensity ? CompactDockHeight : DockHeight,
+            _textScaleFactor);
+        var result = _workAreaReservation.Reserve(
+            WinRT.Interop.WindowNative.GetWindowHandle(this),
+            _monitor.Handle,
+            dockHeight + WorkAreaVerticalMargin);
+        _reservedArea = result.Success ? result.ReservedArea : null;
+        SetCollapsed(_collapsed);
+        return result;
+    }
+
     public void ApplyClock(DateTimeOffset timestamp)
     {
         var local = timestamp.LocalDateTime;
@@ -138,6 +167,7 @@ public sealed partial class DockWindow : Window
     {
         _autoHideTimer.Stop();
         _shellState.StateChanged -= OnShellStateChanged;
+        _ = _workAreaReservation.Release();
         _allowClose = true;
         Close();
     }
@@ -159,8 +189,17 @@ public sealed partial class DockWindow : Window
         ExpandedDock.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         PeekIndicator.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
 
+        var placementMonitor = _reservedArea is null
+            ? _monitor
+            : _monitor with
+            {
+                WorkAreaX = _reservedArea.X,
+                WorkAreaY = _reservedArea.Y,
+                WorkAreaWidth = _reservedArea.Width,
+                WorkAreaHeight = _reservedArea.Height,
+            };
         var bounds = DockPlacement.Calculate(
-            _monitor,
+            placementMonitor,
             DockWidth,
             AccessibilityLayout.ScaleDockHeight(
                 _compactDensity ? CompactDockHeight : DockHeight,

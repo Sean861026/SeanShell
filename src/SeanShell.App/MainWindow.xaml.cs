@@ -169,13 +169,24 @@ public sealed partial class MainWindow : Window
         {
             if (state.Mode == ShellMode.Gaming)
             {
-                ResumeTaskbarReplacementForGaming();
+                PrepareTaskbarReplacementForGaming();
                 _dockRefreshTimer.Stop();
                 UpdateReducedEffects();
                 await _pluginHost.SuspendAsync().ConfigureAwait(true);
             }
             else
             {
+                if (ShouldReserveDockWorkArea())
+                {
+                    var reservation = SetDockWorkAreaReservation(true);
+                    if (!reservation.Success)
+                    {
+                        FailTaskbarReplacement(
+                            reservation.Error ??
+                            "Windows did not reserve the Dock work area.");
+                    }
+                }
+
                 UpdateReducedEffects();
                 _dockRefreshTimer.Start();
                 _ = RefreshDockWindowsAsync();
@@ -384,6 +395,12 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        WorkAreaReservationResult? release = null;
+        if (!enabled)
+        {
+            release = SetDockWorkAreaReservation(false);
+        }
+
         var result = enabled
             ? _taskbarReplacement.Enable()
             : _taskbarReplacement.Disable();
@@ -392,6 +409,17 @@ public sealed partial class MainWindow : Window
             _taskbarAccessRevealed = false;
             if (enabled)
             {
+                var reservation = ShouldReserveDockWorkArea()
+                    ? SetDockWorkAreaReservation(true)
+                    : WorkAreaReservationResult.Released();
+                if (!reservation.Success)
+                {
+                    FailTaskbarReplacement(
+                        reservation.Error ??
+                        "Windows did not reserve the Dock work area.");
+                    return;
+                }
+
                 _taskbarRefreshTimer.Start();
             }
             else
@@ -402,6 +430,14 @@ public sealed partial class MainWindow : Window
             UpdateDockSystemAreaState();
             if (RootFrame.Content is MainPage appliedPage)
             {
+                if (release is { Success: false })
+                {
+                    appliedPage.SetTaskbarReplacementFailed(
+                        release.Error ??
+                        "Windows did not release the Dock work area.");
+                    return;
+                }
+
                 appliedPage.SetTaskbarReplacementApplied(
                     enabled,
                     result.TaskbarCount);
@@ -433,6 +469,17 @@ public sealed partial class MainWindow : Window
         if (result.Success)
         {
             _taskbarAccessRevealed = false;
+            var reservation = ShouldReserveDockWorkArea()
+                ? SetDockWorkAreaReservation(true)
+                : WorkAreaReservationResult.Released();
+            if (!reservation.Success)
+            {
+                FailTaskbarReplacement(
+                    reservation.Error ??
+                    "Windows did not reserve the Dock work area.");
+                return;
+            }
+
             _taskbarRefreshTimer.Start();
             UpdateDockSystemAreaState();
             if (RootFrame.Content is MainPage mainPage)
@@ -503,6 +550,17 @@ public sealed partial class MainWindow : Window
             dockWindow.ApplyTextScaleFactor(snapshot.TextScaleFactor);
         }
 
+        if (ShouldReserveDockWorkArea())
+        {
+            var reservation = SetDockWorkAreaReservation(true);
+            if (!reservation.Success)
+            {
+                FailTaskbarReplacement(
+                    reservation.Error ??
+                    "Windows did not resize the Dock work area.");
+            }
+        }
+
         UpdateReducedEffects();
     }
 
@@ -569,6 +627,17 @@ public sealed partial class MainWindow : Window
             foreach (var dockWindow in previous)
             {
                 dockWindow.Shutdown();
+            }
+
+            if (ShouldReserveDockWorkArea())
+            {
+                var reservation = SetDockWorkAreaReservation(true);
+                if (!reservation.Success)
+                {
+                    FailTaskbarReplacement(
+                        reservation.Error ??
+                        "Windows did not reserve the Dock work area.");
+                }
             }
 
             if (!_gamingMode.Current.IsGaming)
@@ -677,7 +746,7 @@ public sealed partial class MainWindow : Window
 
         var result = _taskbarAccessRevealed
             ? _taskbarReplacement.EnsureHidden()
-            : _taskbarReplacement.Reveal();
+            : RevealTaskbarSystemArea();
         if (!result.Success)
         {
             FailTaskbarReplacement(
@@ -687,6 +756,18 @@ public sealed partial class MainWindow : Window
         }
 
         _taskbarAccessRevealed = !_taskbarAccessRevealed;
+        if (!_taskbarAccessRevealed)
+        {
+            var reservation = SetDockWorkAreaReservation(true);
+            if (!reservation.Success)
+            {
+                FailTaskbarReplacement(
+                    reservation.Error ??
+                    "Windows did not restore the Dock work area.");
+                return;
+            }
+        }
+
         if (_taskbarAccessRevealed)
         {
             _taskbarRefreshTimer.Stop();
@@ -705,24 +786,50 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ResumeTaskbarReplacementForGaming()
+    private TaskbarOperationResult RevealTaskbarSystemArea()
     {
-        if (!_taskbarAccessRevealed ||
-            !_settings.ReplaceWindowsTaskbar)
+        var release = SetDockWorkAreaReservation(false);
+        if (!release.Success)
+        {
+            return new TaskbarOperationResult(
+                false,
+                0,
+                release.Error ?? "Windows did not release the Dock work area.");
+        }
+
+        return _taskbarReplacement.Reveal();
+    }
+
+    private void PrepareTaskbarReplacementForGaming()
+    {
+        if (!_settings.ReplaceWindowsTaskbar ||
+            !_taskbarReplacement.IsEnabled)
         {
             return;
         }
 
-        var result = _taskbarReplacement.EnsureHidden();
-        if (!result.Success)
+        if (_taskbarAccessRevealed)
         {
-            FailTaskbarReplacement(
-                result.Error ??
-                "Windows did not resume taskbar replacement.");
-            return;
+            var result = _taskbarReplacement.EnsureHidden();
+            if (!result.Success)
+            {
+                FailTaskbarReplacement(
+                    result.Error ??
+                    "Windows did not resume taskbar replacement.");
+                return;
+            }
         }
 
         _taskbarAccessRevealed = false;
+        var release = SetDockWorkAreaReservation(false);
+        if (!release.Success)
+        {
+            FailTaskbarReplacement(
+                release.Error ??
+                "Windows did not release the Dock work area.");
+            return;
+        }
+
         _taskbarRefreshTimer.Start();
         UpdateDockSystemAreaState();
     }
@@ -733,6 +840,7 @@ public sealed partial class MainWindow : Window
         _taskbarAccessRevealed = false;
         _settings = _settings with { ReplaceWindowsTaskbar = false };
         _ = PersistSettings();
+        _ = SetDockWorkAreaReservation(false);
         _ = _taskbarReplacement.Disable();
         UpdateDockSystemAreaState();
         if (RootFrame.Content is MainPage mainPage)
@@ -752,6 +860,35 @@ public sealed partial class MainWindow : Window
                 available,
                 _taskbarAccessRevealed);
         }
+    }
+
+    private bool ShouldReserveDockWorkArea() =>
+        _settings.ReplaceWindowsTaskbar &&
+        _taskbarReplacement.IsEnabled &&
+        !_taskbarAccessRevealed &&
+        !_gamingMode.Current.IsGaming;
+
+    private WorkAreaReservationResult SetDockWorkAreaReservation(bool enabled)
+    {
+        WorkAreaReservationResult result = WorkAreaReservationResult.Released();
+        foreach (var dockWindow in _dockWindows)
+        {
+            var current = dockWindow.SetWorkAreaReservation(enabled);
+            if (!current.Success && result.Success)
+            {
+                result = current;
+            }
+        }
+
+        if (enabled && !result.Success)
+        {
+            foreach (var dockWindow in _dockWindows)
+            {
+                _ = dockWindow.SetWorkAreaReservation(false);
+            }
+        }
+
+        return result;
     }
 
     private async Task RefreshDockWindowsAsync()
@@ -1052,6 +1189,7 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _taskbarRefreshTimer.Stop();
+        _ = SetDockWorkAreaReservation(false);
         _ = _taskbarReplacement.Disable();
         _displayChangeTimer.Stop();
         _clockRefreshTimer.Stop();

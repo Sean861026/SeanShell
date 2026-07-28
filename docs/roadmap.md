@@ -120,7 +120,7 @@
 - [x] Regional-format clock and date on every Dock
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
-- [ ] Reserve/recalculate monitor work area without depending on a visible Windows taskbar
+- [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
