@@ -139,6 +139,12 @@ Search for an installed App in Launcher and use its pin button to add or remove
 it. Pins reuse the cached Start Menu index, persist locally, and do not add
 background filesystem polling. A temporarily missing shortcut is omitted without
 deleting the pin, allowing it to return after the shortcut is restored.
+For desktop `.lnk` shortcuts, SeanShell resolves the target executable once
+during indexing. When that process owns a window on a Dock's display, the
+standalone pin is suppressed and the live window item carries its running,
+active, or minimized state instead of showing a duplicate icon. URL and packaged
+shortcuts without a reliable process identity remain separate rather than using
+title heuristics that could merge unrelated applications.
 
 Explorer remains running for notifications, system tray services, input methods,
 file associations, and recovery. Every Dock now shows the current time and date

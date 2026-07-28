@@ -119,6 +119,7 @@
 - [x] Multi-display, restart, graceful-exit, and forced-exit recovery checks
 - [x] Pinned applications and Launcher/Start affordance in every Dock
 - [x] Persisted bounded pin list with schema v7 migration and missing-shortcut recovery
+- [x] Coalesce desktop shortcut pins with matching monitor-local running windows
 - [x] Regional-format clock and date on every Dock
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts

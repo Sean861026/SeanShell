@@ -74,6 +74,14 @@ running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
 dense sessions and small displays.
 
+Desktop Start Menu shortcuts receive an optional process identity by resolving
+their `.lnk` target through the Windows Shell Link COM contract during the
+one-time application index. Each monitor-local Dock uses
+`TaskbarPinWindowMatcher` to suppress a standalone pin only when that explicit
+identity matches a live window process. It never guesses from titles. Unsupported
+URL, ClickOnce, packaged, or unresolved shortcuts therefore fail open as normal
+pins instead of coalescing unrelated applications.
+
 The built-in .NET workspace plugin receives the same bounded developer roots. A
 breadth-first scan is capped at depth four and 24 solution/project files, skips
 build, dependency, reparse-point, and inaccessible directories, and never scans

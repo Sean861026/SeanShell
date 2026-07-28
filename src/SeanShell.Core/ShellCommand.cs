@@ -15,4 +15,6 @@ public sealed record ShellCommand(
     public string? IconSourcePath { get; init; }
 
     public ApplicationIconSnapshot? Icon { get; init; }
+
+    public string? ApplicationProcessName { get; init; }
 }
