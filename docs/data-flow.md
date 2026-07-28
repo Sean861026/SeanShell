@@ -227,6 +227,15 @@ WM_GETICON / class icon / process executable Shell icon
   -> UI-thread shared WriteableBitmap
   -> fixed 26px Dock icon slot or Fluent fallback
 
+Foreground + minimized flags
+  -> TaskbarItemVisualStateResolver
+  -> active / running / minimized indicator
+  -> fixed 48px icon-first taskbar item
+
+Pinned count + monitor-local window count + monitor work area
+  -> TaskbarDockLayout
+  -> bounded floating Dock width
+
 Pinned Start Menu shortcut path
   -> SHGetFileInfo only when the bounded pin list is loaded
   -> validated ApplicationIconSnapshot

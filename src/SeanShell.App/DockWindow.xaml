@@ -23,9 +23,9 @@
             x:Name="ExpandedDock"
             Padding="6,6,6,6"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource AccentFillColorSecondaryBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
-            CornerRadius="{StaticResource SeanCardCornerRadius}">
+            CornerRadius="16">
             <Grid ColumnSpacing="{StaticResource SeanSpace8}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -39,12 +39,13 @@
                     Width="44"
                     Height="44"
                     AutomationProperties.Name="Open SeanShell Launcher"
+                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
                     Click="OnLauncherClicked"
                     ToolTipService.ToolTip="Open Launcher">
                     <FontIcon
                         FontFamily="Segoe Fluent Icons"
                         FontSize="19"
-                        Glyph="&#xE713;" />
+                        Glyph="&#xE721;" />
                 </Button>
 
                 <ListView
@@ -54,6 +55,7 @@
                     AutomationProperties.Name="Pinned applications"
                     IsItemClickEnabled="True"
                     ItemClick="OnPinnedApplicationClicked"
+                    ItemContainerStyle="{StaticResource SeanPinnedDockItemStyle}"
                     SelectionMode="None"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.HorizontalScrollMode="Enabled"
@@ -65,36 +67,45 @@
                     </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Button
+                            <Grid
                                 Width="40"
-                                Height="40"
+                                Height="44"
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 IsHitTestVisible="False"
                                 ToolTipService.ToolTip="{Binding Title}">
-                                <Grid Width="26" Height="26">
-                                    <FontIcon
-                                        FontFamily="Segoe Fluent Icons"
-                                        FontSize="17"
-                                        Glyph="{Binding Glyph}"
-                                        Visibility="{Binding FallbackIconVisibility}" />
-                                    <Image
-                                        Width="26"
-                                        Height="26"
-                                        Source="{Binding Icon}"
-                                        Stretch="Uniform"
-                                        Visibility="{Binding IconVisibility}" />
-                                </Grid>
-                            </Button>
+                                <Border
+                                    Width="40"
+                                    Height="40"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="{StaticResource SeanCompactCornerRadius}"
+                                    VerticalAlignment="Top">
+                                    <Grid Width="26" Height="26">
+                                        <FontIcon
+                                            FontFamily="Segoe Fluent Icons"
+                                            FontSize="17"
+                                            Glyph="{Binding Glyph}"
+                                            Visibility="{Binding FallbackIconVisibility}" />
+                                        <Image
+                                            Width="26"
+                                            Height="26"
+                                            Source="{Binding Icon}"
+                                            Stretch="Uniform"
+                                            Visibility="{Binding IconVisibility}" />
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
 
                 <Border
+                    x:Name="PinnedSeparator"
                     Grid.Column="2"
                     Width="1"
                     Height="32"
                     Background="{ThemeResource DividerStrokeColorDefaultBrush}"
-                    VerticalAlignment="Center" />
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed" />
 
                 <Grid Grid.Column="3">
                     <ListView
@@ -117,21 +128,18 @@
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Grid
+                                    Width="40"
+                                    Height="44"
                                     AutomationProperties.Name="{Binding AccessibleName}"
-                                    ColumnSpacing="{StaticResource SeanSpace8}"
                                     ContextRequested="OnWindowContextRequested"
                                     Opacity="{Binding ContentOpacity}"
                                     ToolTipService.ToolTip="{Binding Title}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="36" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
                                     <Border
-                                        Width="36"
-                                        Height="36"
+                                        Width="40"
+                                        Height="40"
                                         Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                         CornerRadius="{StaticResource SeanCompactCornerRadius}"
-                                        VerticalAlignment="Center">
+                                        VerticalAlignment="Top">
                                         <Grid>
                                             <FontIcon
                                                 FontFamily="Segoe Fluent Icons"
@@ -146,28 +154,27 @@
                                                 Visibility="{Binding IconVisibility}" />
                                         </Grid>
                                     </Border>
-                                    <StackPanel
-                                        Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        Spacing="2">
-                                        <TextBlock
-                                            FontWeight="SemiBold"
-                                            Text="{Binding Title}"
-                                            TextTrimming="CharacterEllipsis" />
-                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource SeanSpace4}">
-                                            <TextBlock
-                                                Style="{StaticResource SeanCaptionTextStyle}"
-                                                Text="{Binding ProcessName}"
-                                                TextTrimming="CharacterEllipsis" />
-                                            <TextBlock
-                                                Style="{StaticResource SeanCaptionTextStyle}"
-                                                Text="&#x2022;" />
-                                            <TextBlock
-                                                FontWeight="SemiBold"
-                                                Style="{StaticResource SeanCaptionTextStyle}"
-                                                Text="{Binding StateText}" />
-                                        </StackPanel>
-                                    </StackPanel>
+                                    <Border
+                                        Width="20"
+                                        Height="3"
+                                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                        CornerRadius="2"
+                                        VerticalAlignment="Bottom"
+                                        Visibility="{Binding ActiveIndicatorVisibility}" />
+                                    <Border
+                                        Width="7"
+                                        Height="3"
+                                        Background="{ThemeResource TextFillColorSecondaryBrush}"
+                                        CornerRadius="2"
+                                        VerticalAlignment="Bottom"
+                                        Visibility="{Binding RunningIndicatorVisibility}" />
+                                    <Border
+                                        Width="5"
+                                        Height="3"
+                                        Background="{ThemeResource TextFillColorDisabledBrush}"
+                                        CornerRadius="2"
+                                        VerticalAlignment="Bottom"
+                                        Visibility="{Binding MinimizedIndicatorVisibility}" />
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
@@ -187,17 +194,15 @@
 
                 <StackPanel
                     Grid.Column="4"
+                    Padding="4,0"
+                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                    CornerRadius="{StaticResource SeanCompactCornerRadius}"
                     Orientation="Horizontal"
-                    Spacing="{StaticResource SeanSpace8}"
+                    Spacing="{StaticResource SeanSpace4}"
                     VerticalAlignment="Center">
-                    <Border
-                        Style="{StaticResource SeanStatusPillStyle}"
-                        VerticalAlignment="Center">
-                        <TextBlock
-                            x:Name="DockCountText"
-                            Style="{StaticResource SeanCaptionTextStyle}"
-                            Text="Loading" />
-                    </Border>
+                    <TextBlock
+                        x:Name="DockCountText"
+                        Visibility="Collapsed" />
                     <Button
                         x:Name="SystemAreaButton"
                         Width="40"

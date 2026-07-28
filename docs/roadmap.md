@@ -102,6 +102,7 @@
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
+- [x] Icon-first taskbar presentation with distinct active, running, and minimized indicators
 - [x] Persisted system, light, and dark appearance preference with schema v4 migration
 - [x] Light, dark, keyboard-focus, and two-display visual checks
 - [ ] High-contrast and text-scaling visual checks on representative Windows settings

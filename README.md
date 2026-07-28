@@ -98,14 +98,21 @@ current session; query text is never retained or written to disk.
 ## Dock and live dashboard preview
 
 The M2 preview adds a compact always-on-top dock on each connected display. Each
-dock lists ordinary visible application windows on that display. Clicking the
+dock lists ordinary visible application windows on that display as native,
+icon-first taskbar items. A wide accent underline identifies the foreground
+window; compact neutral markers distinguish background and minimized windows.
+Full titles, process names, and states remain available to accessibility tools
+and pointer tooltips. Clicking the
 active window minimizes it; clicking another or minimized window restores and
 activates it, matching standard taskbar toggle behavior. A window's context menu
 offers Minimize or Restore plus a standard close request, allowing the target
 application to show its own unsaved-work prompt. Running windows and pinned Start
 Menu applications use their Windows-provided icons in a stable 26-pixel slot;
-SeanShell falls back to a Fluent glyph when Windows cannot supply one. In Overlay
-mode it sits above the Windows taskbar. In the
+SeanShell falls back to a Fluent glyph when Windows cannot supply one. Pinned
+items, running items, and the system area share a compact 48-pixel visual rhythm.
+The floating surface grows with its bounded item count and contracts to a compact
+minimum rather than retaining unused horizontal space. In Overlay mode it sits
+above the Windows taskbar. In the
 opt-in Companion Taskbar mode, it hides every Windows taskbar and becomes the
 visible window-switching surface. The dashboard samples CPU, physical memory,
 and the current window count every two seconds. Gaming mode stops this polling

@@ -6,6 +6,11 @@ namespace SeanShell.App;
 
 public sealed class DockItemViewModel(DesktopWindowSnapshot window)
 {
+    private readonly TaskbarItemVisualState _visualState =
+        TaskbarItemVisualStateResolver.Resolve(
+            window.IsForeground,
+            window.IsMinimized);
+
     public nint Handle { get; } = window.Handle;
 
     public string ProcessName { get; } = window.ProcessName;
@@ -24,7 +29,22 @@ public sealed class DockItemViewModel(DesktopWindowSnapshot window)
     public Visibility FallbackIconVisibility =>
         Icon is null ? Visibility.Visible : Visibility.Collapsed;
 
-    public double ContentOpacity => IsMinimized ? 0.58 : 1;
+    public double ContentOpacity => _visualState.ContentOpacity;
+
+    public Visibility ActiveIndicatorVisibility =>
+        _visualState.Indicator == TaskbarItemIndicator.Active
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+    public Visibility RunningIndicatorVisibility =>
+        _visualState.Indicator == TaskbarItemIndicator.Running
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+    public Visibility MinimizedIndicatorVisibility =>
+        _visualState.Indicator == TaskbarItemIndicator.Minimized
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
     public string StateText => IsForeground
         ? "Active"

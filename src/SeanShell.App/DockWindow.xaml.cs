@@ -14,12 +14,11 @@ namespace SeanShell.App;
 
 public sealed partial class DockWindow : Window
 {
-    private const int DockWidth = 1000;
-    private const int DockHeight = 92;
+    private const int DockHeight = 76;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
-    private const int CompactDockHeight = 88;
-    private const int WorkAreaVerticalMargin = 24;
+    private const int CompactDockHeight = 72;
+    private const int WorkAreaVerticalMargin = 16;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
@@ -33,6 +32,7 @@ public sealed partial class DockWindow : Window
     private bool _contextMenuOpen;
     private bool _hasKeyboardFocus;
     private bool _pointerInside;
+    private int _expandedDockWidth;
     private DockBounds? _reservedArea;
 
     public DockWindow(
@@ -49,6 +49,10 @@ public sealed partial class DockWindow : Window
         var density = ((App)Application.Current).SettingsLoad.Settings.DisplayDensity;
         _compactDensity = density == ShellDisplayDensity.Compact;
         _textScaleFactor = textScaleFactor;
+        _expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
+            0,
+            0,
+            _monitor.WorkAreaWidth);
         ApplyDisplayDensity(density);
         PinnedList.ItemsSource = PinnedItems;
         WindowList.ItemsSource = Items;
@@ -80,6 +84,8 @@ public sealed partial class DockWindow : Window
         }
 
         ExpandedDock.Padding = new Thickness(4);
+        PinnedList.ItemContainerStyle =
+            (Style)Application.Current.Resources["SeanCompactDockItemStyle"];
         WindowList.ItemContainerStyle =
             (Style)Application.Current.Resources["SeanCompactDockItemStyle"];
     }
@@ -201,7 +207,7 @@ public sealed partial class DockWindow : Window
             };
         var bounds = DockPlacement.Calculate(
             placementMonitor,
-            DockWidth,
+            _expandedDockWidth,
             AccessibilityLayout.ScaleDockHeight(
                 _compactDensity ? CompactDockHeight : DockHeight,
                 _textScaleFactor),
@@ -260,6 +266,7 @@ public sealed partial class DockWindow : Window
         DockCountText.Text = Items.Count == 1 ? "1 window" : $"{Items.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RefreshExpandedWidth();
     }
 
     public void ApplyPinnedApplications(
@@ -278,6 +285,10 @@ public sealed partial class DockWindow : Window
         {
             PinnedItems.Add(new PinnedDockItemViewModel(application));
         }
+
+        PinnedSeparator.Visibility =
+            PinnedItems.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        RefreshExpandedWidth();
     }
 
     public void SetWindowSnapshotUnavailable(string message)
@@ -292,6 +303,7 @@ public sealed partial class DockWindow : Window
         DockCountText.Text = "Unavailable";
         EmptyStateText.Text = $"Dock unavailable: {message}";
         EmptyState.Visibility = Visibility.Visible;
+        RefreshExpandedWidth();
     }
 
     private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
@@ -300,6 +312,21 @@ public sealed partial class DockWindow : Window
         {
             SetCollapsed(true);
         }
+    }
+
+    private void RefreshExpandedWidth()
+    {
+        var expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
+            PinnedItems.Count,
+            Items.Count,
+            _monitor.WorkAreaWidth);
+        if (_expandedDockWidth == expandedDockWidth)
+        {
+            return;
+        }
+
+        _expandedDockWidth = expandedDockWidth;
+        SetCollapsed(_collapsed);
     }
 
     private void OnDockPointerEntered(object sender, PointerRoutedEventArgs e)
