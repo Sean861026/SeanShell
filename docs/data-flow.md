@@ -315,6 +315,9 @@ hook, or game-process access is involved.
 Start Menu shortcut roots
   -> one-time InstalledApplicationProvider index
   -> exact app: command IDs
+  -> explicit shortcut process identities
+  -> TaskbarDockPinResolver + monitor-local window group
+  -> zero, one, or multiple native Dock pin choices
   -> PinnedApplicationIdList (ordered, distinct, maximum eight)
   -> ShellSettings.PinnedApplicationIds
   -> exact cache lookup
@@ -323,9 +326,9 @@ Start Menu shortcut roots
 ```
 
 The local settings file contains shortcut command IDs, which include local Start
-Menu paths. No pin data is uploaded. Normal Dock refreshes do not query the
-filesystem. Missing IDs produce no executable command and stay persisted for
-later recovery.
+Menu paths. No pin data is uploaded. The application index is shared from its
+one-time cache; normal Dock refreshes do not query the filesystem. Missing IDs
+produce no executable command and stay persisted for later recovery.
 
 ## Clock and system-area state
 

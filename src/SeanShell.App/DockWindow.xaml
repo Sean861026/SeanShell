@@ -71,7 +71,7 @@
                                 Width="40"
                                 Height="44"
                                 AutomationProperties.Name="{Binding AccessibleName}"
-                                IsHitTestVisible="False"
+                                ContextRequested="OnPinnedApplicationContextRequested"
                                 ToolTipService.ToolTip="{Binding Title}">
                                 <Border
                                     Width="40"
