@@ -224,7 +224,10 @@ public sealed partial class DockWindow : Window
             revealed
                 ? "Hide the Windows taskbar and resume SeanShell replacement"
                 : "Show the Windows taskbar for notification and system tray access");
-        SystemAreaGlyph.Glyph = "\uE7F4";
+        RevealSystemAreaIcon.Visibility =
+            revealed ? Visibility.Collapsed : Visibility.Visible;
+        ResumeTaskbarIcon.Visibility =
+            revealed ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public void SetShowDesktopState(bool desktopShown)
@@ -238,6 +241,10 @@ public sealed partial class DockWindow : Window
                 ? "Restores the windows minimized by Show desktop."
                 : "Minimizes every application window. Select again to restore them.");
         ToolTipService.SetToolTip(ShowDesktopButton, label);
+        ShowDesktopIcon.Visibility =
+            desktopShown ? Visibility.Collapsed : Visibility.Visible;
+        RestoreWindowsIcon.Visibility =
+            desktopShown ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public void Shutdown()
