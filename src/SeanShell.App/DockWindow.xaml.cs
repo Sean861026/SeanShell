@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using Microsoft.UI.Dispatching;
@@ -206,9 +207,10 @@ public sealed partial class DockWindow : Window
         var culture = CultureInfo.CurrentCulture;
         ClockTimeText.Text = local.ToString("t", culture);
         ClockDateText.Text = local.ToString("d", culture);
-        AutomationProperties.SetName(
-            ClockTimeText,
-            $"Current date and time: {local.ToString("F", culture)}");
+        var accessibleTimestamp =
+            $"Current date and time: {local.ToString("F", culture)}";
+        AutomationProperties.SetName(ClockButton, accessibleTimestamp);
+        ClockDetailsItem.Text = local.ToString("F", culture);
     }
 
     public void SetSystemAreaAccessState(bool available, bool revealed)
@@ -873,6 +875,16 @@ public sealed partial class DockWindow : Window
     private void OnSystemAreaClicked(object sender, RoutedEventArgs e)
     {
         SystemAreaRequested?.Invoke(this, EventArgs.Empty);
+        ScheduleAutoHide();
+    }
+
+    private void OnOpenDateTimeSettingsClicked(object sender, RoutedEventArgs e)
+    {
+        Process.Start(
+            new ProcessStartInfo("ms-settings:dateandtime")
+            {
+                UseShellExecute = true,
+            });
         ScheduleAutoHide();
     }
 
