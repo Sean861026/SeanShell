@@ -872,6 +872,47 @@ public sealed partial class DockWindow : Window
         ScheduleAutoHide();
     }
 
+    private void OnLauncherContextRequested(
+        UIElement sender,
+        ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement anchor)
+        {
+            return;
+        }
+
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+        var flyout = CreateDockMenuFlyout();
+        AddSystemTool(flyout, "File Explorer", "\uEC50", "explorer.exe");
+        AddSystemTool(flyout, "Windows Terminal", "\uE756", "wt.exe");
+        AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(anchor);
+        args.Handled = true;
+    }
+
+    private static void AddSystemTool(
+        MenuFlyout flyout,
+        string title,
+        string glyph,
+        string target)
+    {
+        var item = new MenuFlyoutItem
+        {
+            Text = title,
+            Icon = CreateMenuIcon(glyph),
+        };
+        item.Click += (_, _) => LaunchShellTarget(target);
+        flyout.Items.Add(item);
+    }
+
     private void OnSystemAreaClicked(object sender, RoutedEventArgs e)
     {
         SystemAreaRequested?.Invoke(this, EventArgs.Empty);
@@ -880,7 +921,7 @@ public sealed partial class DockWindow : Window
 
     private void OnOpenDateTimeSettingsClicked(object sender, RoutedEventArgs e)
     {
-        OpenWindowsSettings("ms-settings:dateandtime");
+        LaunchShellTarget("ms-settings:dateandtime");
         ScheduleAutoHide();
     }
 
@@ -888,15 +929,15 @@ public sealed partial class DockWindow : Window
     {
         if (sender is FrameworkElement { Tag: string settingsUri })
         {
-            OpenWindowsSettings(settingsUri);
+            LaunchShellTarget(settingsUri);
         }
 
         ScheduleAutoHide();
     }
 
-    private static void OpenWindowsSettings(string settingsUri) =>
+    private static void LaunchShellTarget(string target) =>
         Process.Start(
-            new ProcessStartInfo(settingsUri)
+            new ProcessStartInfo(target)
             {
                 UseShellExecute = true,
             });
