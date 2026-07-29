@@ -308,7 +308,9 @@ public sealed partial class DockWindow : Window
             return;
         }
 
-        var windows = DesktopWindowFilter.ForMonitor(snapshot, _monitor.Handle);
+        var windows = DockForegroundContinuity.Apply(
+            DesktopWindowFilter.ForMonitor(snapshot, _monitor.Handle),
+            _returnFocusWindow);
         if (windows.Count == _monitorWindows.Count && windows
             .Select(static window => (
                 window.Handle,

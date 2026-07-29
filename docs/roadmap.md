@@ -102,6 +102,7 @@
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
+- [x] Active-application visual continuity while the Dock owns keyboard foreground
 - [x] Desktop Acrylic Dock surface with reduced-effects-aware hover and press motion
 - [x] Unified glass application capsule, floating icon tiles, and branded accent rail
 - [x] Semantic application and system-area surface hierarchy with stable tabular clock figures

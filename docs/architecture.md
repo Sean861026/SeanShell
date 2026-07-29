@@ -80,6 +80,10 @@ foreground/minimized snapshot to one of three stable presentations: a wide
 accent active underline, a compact running marker, or a compact minimized marker
 with reduced icon emphasis. Tooltips and automation names preserve the window
 title, process, and state that are intentionally omitted from the visual surface.
+`DockForegroundContinuity` retains the captured previous window as active only
+while no live application snapshot owns foreground and that exact HWND still
+exists. This prevents the active rail from disappearing when keyboard navigation
+makes the Dock itself foreground, without guessing a replacement window.
 `TaskbarDockLayout` derives a bounded expanded width from the current pinned and
 running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
