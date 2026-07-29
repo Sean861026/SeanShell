@@ -104,6 +104,7 @@
 - [x] BaseAlt Mica Dock surface with reduced-effects-aware hover and press motion
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] ExtraLarge 48px Shell icon sources with bounded high-DPI downsampling
+- [x] Production SeanShell brand icon across package, title-bar, and Dock Launcher surfaces
 - [x] Icon-first taskbar presentation with distinct active, running, and minimized indicators
 - [x] Persisted system, light, and dark appearance preference with schema v4 migration
 - [x] Light, dark, keyboard-focus, and two-display visual checks
