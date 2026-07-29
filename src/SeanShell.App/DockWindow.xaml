@@ -83,7 +83,7 @@
                             <Grid
                                 Width="40"
                                 Height="44"
-                                AutomationProperties.HelpText="Drag to reorder, or use Move left and Move right in the context menu."
+                                AutomationProperties.HelpText="Middle-click to open a new instance. Drag to reorder, or use Move left and Move right in the context menu."
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 ContextRequested="OnPinnedApplicationContextRequested"
                                 PointerEntered="OnDockItemPointerEntered"
@@ -164,6 +164,7 @@
                                 <Grid
                                     Width="40"
                                     Height="44"
+                                    AutomationProperties.HelpText="Middle-click opens a new instance when a matching installed application is available."
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ContextRequested="OnWindowContextRequested"
                                     Opacity="{Binding ContentOpacity}"

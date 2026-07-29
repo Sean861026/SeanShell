@@ -160,6 +160,10 @@ unsaved work. While a menu is open, Dock auto-hide is paused and resumes after
 the flyout closes. Open new instance remains an application-level action outside
 the per-window submenu because it launches the matched shortcut rather than
 operating on a specific window handle.
+Middle-click follows the same cached-identity boundary: standalone pins execute
+their exact command, a running item with one application candidate opens it, and
+multiple candidates require a native selection flyout. A running window without
+a reliable application identity is left unchanged.
 
 Every Dock also exposes a native Show desktop toggle. `ShowDesktopSession`
 tracks only SeanShell-initiated minimize-all state and delegates to the Windows

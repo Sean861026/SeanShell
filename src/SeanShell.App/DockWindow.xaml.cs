@@ -457,14 +457,62 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    private void OnDockItemPointerPressed(
+    private async void OnDockItemPointerPressed(
         object sender,
         PointerRoutedEventArgs e)
     {
-        if (sender is FrameworkElement element &&
-            e.GetCurrentPoint(element).Properties.IsLeftButtonPressed)
+        if (sender is not FrameworkElement element)
+        {
+            return;
+        }
+
+        var properties = e.GetCurrentPoint(element).Properties;
+        if (properties.IsMiddleButtonPressed)
+        {
+            e.Handled = true;
+            await HandleMiddleClickAsync(element).ConfigureAwait(true);
+            ScheduleAutoHide();
+            return;
+        }
+
+        if (properties.IsLeftButtonPressed)
         {
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: true);
+        }
+    }
+
+    private async Task HandleMiddleClickAsync(FrameworkElement anchor)
+    {
+        if (anchor.DataContext is PinnedDockItemViewModel pinnedItem)
+        {
+            await OpenNewInstanceAsync(pinnedItem.Command).ConfigureAwait(true);
+            return;
+        }
+
+        if (anchor.DataContext is not DockItemViewModel dockItem)
+        {
+            return;
+        }
+
+        var candidates = TaskbarDockPinResolver.FindApplicationCandidates(
+            _availableApplications,
+            dockItem.Windows);
+        switch (TaskbarMiddleClickResolver.Resolve(candidates.Count))
+        {
+            case TaskbarMiddleClickAction.Open:
+                await OpenNewInstanceAsync(candidates[0]).ConfigureAwait(true);
+                break;
+            case TaskbarMiddleClickAction.Choose:
+                ShowOpenNewInstancePicker(candidates, anchor);
+                break;
+            case TaskbarMiddleClickAction.None:
+                ToolTipService.SetToolTip(
+                    anchor,
+                    $"{dockItem.ToolTipText}\nNew instance unavailable: no matching installed application.");
+                break;
+            default:
+                throw new InvalidOperationException(
+                    "Unsupported taskbar middle-click action.");
         }
     }
 
@@ -954,6 +1002,34 @@ public sealed partial class DockWindow : Window
         }
 
         items.Add(openMenu);
+    }
+
+    private void ShowOpenNewInstancePicker(
+        IReadOnlyList<ShellCommand> candidates,
+        FrameworkElement anchor)
+    {
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+
+        var flyout = CreateDockMenuFlyout();
+        foreach (var candidate in candidates)
+        {
+            var item = new MenuFlyoutItem
+            {
+                Text = candidate.Title,
+                Icon = CreateOpenNewInstanceIcon(),
+            };
+            item.Click += async (_, _) =>
+                await OpenNewInstanceAsync(candidate).ConfigureAwait(true);
+            flyout.Items.Add(item);
+        }
+
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(anchor);
     }
 
     private MenuFlyoutItem CreateOpenNewInstanceMenuItem(
