@@ -4,7 +4,9 @@ using SeanShell.Core;
 
 namespace SeanShell.App;
 
-public sealed class DockItemViewModel(TaskbarWindowGroup group)
+public sealed class DockItemViewModel(
+    TaskbarWindowGroup group,
+    bool isPinned = false)
 {
     private readonly TaskbarItemVisualState _visualState =
         TaskbarItemVisualStateResolver.Resolve(
@@ -20,13 +22,11 @@ public sealed class DockItemViewModel(TaskbarWindowGroup group)
     public string Title =>
         WindowCount == 1 ? PrimaryWindow.Title : ProcessName;
 
-    public string ToolTipText => WindowCount == 1
-        ? PrimaryWindow.Title
-        : $"{ProcessName} — {WindowCount} windows";
-
     public bool IsForeground { get; } = group.IsForeground;
 
     public bool IsMinimized { get; } = group.IsMinimized;
+
+    public bool IsPinned { get; } = isPinned;
 
     public int WindowCount => Windows.Count;
 
@@ -58,6 +58,9 @@ public sealed class DockItemViewModel(TaskbarWindowGroup group)
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+    public Visibility PinnedIndicatorVisibility =>
+        IsPinned ? Visibility.Visible : Visibility.Collapsed;
+
     public Visibility CountBadgeVisibility =>
         WindowCount > 1 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -70,7 +73,21 @@ public sealed class DockItemViewModel(TaskbarWindowGroup group)
             ? "Minimized"
             : "Running";
 
+    public string ToolTipText
+    {
+        get
+        {
+            var title = WindowCount == 1
+                ? PrimaryWindow.Title
+                : $"{ProcessName} — {WindowCount} windows";
+            var pinState = IsPinned ? " · Pinned" : string.Empty;
+            return $"{title}\n{StateText}{pinState}";
+        }
+    }
+
     public string AccessibleName => WindowCount == 1
-        ? $"Switch to {Title}, {ProcessName}, {StateText}"
-        : $"{ProcessName}, {WindowCount} windows, {StateText}. Open window picker";
+        ? $"Switch to {Title}, {ProcessName}, {StateText}{PinnedText}"
+        : $"{ProcessName}, {WindowCount} windows, {StateText}{PinnedText}. Open window picker";
+
+    private string PinnedText => IsPinned ? ", Pinned" : string.Empty;
 }

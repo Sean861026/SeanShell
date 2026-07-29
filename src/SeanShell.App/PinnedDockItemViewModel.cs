@@ -22,5 +22,7 @@ public sealed class PinnedDockItemViewModel(ShellCommand command)
     public Visibility FallbackIconVisibility =>
         Icon is null ? Visibility.Visible : Visibility.Collapsed;
 
+    public string ToolTipText => $"{Title}\nPinned · Drag to reorder";
+
     public string AccessibleName => $"Open pinned application {Title}";
 }
