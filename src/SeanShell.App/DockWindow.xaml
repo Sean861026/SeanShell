@@ -277,6 +277,23 @@
                         <TextBlock
                             x:Name="DockCountText"
                             Visibility="Collapsed" />
+                        <ToggleButton
+                            x:Name="ShowDesktopButton"
+                            AutomationProperties.HelpText="Minimizes every application window. Select again to restore them."
+                            AutomationProperties.Name="Show desktop"
+                            Click="OnShowDesktopClicked"
+                            IsThreeState="False"
+                            PointerEntered="OnDockItemPointerEntered"
+                            PointerExited="OnDockItemPointerExited"
+                            PointerPressed="OnDockItemPointerPressed"
+                            PointerReleased="OnDockItemPointerReleased"
+                            Style="{StaticResource SeanDockToggleButtonStyle}"
+                            ToolTipService.ToolTip="Show desktop">
+                            <FontIcon
+                                FontFamily="Segoe Fluent Icons"
+                                FontSize="{StaticResource SeanDockGlyphIconSize}"
+                                Glyph="&#xE8A7;" />
+                        </ToggleButton>
                         <Button
                             x:Name="SystemAreaButton"
                             AutomationProperties.Name="Show Windows system area"

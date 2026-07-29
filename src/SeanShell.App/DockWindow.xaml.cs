@@ -91,6 +91,8 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler? LauncherRequested;
 
+    public event EventHandler? ShowDesktopRequested;
+
     public event EventHandler? SystemAreaRequested;
 
     public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
@@ -205,6 +207,19 @@ public sealed partial class DockWindow : Window
                 ? "Hide the Windows taskbar and resume SeanShell replacement"
                 : "Show the Windows taskbar for notification and system tray access");
         SystemAreaGlyph.Glyph = "\uE7F4";
+    }
+
+    public void SetShowDesktopState(bool desktopShown)
+    {
+        ShowDesktopButton.IsChecked = desktopShown;
+        var label = desktopShown ? "Restore windows" : "Show desktop";
+        AutomationProperties.SetName(ShowDesktopButton, label);
+        AutomationProperties.SetHelpText(
+            ShowDesktopButton,
+            desktopShown
+                ? "Restores the windows minimized by Show desktop."
+                : "Minimizes every application window. Select again to restore them.");
+        ToolTipService.SetToolTip(ShowDesktopButton, label);
     }
 
     public void Shutdown()
@@ -761,6 +776,12 @@ public sealed partial class DockWindow : Window
     private void OnSystemAreaClicked(object sender, RoutedEventArgs e)
     {
         SystemAreaRequested?.Invoke(this, EventArgs.Empty);
+        ScheduleAutoHide();
+    }
+
+    private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
+    {
+        ShowDesktopRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
     }
 

@@ -144,7 +144,8 @@ The dock does not retain process handles, inject code, attach input queues, or
 bypass Windows foreground restrictions.
 
 Companion Taskbar mode covers running-window switching, a Launcher/Start button,
-and up to eight pinned Start Menu applications synchronized across every Dock.
+Show desktop / Restore windows, and up to eight pinned Start Menu applications
+synchronized across every Dock.
 Search for an installed App in Launcher and use its pin button to add or remove
 it. A running app with an explicitly matched Start Menu shortcut can also be
 pinned from its Dock context menu; multiple matching shortcuts appear in a
