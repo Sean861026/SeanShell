@@ -45,6 +45,9 @@ Raw colors must not be embedded in individual views.
 - The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
   Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
   colors are not embedded in the Dock.
+- Dock chrome has three semantic depth levels: Acrylic window shell, a tertiary
+  application region, and a secondary bordered system region. Clock figures use
+  tabular numerals so time changes do not shift neighboring content.
 - The SeanShell brand mark is the only fixed-color identity asset. Its rounded
   blue terminal prompt is self-contained so it remains legible on light, dark,
   transparent, Start, taskbar, title-bar, and installer surfaces. Package assets

@@ -6,6 +6,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -13,6 +14,7 @@ using SeanShell.Core;
 using SeanShell.Windows;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
+using Windows.UI.Text;
 
 namespace SeanShell.App;
 
@@ -53,6 +55,12 @@ public sealed partial class DockWindow : Window
         _shellState = shellState;
         _monitor = monitor;
         InitializeComponent();
+        Typography.SetNumeralAlignment(
+            ClockTimeText,
+            FontNumeralAlignment.Tabular);
+        Typography.SetNumeralAlignment(
+            ClockDateText,
+            FontNumeralAlignment.Tabular);
 
         var density = ((App)Application.Current).SettingsLoad.Settings.DisplayDensity;
         _compactDensity = density == ShellDisplayDensity.Compact;
