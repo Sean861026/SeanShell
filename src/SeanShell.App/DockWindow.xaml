@@ -312,10 +312,23 @@
                             PointerReleased="OnDockItemPointerReleased"
                             Style="{StaticResource SeanDockToggleButtonStyle}"
                             ToolTipService.ToolTip="Show desktop">
-                            <FontIcon
-                                FontFamily="Segoe Fluent Icons"
-                                FontSize="{StaticResource SeanDockGlyphIconSize}"
-                                Glyph="&#xE8A7;" />
+                            <Grid
+                                Width="{StaticResource SeanDockActionIconSize}"
+                                Height="{StaticResource SeanDockActionIconSize}">
+                                <PathIcon
+                                    x:Name="ShowDesktopIcon"
+                                    Width="{StaticResource SeanDockGlyphIconSize}"
+                                    Height="{StaticResource SeanDockGlyphIconSize}"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Data="M1,2 L15,2 L15,12 L10,12 L10,14 L13,14 L13,15 L3,15 L3,14 L6,14 L6,12 L1,12 Z M2.5,3.5 L2.5,10.5 L13.5,10.5 L13.5,3.5 Z" />
+                                <PathIcon
+                                    x:Name="RestoreWindowsIcon"
+                                    Width="{StaticResource SeanDockGlyphIconSize}"
+                                    Height="{StaticResource SeanDockGlyphIconSize}"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Data="M4,1 L15,1 L15,12 L13,12 L13,3 L4,3 Z M1,4 L12,4 L12,15 L1,15 Z M2.5,5.5 L2.5,13.5 L10.5,13.5 L10.5,5.5 Z"
+                                    Visibility="Collapsed" />
+                            </Grid>
                         </ToggleButton>
                         <Button
                             x:Name="SystemAreaButton"
@@ -328,11 +341,23 @@
                             Style="{StaticResource SeanDockActionButtonStyle}"
                             ToolTipService.ToolTip="Show the Windows taskbar for notification and system tray access"
                             Visibility="Collapsed">
-                            <FontIcon
-                                x:Name="SystemAreaGlyph"
-                                FontFamily="Segoe Fluent Icons"
-                                FontSize="{StaticResource SeanDockGlyphIconSize}"
-                                Glyph="&#xE7F4;" />
+                            <Grid
+                                Width="{StaticResource SeanDockActionIconSize}"
+                                Height="{StaticResource SeanDockActionIconSize}">
+                                <PathIcon
+                                    x:Name="RevealSystemAreaIcon"
+                                    Width="{StaticResource SeanDockGlyphIconSize}"
+                                    Height="{StaticResource SeanDockGlyphIconSize}"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Data="M1,2 L15,2 L15,13 L1,13 Z M2.5,3.5 L2.5,10 L13.5,10 L13.5,3.5 Z M8,5 L11,8 L10,9 L8.75,7.75 L8.75,10 L7.25,10 L7.25,7.75 L6,9 L5,8 Z M10,11 L11,11 L11,12 L10,12 Z M12,11 L13,11 L13,12 L12,12 Z" />
+                                <PathIcon
+                                    x:Name="ResumeTaskbarIcon"
+                                    Width="{StaticResource SeanDockGlyphIconSize}"
+                                    Height="{StaticResource SeanDockGlyphIconSize}"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Data="M1,2 L15,2 L15,13 L1,13 Z M2.5,3.5 L2.5,10 L13.5,10 L13.5,3.5 Z M8,10 L5,7 L6,6 L7.25,7.25 L7.25,5 L8.75,5 L8.75,7.25 L10,6 L11,7 Z M10,11 L11,11 L11,12 L10,12 Z M12,11 L13,11 L13,12 L12,12 Z"
+                                    Visibility="Collapsed" />
+                            </Grid>
                         </Button>
                         <StackPanel
                             MinWidth="80"
