@@ -12,6 +12,7 @@ public sealed class SystemAccessibilityService : IDisposable
     {
         Current = Capture();
         _uiSettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
+        _uiSettings.ColorValuesChanged += OnColorValuesChanged;
         _uiSettings.TextScaleFactorChanged += OnTextScaleFactorChanged;
     }
 
@@ -27,13 +28,15 @@ public sealed class SystemAccessibilityService : IDisposable
         }
 
         _uiSettings.AnimationsEnabledChanged -= OnAnimationsEnabledChanged;
+        _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
         _uiSettings.TextScaleFactorChanged -= OnTextScaleFactorChanged;
         _disposed = true;
     }
 
     private SystemAccessibilitySnapshot Capture() => new(
         _uiSettings.AnimationsEnabled,
-        _uiSettings.TextScaleFactor);
+        _uiSettings.TextScaleFactor,
+        HighContrastReader.IsEnabled());
 
     private void Refresh()
     {
@@ -49,6 +52,8 @@ public sealed class SystemAccessibilityService : IDisposable
 
     private void OnAnimationsEnabledChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args) =>
         Refresh();
+
+    private void OnColorValuesChanged(UISettings sender, object args) => Refresh();
 
     private void OnTextScaleFactorChanged(UISettings sender, object args) => Refresh();
 }

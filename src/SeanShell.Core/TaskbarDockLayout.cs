@@ -12,17 +12,22 @@ public static class TaskbarDockLayout
     public static int CalculateExpandedWidth(
         int pinnedItemCount,
         int windowItemCount,
-        int monitorWorkAreaWidth)
+        int monitorWorkAreaWidth,
+        double textScaleFactor = 1)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(pinnedItemCount);
         ArgumentOutOfRangeException.ThrowIfNegative(windowItemCount);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(monitorWorkAreaWidth);
 
+        var fixedControlsWidth =
+            AccessibilityLayout.ScaleDockFixedControlsWidth(
+                FixedControlsWidth,
+                textScaleFactor);
         var availableWidth = Math.Max(
             1,
             monitorWorkAreaWidth - MonitorEdgeMargin);
         var preferredWidth = checked(
-            FixedControlsWidth +
+            fixedControlsWidth +
             ((pinnedItemCount + windowItemCount) * ItemSlotWidth));
         var minimumWidth = Math.Min(
             PreferredMinimumWidth,
