@@ -880,13 +880,26 @@ public sealed partial class DockWindow : Window
 
     private void OnOpenDateTimeSettingsClicked(object sender, RoutedEventArgs e)
     {
+        OpenWindowsSettings("ms-settings:dateandtime");
+        ScheduleAutoHide();
+    }
+
+    private void OnOpenSystemSettingsClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string settingsUri })
+        {
+            OpenWindowsSettings(settingsUri);
+        }
+
+        ScheduleAutoHide();
+    }
+
+    private static void OpenWindowsSettings(string settingsUri) =>
         Process.Start(
-            new ProcessStartInfo("ms-settings:dateandtime")
+            new ProcessStartInfo(settingsUri)
             {
                 UseShellExecute = true,
             });
-        ScheduleAutoHide();
-    }
 
     private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
     {
