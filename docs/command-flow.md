@@ -296,7 +296,8 @@ registered. SeanShell does not capture arbitrary keys or install an input hook.
 ```text
 User presses Ctrl+Alt+D (or the selected Dock preset)
   -> Windows delivers the independently registered WM_HOTKEY
-  -> resolve the current primary monitor index
+  -> capture the current foreground window and its nearest monitor
+  -> resolve that monitor index; fall back to primary, then first available
   -> select the matching monitor-local Dock
   -> capture the current foreground window handle
   -> stop its pending auto-hide timer

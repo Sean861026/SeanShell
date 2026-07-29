@@ -90,8 +90,9 @@ keyboard hook or intercept input sent to games. The dashboard can switch between
 the requested shortcut, SeanShell restores the previous shortcut and explains the
 conflict; the dashboard button always remains available.
 
-Press `Ctrl+Alt+D` to expand the Dock on the primary display and place keyboard
-focus on its Launcher button. From there, Tab and the standard WinUI navigation
+Press `Ctrl+Alt+D` to expand the Dock on the active application's display and
+place keyboard focus on its Launcher button. If no active display can be resolved,
+SeanShell falls back to the primary display. From there, Tab and standard WinUI navigation
 keys reach pinned applications, running windows, Show desktop, and system-area
 access without a mouse. Press Escape to return focus to the window that was active
 before the Dock opened and immediately collapse an auto-hidden Dock.

@@ -402,7 +402,7 @@
                                     MinWidth="260"
                                     MaxWidth="360"
                                     HorizontalAlignment="Left"
-                                    AutomationProperties.HelpText="Choose a supported global shortcut for expanding and focusing the primary Dock."
+                                    AutomationProperties.HelpText="Choose a supported global shortcut for expanding and focusing the Dock on the active display."
                                     Header="Focus Dock shortcut"
                                     SelectionChanged="OnDockShortcutSelectionChanged">
                                     <ComboBoxItem Content="Ctrl + Alt + D" Tag="ControlAltD" />
@@ -411,7 +411,7 @@
 
                                 <TextBlock
                                     Style="{StaticResource SeanSecondaryTextStyle}"
-                                    Text="The shortcut expands the primary display Dock and places keyboard focus on its Launcher button."
+                                    Text="The shortcut expands the Dock on the active application's display and places keyboard focus on its Launcher button."
                                     TextWrapping="Wrap" />
 
                                 <ComboBox
