@@ -93,9 +93,11 @@ conflict; the dashboard button always remains available.
 Press `Ctrl+Alt+D` to expand the Dock on the primary display and place keyboard
 focus on its Launcher button. From there, Tab and the standard WinUI navigation
 keys reach pinned applications, running windows, Show desktop, and system-area
-access without a mouse. `Ctrl+Shift+D` is available as an alternate preset. Dock
-and Launcher shortcuts are registered independently, and either one rolls back
-to its previous binding if Windows reports a conflict.
+access without a mouse. Press Escape to return focus to the window that was active
+before the Dock opened and immediately collapse an auto-hidden Dock.
+`Ctrl+Shift+D` is available as an alternate preset. Dock and Launcher shortcuts
+are registered independently, and either one rolls back to its previous binding
+if Windows reports a conflict.
 
 The Launcher card measures the first successful window presentation and the most
 recent 50 successful provider/ranking operations. It shows the latest search and

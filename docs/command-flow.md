@@ -298,10 +298,16 @@ User presses Ctrl+Alt+D (or the selected Dock preset)
   -> Windows delivers the independently registered WM_HOTKEY
   -> resolve the current primary monitor index
   -> select the matching monitor-local Dock
+  -> capture the current foreground window handle
   -> stop its pending auto-hide timer
-  -> expand and activate the Dock
+  -> expand and activate the Dock through the native window boundary
   -> place keyboard focus on the Launcher button
   -> standard WinUI Tab and arrow navigation continues through Dock controls
+
+User presses Escape while the Dock owns keyboard focus
+  -> consume the routed Dock key event
+  -> restore and activate the captured foreground window if it remains valid
+  -> immediately collapse the Dock when auto-hide is enabled
 ```
 
 Changing the Dock shortcut follows the same register-first, persist-on-success,

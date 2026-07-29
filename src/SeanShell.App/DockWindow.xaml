@@ -14,8 +14,10 @@
 
     <Grid
         x:Name="DockRoot"
+        AutomationProperties.HelpText="Press Escape to return to the previous window."
         Background="Transparent"
         GotFocus="OnDockGotFocus"
+        KeyDown="OnDockKeyDown"
         LostFocus="OnDockLostFocus"
         PointerEntered="OnDockPointerEntered"
         PointerExited="OnDockPointerExited">

@@ -141,6 +141,7 @@
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input
 - [x] Keyboard-only Dock entry point with primary-display focus and auto-hide expansion
+- [x] Escape dismissal returns to the previous foreground window and collapses the Dock
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement

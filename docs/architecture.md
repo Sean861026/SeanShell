@@ -355,9 +355,12 @@ succeeds; failed registration restores the previously active shortcut. Every
 identifier so Launcher and Dock shortcuts can coexist on the main HWND.
 
 The Dock shortcut selects the monitor snapshot marked primary, expands its
-monitor-local Dock, activates that window, and places keyboard focus on the
-Launcher button. If the display topology changes, the next invocation uses the
-rebuilt monitor and Dock collections rather than retaining a stale HWND.
+monitor-local Dock, captures the current foreground HWND, activates the Dock
+through the same validated foreground-switch boundary used by taskbar items, and
+places keyboard focus on the Launcher button. Escape restores and activates the
+captured window when it is still valid, then immediately collapses an auto-hidden
+Dock. If the display topology changes, the next invocation uses the rebuilt
+monitor and Dock collections rather than retaining a stale Dock HWND.
 
 Plugin enablement is independent of Gaming Mode. Disabling a plugin suspends it
 and removes its Launcher commands; disabling before startup skips initialization.

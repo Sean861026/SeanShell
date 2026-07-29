@@ -141,6 +141,8 @@ public sealed class DesktopWindowService
         return true;
     }
 
+    public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
+
     public bool RestoreAndActivate(nint handle)
     {
         if (!IsWindow(handle))
