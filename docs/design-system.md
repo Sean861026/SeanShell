@@ -39,11 +39,12 @@ Raw colors must not be embedded in individual views.
 - High contrast disables translucent backdrops and motion while retaining native
   ThemeResource colors; text scaling expands both Dock height and its fixed
   launcher/system area before applying monitor-width bounds.
-- Dock hover feedback uses a 120 ms scale/translation transition; press feedback
+- Dock hover feedback uses a 140 ms scale/translation transition; press feedback
   uses 80 ms. Both resolve to an identity transform with no transition when
   Windows requests reduced effects or Gaming Mode is active.
-- Backdrop surfaces use BaseAlt Mica with semantic Layer/Card fallback brushes;
-  raw tint colors are not embedded in the Dock.
+- The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
+  Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
+  colors are not embedded in the Dock.
 - The SeanShell brand mark is the only fixed-color identity asset. Its rounded
   blue terminal prompt is self-contained so it remains legible on light, dark,
   transparent, Start, taskbar, title-bar, and installer surfaces. Package assets

@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Numerics;
-using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -140,7 +139,7 @@ public sealed partial class DockWindow : Window
         _reducedEffects = enabled;
         SystemBackdrop = enabled
             ? null
-            : new MicaBackdrop { Kind = MicaKind.BaseAlt };
+            : new DesktopAcrylicBackdrop();
         ExpandedDock.Background = Application.Current.Resources[
             enabled
                 ? "CardBackgroundFillColorDefaultBrush"
