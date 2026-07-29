@@ -51,6 +51,12 @@
                         Stretch="Uniform" />
                 </Button>
 
+                <Border
+                    Grid.Column="1"
+                    Grid.ColumnSpan="3"
+                    IsHitTestVisible="False"
+                    Style="{StaticResource SeanDockApplicationRegionStyle}" />
+
                 <ListView
                     x:Name="PinnedList"
                     Grid.Column="1"
@@ -262,51 +268,51 @@
                     </StackPanel>
                 </Grid>
 
-                <StackPanel
+                <Border
                     Grid.Column="4"
-                    Padding="4,0"
-                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                    CornerRadius="{StaticResource SeanCompactCornerRadius}"
-                    Orientation="Horizontal"
-                    Spacing="{StaticResource SeanSpace4}"
-                    VerticalAlignment="Center">
-                    <TextBlock
-                        x:Name="DockCountText"
-                        Visibility="Collapsed" />
-                    <Button
-                        x:Name="SystemAreaButton"
-                        AutomationProperties.Name="Show Windows system area"
-                        Click="OnSystemAreaClicked"
-                        PointerEntered="OnDockItemPointerEntered"
-                        PointerExited="OnDockItemPointerExited"
-                        PointerPressed="OnDockItemPointerPressed"
-                        PointerReleased="OnDockItemPointerReleased"
-                        Style="{StaticResource SeanDockActionButtonStyle}"
-                        ToolTipService.ToolTip="Show the Windows taskbar for notification and system tray access"
-                        Visibility="Collapsed">
-                        <FontIcon
-                            x:Name="SystemAreaGlyph"
-                            FontFamily="Segoe Fluent Icons"
-                            FontSize="{StaticResource SeanDockGlyphIconSize}"
-                            Glyph="&#xE7F4;" />
-                    </Button>
+                    Style="{StaticResource SeanDockSystemRegionStyle}">
                     <StackPanel
-                        MinWidth="76"
-                        AutomationProperties.Name="Current date and time"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center">
+                        Orientation="Horizontal"
+                        Spacing="{StaticResource SeanSpace4}">
                         <TextBlock
-                            x:Name="ClockTimeText"
+                            x:Name="DockCountText"
+                            Visibility="Collapsed" />
+                        <Button
+                            x:Name="SystemAreaButton"
+                            AutomationProperties.Name="Show Windows system area"
+                            Click="OnSystemAreaClicked"
+                            PointerEntered="OnDockItemPointerEntered"
+                            PointerExited="OnDockItemPointerExited"
+                            PointerPressed="OnDockItemPointerPressed"
+                            PointerReleased="OnDockItemPointerReleased"
+                            Style="{StaticResource SeanDockActionButtonStyle}"
+                            ToolTipService.ToolTip="Show the Windows taskbar for notification and system tray access"
+                            Visibility="Collapsed">
+                            <FontIcon
+                                x:Name="SystemAreaGlyph"
+                                FontFamily="Segoe Fluent Icons"
+                                FontSize="{StaticResource SeanDockGlyphIconSize}"
+                                Glyph="&#xE7F4;" />
+                        </Button>
+                        <StackPanel
+                            MinWidth="80"
+                            AutomationProperties.Name="Current date and time"
                             HorizontalAlignment="Right"
-                            FontWeight="SemiBold"
-                            Text="--:--" />
-                        <TextBlock
-                            x:Name="ClockDateText"
-                            HorizontalAlignment="Right"
-                            Style="{StaticResource SeanCaptionTextStyle}"
-                            Text="--/--/----" />
+                            VerticalAlignment="Center">
+                            <TextBlock
+                                x:Name="ClockTimeText"
+                                HorizontalAlignment="Right"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Text="--:--" />
+                            <TextBlock
+                                x:Name="ClockDateText"
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource SeanCaptionTextStyle}"
+                                Text="--/--/----" />
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
