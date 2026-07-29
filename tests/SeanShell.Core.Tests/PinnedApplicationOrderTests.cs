@@ -5,6 +5,43 @@ namespace SeanShell.Core.Tests;
 [TestClass]
 public sealed class PinnedApplicationOrderTests
 {
+    [TestMethod]
+    public void MergeVisibleOrderPreservesHiddenPinnedSlots()
+    {
+        string[] applicationIds =
+        [
+            "app:first",
+            "app:hidden",
+            "app:second",
+            "app:third",
+        ];
+
+        var result = PinnedApplicationOrder.MergeVisibleOrder(
+            applicationIds,
+            ["app:third", "app:first", "app:second"]);
+
+        CollectionAssert.AreEqual(
+            new[] { "app:third", "app:hidden", "app:first", "app:second" },
+            result.ToArray());
+    }
+
+    [TestMethod]
+    public void MergeVisibleOrderRejectsIncompleteOrUnknownOrder()
+    {
+        string[] applicationIds = ["app:first", "app:hidden", "app:second"];
+
+        CollectionAssert.AreEqual(
+            applicationIds,
+            PinnedApplicationOrder.MergeVisibleOrder(
+                applicationIds,
+                ["app:second"]).ToArray());
+        CollectionAssert.AreEqual(
+            applicationIds,
+            PinnedApplicationOrder.MergeVisibleOrder(
+                applicationIds,
+                ["app:first", "app:missing"]).ToArray());
+    }
+
     private static readonly string[] ApplicationIds =
         ["app:first", "app:second", "app:third"];
 

@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using SeanShell.Core;
 using SeanShell.Windows;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 
 namespace SeanShell.App;
@@ -89,6 +90,8 @@ public sealed partial class DockWindow : Window
 
     public event Func<ShellCommand, PinnedApplicationMoveDirection, Task<bool>>?
         PinMoveRequested;
+
+    public event Func<IReadOnlyList<string>, Task<bool>>? PinOrderRequested;
 
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
@@ -758,6 +761,34 @@ public sealed partial class DockWindow : Window
         finally
         {
             ScheduleAutoHide();
+        }
+    }
+
+    private async void OnPinnedApplicationsDragCompleted(
+        ListViewBase sender,
+        DragItemsCompletedEventArgs args)
+    {
+        if (args.DropResult != DataPackageOperation.Move ||
+            PinOrderRequested is not { } handler)
+        {
+            return;
+        }
+
+        try
+        {
+            var visibleOrder = PinnedItems
+                .Select(static item => item.Id)
+                .ToArray();
+            if (!await handler(visibleOrder).ConfigureAwait(true))
+            {
+                RefreshPinnedItems();
+            }
+        }
+        catch (Exception exception)
+        {
+            DockCountText.Text = "Reorder failed";
+            ToolTipService.SetToolTip(DockCountText, exception.Message);
+            RefreshPinnedItems();
         }
     }
 

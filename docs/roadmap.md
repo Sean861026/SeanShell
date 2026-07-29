@@ -124,6 +124,7 @@
 - [x] Coalesce desktop shortcut pins with matching monitor-local running windows
 - [x] Pin and unpin directly from running and standalone Dock item context menus
 - [x] Persisted Move left / Move right pin ordering synchronized across displays
+- [x] Native drag-to-reorder for visible pins with hidden running-pin preservation
 - [x] Regional-format clock and date on every Dock
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
