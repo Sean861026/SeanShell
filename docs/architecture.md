@@ -104,8 +104,12 @@ numeric badge and opens a native `MenuFlyout` containing every title and state.
 The native control owns keyboard focus, arrow navigation, Enter activation, and
 Escape dismissal; SeanShell does not add a global input hook. Grouping reduces
 visual density while retaining individual window handles for activation. Its
-context menu mirrors that same window list as native submenus, each containing
-Activate, Minimize or Restore, and graceful Close window commands. Duplicate
+context menu mirrors that same window list as native submenus whose labels retain
+the current Active, Running, or Minimized state, each containing Activate,
+Minimize or Restore, and graceful Close window commands. Single-window menus
+expose the same explicit Activate action. Every Dock flyout uses one compact
+native presenter style with a bounded width, shared corner radius, and Fluent
+icons while retaining system theme, high-contrast, and keyboard behavior. Duplicate
 titles receive a stable ordinal in both menus so every handle remains
 distinguishable without process injection.
 

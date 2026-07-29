@@ -304,8 +304,9 @@ Dock refresh timer
   -> otherwise: restore when minimized and request foreground activation
 
 User opens an entry context menu
-  -> single-window entry: expose actions directly
+  -> single-window entry: expose Activate and bounded window actions directly
   -> multi-window group: expose one title/state submenu per window
+  -> native compact presenter retains arrow, Enter, and Escape handling
   -> selected visible window: offer Activate and Minimize
   -> selected minimized window: offer Activate and Restore
   -> selected toggle: perform the named bounded window operation

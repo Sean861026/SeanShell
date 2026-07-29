@@ -546,19 +546,23 @@ public sealed partial class DockWindow : Window
 
         var toggleAction =
             TaskbarWindowActionResolver.ResolveContextToggle(window.IsMinimized);
+        var activateItem = new MenuFlyoutItem
+        {
+            Text = "Activate",
+            Icon = CreateMenuIcon("\uE8A7"),
+        };
+        activateItem.Click += (_, _) =>
+            _ = _windowService.RestoreAndActivate(window.Handle);
+
         var toggleItem = new MenuFlyoutItem
         {
             Text = toggleAction == TaskbarWindowAction.Minimize
                 ? "Minimize"
                 : "Restore",
-            Icon = new FontIcon
-            {
-                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                    "Segoe Fluent Icons"),
-                Glyph = toggleAction == TaskbarWindowAction.Minimize
+            Icon = CreateMenuIcon(
+                toggleAction == TaskbarWindowAction.Minimize
                     ? "\uE921"
-                    : "\uE923",
-            },
+                    : "\uE923"),
         };
         toggleItem.Click += (_, _) =>
         {
@@ -570,16 +574,12 @@ public sealed partial class DockWindow : Window
         var closeItem = new MenuFlyoutItem
         {
             Text = "Close window",
-            Icon = new FontIcon
-            {
-                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                    "Segoe Fluent Icons"),
-                Glyph = "\uE8BB",
-            },
+            Icon = CreateMenuIcon("\uE8BB"),
         };
         closeItem.Click += (_, _) => _ = _windowService.RequestClose(window.Handle);
 
-        var flyout = new MenuFlyout();
+        var flyout = CreateDockMenuFlyout();
+        flyout.Items.Add(activateItem);
         flyout.Items.Add(toggleItem);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(closeItem);
@@ -601,25 +601,20 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
 
-        var flyout = new MenuFlyout();
+        var flyout = CreateDockMenuFlyout();
         for (var index = 0; index < item.Windows.Count; index++)
         {
             var window = item.Windows[index];
             var windowMenu = new MenuFlyoutSubItem
             {
-                Text = GetWindowDisplayTitle(item, index),
+                Text = GetWindowMenuText(item, index),
                 Icon = CreateWindowStateIcon(window),
             };
 
             var activateItem = new MenuFlyoutItem
             {
                 Text = "Activate",
-                Icon = new FontIcon
-                {
-                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                        "Segoe Fluent Icons"),
-                    Glyph = "\uE8A7",
-                },
+                Icon = CreateMenuIcon("\uE8A7"),
             };
             activateItem.Click += (_, _) =>
                 _ = _windowService.RestoreAndActivate(window.Handle);
@@ -632,14 +627,10 @@ public sealed partial class DockWindow : Window
                 Text = toggleAction == TaskbarWindowAction.Minimize
                     ? "Minimize"
                     : "Restore",
-                Icon = new FontIcon
-                {
-                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                        "Segoe Fluent Icons"),
-                    Glyph = toggleAction == TaskbarWindowAction.Minimize
+                Icon = CreateMenuIcon(
+                    toggleAction == TaskbarWindowAction.Minimize
                         ? "\uE921"
-                        : "\uE923",
-                },
+                        : "\uE923"),
             };
             toggleItem.Click += (_, _) =>
             {
@@ -653,12 +644,7 @@ public sealed partial class DockWindow : Window
             var closeItem = new MenuFlyoutItem
             {
                 Text = "Close window",
-                Icon = new FontIcon
-                {
-                    FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
-                        "Segoe Fluent Icons"),
-                    Glyph = "\uE8BB",
-                },
+                Icon = CreateMenuIcon("\uE8BB"),
             };
             closeItem.Click += (_, _) =>
                 _ = _windowService.RequestClose(window.Handle);
@@ -683,18 +669,13 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
 
-        var flyout = new MenuFlyout();
+        var flyout = CreateDockMenuFlyout();
         for (var index = 0; index < item.Windows.Count; index++)
         {
             var window = item.Windows[index];
-            var state = window.IsForeground
-                ? "Active"
-                : window.IsMinimized
-                    ? "Minimized"
-                    : "Running";
             var windowItem = new MenuFlyoutItem
             {
-                Text = $"{GetWindowDisplayTitle(item, index)} — {state}",
+                Text = GetWindowMenuText(item, index),
                 Icon = CreateWindowStateIcon(window),
             };
             windowItem.Click += (_, _) =>
@@ -709,6 +690,32 @@ public sealed partial class DockWindow : Window
         };
         flyout.ShowAt(anchor);
     }
+
+    private static MenuFlyout CreateDockMenuFlyout()
+    {
+        var flyout = new MenuFlyout();
+        if (Application.Current.Resources.TryGetValue(
+                "SeanDockMenuFlyoutPresenterStyle",
+                out var style) &&
+            style is Style presenterStyle)
+        {
+            flyout.MenuFlyoutPresenterStyle = presenterStyle;
+        }
+
+        return flyout;
+    }
+
+    private static string GetWindowMenuText(
+        DockItemViewModel item,
+        int index) =>
+        $"{GetWindowDisplayTitle(item, index)} — {GetWindowStateText(item.Windows[index])}";
+
+    private static string GetWindowStateText(DesktopWindowSnapshot window) =>
+        window.IsForeground
+            ? "Active"
+            : window.IsMinimized
+                ? "Minimized"
+                : "Running";
 
     private static string GetWindowDisplayTitle(
         DockItemViewModel item,
@@ -734,11 +741,15 @@ public sealed partial class DockWindow : Window
 
     private static FontIcon CreateWindowStateIcon(
         DesktopWindowSnapshot window) =>
+        CreateMenuIcon(window.IsForeground ? "\uE73E" : "\uE8A7");
+
+    private static FontIcon CreateMenuIcon(string glyph) =>
         new()
         {
             FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(
                 "Segoe Fluent Icons"),
-            Glyph = window.IsForeground ? "\uE73E" : "\uE8A7",
+            FontSize = 16,
+            Glyph = glyph,
         };
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)
@@ -821,7 +832,7 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
 
-        var flyout = new MenuFlyout();
+        var flyout = CreateDockMenuFlyout();
         AddPinnedApplicationActions(
             flyout.Items,
             item.Command,
