@@ -23,11 +23,11 @@
         PointerExited="OnDockPointerExited">
         <Border
             x:Name="ExpandedDock"
-            Padding="6,6,6,6"
-            Background="{ThemeResource LayerFillColorAltBrush}"
+            Padding="7,7,7,7"
+            Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
-            CornerRadius="16">
+            CornerRadius="20">
             <Grid ColumnSpacing="{StaticResource SeanSpace8}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -36,6 +36,24 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+
+                <Border
+                    Grid.ColumnSpan="5"
+                    Width="112"
+                    Height="2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    CornerRadius="1"
+                    IsHitTestVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Offset="0" Color="Transparent" />
+                            <GradientStop Offset="0.3" Color="{ThemeResource SystemAccentColorLight1}" />
+                            <GradientStop Offset="0.7" Color="{ThemeResource SystemAccentColor}" />
+                            <GradientStop Offset="1" Color="Transparent" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
 
                 <Button
                     x:Name="LauncherButton"
@@ -97,7 +115,7 @@
                                 <Border
                                     Width="40"
                                     Height="40"
-                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    Background="Transparent"
                                     CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                     VerticalAlignment="Top">
                                     <Grid
@@ -179,12 +197,13 @@
                                     <Border
                                         Width="40"
                                         Height="40"
-                                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                        Background="Transparent"
                                         CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                         VerticalAlignment="Top">
                                         <Grid>
                                             <Border
-                                                Background="{ThemeResource AccentFillColorTertiaryBrush}"
+                                                Margin="2"
+                                                Background="{ThemeResource AccentFillColorSecondaryBrush}"
                                                 CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                                 Visibility="{Binding ActiveIndicatorVisibility}" />
                                             <FontIcon
@@ -235,14 +254,14 @@
                                             VerticalAlignment="Center" />
                                     </Border>
                                     <Border
-                                        Width="20"
-                                        Height="3"
+                                        Width="24"
+                                        Height="4"
                                         Background="{ThemeResource AccentFillColorDefaultBrush}"
                                         CornerRadius="2"
                                         VerticalAlignment="Bottom"
                                         Visibility="{Binding ActiveIndicatorVisibility}" />
                                     <Border
-                                        Width="7"
+                                        Width="10"
                                         Height="3"
                                         Background="{ThemeResource TextFillColorSecondaryBrush}"
                                         CornerRadius="2"
@@ -340,21 +359,29 @@
         <Border
             x:Name="PeekIndicator"
             Width="120"
-            Height="8"
+            Height="9"
             AutomationProperties.HelpText="Move the pointer here to expand the SeanShell dock."
             AutomationProperties.Name="SeanShell dock is collapsed"
             Background="{ThemeResource SubtleFillColorSecondaryBrush}"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1"
-            CornerRadius="4"
+            CornerRadius="5"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Visibility="Collapsed">
             <Border
-                Width="72"
-                Height="4"
-                Background="{ThemeResource AccentFillColorDefaultBrush}"
-                CornerRadius="2" />
+                Width="80"
+                Height="3"
+                CornerRadius="2">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Offset="0" Color="Transparent" />
+                        <GradientStop Offset="0.3" Color="{ThemeResource SystemAccentColorLight1}" />
+                        <GradientStop Offset="0.7" Color="{ThemeResource SystemAccentColor}" />
+                        <GradientStop Offset="1" Color="Transparent" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
         </Border>
     </Grid>
 </Window>

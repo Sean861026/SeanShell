@@ -103,6 +103,7 @@
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
 - [x] Desktop Acrylic Dock surface with reduced-effects-aware hover and press motion
+- [x] Unified glass application capsule, floating icon tiles, and branded accent rail
 - [x] Semantic application and system-area surface hierarchy with stable tabular clock figures
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] ExtraLarge 48px Shell icon sources with bounded high-DPI downsampling

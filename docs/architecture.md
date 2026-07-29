@@ -95,6 +95,13 @@ propagates the existing reduced-effects policy to every Dock; Windows reduced
 motion, high contrast, and Gaming Mode remove Acrylic, transitions, scale, and
 translation while retaining native focus and pointer states.
 
+The expanded Dock groups floating application icons inside one
+Layer-on-Acrylic capsule rather than giving every icon an opaque tile. Only the
+foreground application receives an accent backing. A bounded system-accent
+gradient rail provides brand identity on expanded and collapsed surfaces without
+changing the interaction geometry. These additions use Windows theme colors;
+reduced-effects mode still replaces Acrylic with the existing opaque card surface.
+
 `TaskbarWindowGrouper` combines monitor-local windows by case-insensitive process
 name and keeps the foreground window first inside each group. Generic Windows
 host processes remain separate because their process name is not a safe
