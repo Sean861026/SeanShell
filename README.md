@@ -160,6 +160,10 @@ standalone pin is suppressed and the live window item carries its running,
 active, or minimized state instead of showing a duplicate icon. URL and packaged
 shortcuts without a reliable process identity remain separate rather than using
 title heuristics that could merge unrelated applications.
+Pinned items retain a compact pin badge even after coalescing with a running
+window. Active windows add an accent surface to their wide underline, while
+tooltips and automation names describe active, running, minimized, and pinned
+states without relying on color alone.
 
 Explorer remains running for notifications, system tray services, input methods,
 file associations, and recovery. Every Dock now shows the current time and date

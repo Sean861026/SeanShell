@@ -287,17 +287,25 @@ public sealed partial class DockWindow : Window
         }
 
         _monitorWindows = windows;
-        Items.Clear();
-        foreach (var group in TaskbarWindowGrouper.Group(windows))
-        {
-            Items.Add(new DockItemViewModel(group));
-        }
-
-        WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
+        RefreshWindowItems();
         DockCountText.Text = windows.Count == 1 ? "1 window" : $"{windows.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         RefreshPinnedItems();
+    }
+
+    private void RefreshWindowItems()
+    {
+        Items.Clear();
+        foreach (var group in TaskbarWindowGrouper.Group(_monitorWindows))
+        {
+            var isPinned = TaskbarDockPinResolver.FindPinnedApplication(
+                _pinnedApplications,
+                group.Windows) is not null;
+            Items.Add(new DockItemViewModel(group, isPinned));
+        }
+
+        WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
     }
 
     public void ApplyPinnedApplications(
@@ -312,6 +320,7 @@ public sealed partial class DockWindow : Window
         }
 
         _pinnedApplications = applications.ToArray();
+        RefreshWindowItems();
         RefreshPinnedItems();
     }
 

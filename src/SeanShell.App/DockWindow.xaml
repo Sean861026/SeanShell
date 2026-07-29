@@ -75,13 +75,14 @@
                             <Grid
                                 Width="40"
                                 Height="44"
+                                AutomationProperties.HelpText="Drag to reorder, or use Move left and Move right in the context menu."
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 ContextRequested="OnPinnedApplicationContextRequested"
                                 PointerEntered="OnDockItemPointerEntered"
                                 PointerExited="OnDockItemPointerExited"
                                 PointerPressed="OnDockItemPointerPressed"
                                 PointerReleased="OnDockItemPointerReleased"
-                                ToolTipService.ToolTip="{Binding Title}">
+                                ToolTipService.ToolTip="{Binding ToolTipText}">
                                 <Border
                                     Width="40"
                                     Height="40"
@@ -101,6 +102,20 @@
                                             Stretch="Uniform"
                                             Visibility="{Binding IconVisibility}" />
                                     </Grid>
+                                </Border>
+                                <Border
+                                    Width="14"
+                                    Height="14"
+                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="7"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top">
+                                    <FontIcon
+                                        FontFamily="Segoe Fluent Icons"
+                                        FontSize="8"
+                                        Glyph="&#xE718;" />
                                 </Border>
                             </Grid>
                         </DataTemplate>
@@ -154,6 +169,10 @@
                                         CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                         VerticalAlignment="Top">
                                         <Grid>
+                                            <Border
+                                                Background="{ThemeResource AccentFillColorTertiaryBrush}"
+                                                CornerRadius="{StaticResource SeanCompactCornerRadius}"
+                                                Visibility="{Binding ActiveIndicatorVisibility}" />
                                             <FontIcon
                                                 FontFamily="Segoe Fluent Icons"
                                                 FontSize="16"
@@ -166,6 +185,21 @@
                                                 Stretch="Uniform"
                                                 Visibility="{Binding IconVisibility}" />
                                         </Grid>
+                                    </Border>
+                                    <Border
+                                        Width="14"
+                                        Height="14"
+                                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="7"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Top"
+                                        Visibility="{Binding PinnedIndicatorVisibility}">
+                                        <FontIcon
+                                            FontFamily="Segoe Fluent Icons"
+                                            FontSize="8"
+                                            Glyph="&#xE718;" />
                                     </Border>
                                     <Border
                                         MinWidth="17"
