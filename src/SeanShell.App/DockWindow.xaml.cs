@@ -38,6 +38,7 @@ public sealed partial class DockWindow : Window
     private bool _collapsed;
     private bool _contextMenuOpen;
     private bool _hasKeyboardFocus;
+    private bool _modalDialogOpen;
     private bool _pointerInside;
     private bool _reducedEffects;
     private int _expandedDockWidth;
@@ -301,6 +302,7 @@ public sealed partial class DockWindow : Window
     {
         if (!_autoHide ||
             _contextMenuOpen ||
+            _modalDialogOpen ||
             _shellState.Current.Mode == ShellMode.Gaming)
         {
             return;
@@ -889,6 +891,8 @@ public sealed partial class DockWindow : Window
         AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
         flyout.Items.Add(new MenuFlyoutSeparator());
         AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        AddPowerMenu(flyout);
         flyout.Closed += (_, _) =>
         {
             _contextMenuOpen = false;
@@ -911,6 +915,115 @@ public sealed partial class DockWindow : Window
         };
         item.Click += (_, _) => LaunchShellTarget(target);
         flyout.Items.Add(item);
+    }
+
+    private void AddPowerMenu(MenuFlyout flyout)
+    {
+        var powerMenu = new MenuFlyoutSubItem
+        {
+            Text = "Power",
+            Icon = CreateMenuIcon("\uE7E8"),
+        };
+
+        var lockItem = new MenuFlyoutItem
+        {
+            Text = "Lock",
+            Icon = CreateMenuIcon("\uE72E"),
+        };
+        lockItem.Click += (_, _) => LaunchSessionAction(SessionAction.Lock);
+        powerMenu.Items.Add(lockItem);
+        powerMenu.Items.Add(new MenuFlyoutSeparator());
+
+        AddConfirmedSessionAction(
+            powerMenu,
+            SessionAction.SignOut,
+            "Sign out",
+            "\uE8AC");
+        AddConfirmedSessionAction(
+            powerMenu,
+            SessionAction.Restart,
+            "Restart",
+            "\uE777");
+        AddConfirmedSessionAction(
+            powerMenu,
+            SessionAction.ShutDown,
+            "Shut down",
+            "\uE7E8");
+        flyout.Items.Add(powerMenu);
+    }
+
+    private void AddConfirmedSessionAction(
+        MenuFlyoutSubItem powerMenu,
+        SessionAction action,
+        string title,
+        string glyph)
+    {
+        var item = new MenuFlyoutItem
+        {
+            Text = title,
+            Icon = CreateMenuIcon(glyph),
+        };
+        item.Click += async (_, _) =>
+            await ConfirmSessionActionAsync(action, title).ConfigureAwait(true);
+        powerMenu.Items.Add(item);
+    }
+
+    private async Task ConfirmSessionActionAsync(
+        SessionAction action,
+        string title)
+    {
+        _autoHideTimer.Stop();
+        _modalDialogOpen = true;
+        try
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = DockRoot.XamlRoot,
+                Title = $"{title} Windows?",
+                Content = action switch
+                {
+                    SessionAction.SignOut =>
+                        "Open applications may prevent sign out. Save your work before continuing.",
+                    SessionAction.Restart =>
+                        "Windows will restart immediately. Save your work before continuing.",
+                    SessionAction.ShutDown =>
+                        "Windows will shut down immediately. Save your work before continuing.",
+                    _ => string.Empty,
+                },
+                PrimaryButtonText = title,
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                LaunchSessionAction(action);
+            }
+        }
+        finally
+        {
+            _modalDialogOpen = false;
+            ScheduleAutoHide();
+        }
+    }
+
+    private static void LaunchSessionAction(SessionAction action)
+    {
+        var (fileName, arguments) = action switch
+        {
+            SessionAction.Lock =>
+                ("rundll32.exe", "user32.dll,LockWorkStation"),
+            SessionAction.SignOut => ("shutdown.exe", "/l"),
+            SessionAction.Restart => ("shutdown.exe", "/r /t 0"),
+            SessionAction.ShutDown => ("shutdown.exe", "/s /t 0"),
+            _ => throw new ArgumentOutOfRangeException(nameof(action)),
+        };
+
+        Process.Start(
+            new ProcessStartInfo(fileName, arguments)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
     }
 
     private void OnSystemAreaClicked(object sender, RoutedEventArgs e)
@@ -946,6 +1059,14 @@ public sealed partial class DockWindow : Window
     {
         ShowDesktopRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
+    }
+
+    private enum SessionAction
+    {
+        Lock,
+        SignOut,
+        Restart,
+        ShutDown,
     }
 
     private async void OnPinnedApplicationClicked(
