@@ -40,6 +40,7 @@ public sealed partial class DockWindow : Window
     private bool _pointerInside;
     private bool _reducedEffects;
     private int _expandedDockWidth;
+    private nint _returnFocusWindow;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
@@ -127,9 +128,17 @@ public sealed partial class DockWindow : Window
     public void FocusDock()
     {
         _autoHideTimer.Stop();
+        var foregroundWindow = _windowService.CaptureForegroundWindowHandle();
+        var dockWindow = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        if (foregroundWindow != 0 && foregroundWindow != dockWindow)
+        {
+            _returnFocusWindow = foregroundWindow;
+        }
+
         SetCollapsed(false);
         AppWindow.Show();
         Activate();
+        _ = _windowService.RestoreAndActivate(dockWindow);
         _ = LauncherButton.Focus(FocusState.Keyboard);
     }
 
@@ -573,6 +582,28 @@ public sealed partial class DockWindow : Window
     {
         _hasKeyboardFocus = false;
         ScheduleAutoHide();
+    }
+
+    private void OnDockKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != global::Windows.System.VirtualKey.Escape)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var returnFocusWindow = _returnFocusWindow;
+        _returnFocusWindow = 0;
+        if (returnFocusWindow != 0)
+        {
+            _ = _windowService.RestoreAndActivate(returnFocusWindow);
+        }
+
+        if (_autoHide)
+        {
+            _autoHideTimer.Stop();
+            SetCollapsed(true);
+        }
     }
 
     private void OnWindowClicked(object sender, ItemClickEventArgs e)
