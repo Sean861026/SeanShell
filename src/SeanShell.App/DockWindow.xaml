@@ -359,23 +359,47 @@
                                     Visibility="Collapsed" />
                             </Grid>
                         </Button>
-                        <StackPanel
+                        <Button
+                            x:Name="ClockButton"
                             MinWidth="80"
                             AutomationProperties.Name="Current date and time"
                             HorizontalAlignment="Right"
+                            PointerEntered="OnDockItemPointerEntered"
+                            PointerExited="OnDockItemPointerExited"
+                            PointerPressed="OnDockItemPointerPressed"
+                            PointerReleased="OnDockItemPointerReleased"
+                            Style="{StaticResource SeanDockClockButtonStyle}"
+                            ToolTipService.ToolTip="Date and time"
                             VerticalAlignment="Center">
-                            <TextBlock
-                                x:Name="ClockTimeText"
-                                HorizontalAlignment="Right"
-                                FontSize="13"
-                                FontWeight="SemiBold"
-                                Text="--:--" />
-                            <TextBlock
-                                x:Name="ClockDateText"
-                                HorizontalAlignment="Right"
-                                Style="{StaticResource SeanCaptionTextStyle}"
-                                Text="--/--/----" />
-                        </StackPanel>
+                            <Button.Flyout>
+                                <MenuFlyout
+                                    Placement="TopEdgeAlignedRight"
+                                    MenuFlyoutPresenterStyle="{StaticResource SeanDockMenuFlyoutPresenterStyle}">
+                                    <MenuFlyoutItem
+                                        x:Name="ClockDetailsItem"
+                                        IsEnabled="False"
+                                        Text="Current date and time" />
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem
+                                        Click="OnOpenDateTimeSettingsClicked"
+                                        Icon="Clock"
+                                        Text="Date and time settings" />
+                                </MenuFlyout>
+                            </Button.Flyout>
+                            <StackPanel>
+                                <TextBlock
+                                    x:Name="ClockTimeText"
+                                    HorizontalAlignment="Right"
+                                    FontSize="13"
+                                    FontWeight="SemiBold"
+                                    Text="--:--" />
+                                <TextBlock
+                                    x:Name="ClockDateText"
+                                    HorizontalAlignment="Right"
+                                    Style="{StaticResource SeanCaptionTextStyle}"
+                                    Text="--/--/----" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Border>
             </Grid>
