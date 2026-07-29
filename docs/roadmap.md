@@ -137,6 +137,7 @@
 - [x] Process-based multi-window grouping with an accessible native window picker
 - [x] Per-window context actions inside multi-window groups
 - [x] Safe Open new instance action for explicitly matched running applications
+- [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions

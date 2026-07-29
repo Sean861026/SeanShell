@@ -155,6 +155,9 @@ Reordering is persisted and synchronized across every display. Pins reuse the
 cached Start Menu index, persist locally, and do not add background filesystem
 polling. A temporarily missing shortcut is omitted without deleting the pin,
 allowing it to return after the shortcut is restored.
+Middle-clicking a standalone pin opens a new instance. Middle-clicking a running
+item does the same only when its process has an explicit cached application
+match; multiple matches open a native choice menu instead of being guessed.
 For desktop `.lnk` shortcuts, SeanShell resolves the target executable once
 during indexing. When that process owns a window on a Dock's display, the
 standalone pin is suppressed and the live window item carries its running,
