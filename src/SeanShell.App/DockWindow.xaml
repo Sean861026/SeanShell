@@ -36,15 +36,17 @@
                 </Grid.ColumnDefinitions>
 
                 <Button
-                    Width="44"
-                    Height="44"
                     AutomationProperties.Name="Open SeanShell Launcher"
-                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
                     Click="OnLauncherClicked"
+                    PointerEntered="OnDockItemPointerEntered"
+                    PointerExited="OnDockItemPointerExited"
+                    PointerPressed="OnDockItemPointerPressed"
+                    PointerReleased="OnDockItemPointerReleased"
+                    Style="{StaticResource SeanDockLauncherButtonStyle}"
                     ToolTipService.ToolTip="Open Launcher">
                     <Image
-                        Width="24"
-                        Height="24"
+                        Width="{StaticResource SeanDockActionIconSize}"
+                        Height="{StaticResource SeanDockActionIconSize}"
                         Source="Assets/Square44x44Logo.targetsize-48_altform-unplated.png"
                         Stretch="Uniform" />
                 </Button>
@@ -89,15 +91,17 @@
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                     CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                     VerticalAlignment="Top">
-                                    <Grid Width="26" Height="26">
+                                    <Grid
+                                        Width="{StaticResource SeanDockAppIconSize}"
+                                        Height="{StaticResource SeanDockAppIconSize}">
                                         <FontIcon
                                             FontFamily="Segoe Fluent Icons"
                                             FontSize="17"
                                             Glyph="{Binding Glyph}"
                                             Visibility="{Binding FallbackIconVisibility}" />
                                         <Image
-                                            Width="26"
-                                            Height="26"
+                                            Width="{StaticResource SeanDockAppIconSize}"
+                                            Height="{StaticResource SeanDockAppIconSize}"
                                             Source="{Binding Icon}"
                                             Stretch="Uniform"
                                             Visibility="{Binding IconVisibility}" />
@@ -175,12 +179,12 @@
                                                 Visibility="{Binding ActiveIndicatorVisibility}" />
                                             <FontIcon
                                                 FontFamily="Segoe Fluent Icons"
-                                                FontSize="16"
+                                                FontSize="{StaticResource SeanDockGlyphIconSize}"
                                                 Glyph="&#xE8A7;"
                                                 Visibility="{Binding FallbackIconVisibility}" />
                                             <Image
-                                                Width="26"
-                                                Height="26"
+                                                Width="{StaticResource SeanDockAppIconSize}"
+                                                Height="{StaticResource SeanDockAppIconSize}"
                                                 Source="{Binding Icon}"
                                                 Stretch="Uniform"
                                                 Visibility="{Binding IconVisibility}" />
@@ -271,16 +275,19 @@
                         Visibility="Collapsed" />
                     <Button
                         x:Name="SystemAreaButton"
-                        Width="40"
-                        Height="40"
                         AutomationProperties.Name="Show Windows system area"
                         Click="OnSystemAreaClicked"
+                        PointerEntered="OnDockItemPointerEntered"
+                        PointerExited="OnDockItemPointerExited"
+                        PointerPressed="OnDockItemPointerPressed"
+                        PointerReleased="OnDockItemPointerReleased"
+                        Style="{StaticResource SeanDockActionButtonStyle}"
                         ToolTipService.ToolTip="Show the Windows taskbar for notification and system tray access"
                         Visibility="Collapsed">
                         <FontIcon
                             x:Name="SystemAreaGlyph"
                             FontFamily="Segoe Fluent Icons"
-                            FontSize="16"
+                            FontSize="{StaticResource SeanDockGlyphIconSize}"
                             Glyph="&#xE7F4;" />
                     </Button>
                     <StackPanel

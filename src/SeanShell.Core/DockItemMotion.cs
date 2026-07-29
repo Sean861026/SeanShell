@@ -14,11 +14,11 @@ public static class DockItemMotion
 
         if (isPressed)
         {
-            return new DockItemMotionState(0.94f, 0, 80);
+            return new DockItemMotionState(0.97f, 0, 80);
         }
 
         return isPointerOver
-            ? new DockItemMotionState(1.06f, -2, 120)
+            ? new DockItemMotionState(1.03f, -1, 140)
             : new DockItemMotionState(1, 0, 120);
     }
 }
