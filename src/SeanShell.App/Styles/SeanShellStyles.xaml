@@ -11,6 +11,10 @@
     <x:Double x:Key="SeanSpace20">20</x:Double>
     <x:Double x:Key="SeanSpace24">24</x:Double>
     <x:Double x:Key="SeanSpace32">32</x:Double>
+    <x:Double x:Key="SeanDockActionSize">44</x:Double>
+    <x:Double x:Key="SeanDockAppIconSize">26</x:Double>
+    <x:Double x:Key="SeanDockActionIconSize">24</x:Double>
+    <x:Double x:Key="SeanDockGlyphIconSize">16</x:Double>
 
     <Thickness x:Key="SeanPagePadding">32</Thickness>
     <Thickness x:Key="SeanCardPadding">20</Thickness>
@@ -145,6 +149,23 @@
         <Setter Property="Padding" Value="10,6" />
     </Style>
 
+    <Style x:Key="SeanDockActionButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="Height" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+    </Style>
+
+    <Style
+        x:Key="SeanDockLauncherButtonStyle"
+        BasedOn="{StaticResource SeanDockActionButtonStyle}"
+        TargetType="Button">
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+    </Style>
+
     <Style x:Key="SeanDockItemStyle" TargetType="ListViewItem">
         <Setter Property="Width" Value="48" />
         <Setter Property="MinWidth" Value="48" />
@@ -157,14 +178,14 @@
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+        <Setter Property="IsTabStop" Value="True" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
     </Style>
 
     <Style
         x:Key="SeanPinnedDockItemStyle"
         BasedOn="{StaticResource SeanDockItemStyle}"
-        TargetType="ListViewItem">
-        <Setter Property="IsTabStop" Value="True" />
-    </Style>
+        TargetType="ListViewItem" />
 
     <Style
         x:Key="SeanCompactDockItemStyle"
