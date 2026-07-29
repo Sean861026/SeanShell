@@ -634,6 +634,7 @@ public sealed partial class MainWindow : Window
             {
                 dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
+                dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;
                 dockWindow.Shutdown();
             }
 
@@ -689,6 +690,7 @@ public sealed partial class MainWindow : Window
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
+                dockWindow.PinOrderRequested += OnPinnedApplicationOrderChangedAsync;
                 dockWindow.ApplyAvailableApplications(_availableApplications);
                 dockWindow.ApplyPinnedApplications(_pinnedApplications);
                 dockWindow.ApplyClock(DateTimeOffset.Now);
@@ -1063,6 +1065,39 @@ public sealed partial class MainWindow : Window
         return true;
     }
 
+    private async Task<bool> OnPinnedApplicationOrderChangedAsync(
+        IReadOnlyList<string> visibleApplicationIds)
+    {
+        var applicationIds = PinnedApplicationIdList
+            .Parse(_settings.PinnedApplicationIds);
+        var reordered = PinnedApplicationOrder.MergeVisibleOrder(
+            applicationIds,
+            visibleApplicationIds);
+        if (applicationIds.SequenceEqual(
+                reordered,
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var previousSettings = _settings;
+        _settings = _settings with
+        {
+            PinnedApplicationIds =
+                PinnedApplicationIdList.Serialize(reordered),
+        };
+        if (!PersistSettings())
+        {
+            _settings = previousSettings;
+            throw new IOException(
+                "The dragged pinned application order could not be saved.");
+        }
+
+        _launcherWindow.SetPinnedApplicationIds(reordered);
+        await RefreshPinnedApplicationsAsync().ConfigureAwait(true);
+        return true;
+    }
+
     private async Task RefreshAvailableApplicationsAsync()
     {
         try
@@ -1280,6 +1315,7 @@ public sealed partial class MainWindow : Window
         {
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
+            dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;
             dockWindow.Shutdown();
         }
 

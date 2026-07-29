@@ -8,6 +8,43 @@ public enum PinnedApplicationMoveDirection
 
 public static class PinnedApplicationOrder
 {
+    public static IReadOnlyList<string> MergeVisibleOrder(
+        IReadOnlyList<string> applicationIds,
+        IReadOnlyList<string> visibleApplicationIds)
+    {
+        ArgumentNullException.ThrowIfNull(applicationIds);
+        ArgumentNullException.ThrowIfNull(visibleApplicationIds);
+
+        var visibleSet = visibleApplicationIds.ToHashSet(
+            StringComparer.OrdinalIgnoreCase);
+        if (visibleSet.Count != visibleApplicationIds.Count ||
+            visibleApplicationIds.Any(static id => string.IsNullOrWhiteSpace(id)) ||
+            visibleSet.Any(id => !applicationIds.Contains(
+                id,
+                StringComparer.OrdinalIgnoreCase)))
+        {
+            return applicationIds.ToArray();
+        }
+
+        var expectedVisibleCount = applicationIds.Count(visibleSet.Contains);
+        if (expectedVisibleCount != visibleApplicationIds.Count)
+        {
+            return applicationIds.ToArray();
+        }
+
+        var reordered = applicationIds.ToArray();
+        var visibleIndex = 0;
+        for (var index = 0; index < reordered.Length; index++)
+        {
+            if (visibleSet.Contains(reordered[index]))
+            {
+                reordered[index] = visibleApplicationIds[visibleIndex++];
+            }
+        }
+
+        return reordered;
+    }
+
     public static bool CanMove(
         IReadOnlyList<string> applicationIds,
         string applicationId,
