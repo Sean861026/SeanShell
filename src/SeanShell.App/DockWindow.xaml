@@ -59,6 +59,7 @@
                     x:Name="LauncherButton"
                     AutomationProperties.Name="Open SeanShell Launcher"
                     Click="OnLauncherClicked"
+                    ContextRequested="OnLauncherContextRequested"
                     PointerEntered="OnDockItemPointerEntered"
                     PointerExited="OnDockItemPointerExited"
                     PointerPressed="OnDockItemPointerPressed"
