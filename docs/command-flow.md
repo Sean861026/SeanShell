@@ -291,6 +291,23 @@ User selects a reviewed shortcut preset
 The dashboard button remains available even when no global shortcut can be
 registered. SeanShell does not capture arbitrary keys or install an input hook.
 
+## Dock keyboard focus
+
+```text
+User presses Ctrl+Alt+D (or the selected Dock preset)
+  -> Windows delivers the independently registered WM_HOTKEY
+  -> resolve the current primary monitor index
+  -> select the matching monitor-local Dock
+  -> stop its pending auto-hide timer
+  -> expand and activate the Dock
+  -> place keyboard focus on the Launcher button
+  -> standard WinUI Tab and arrow navigation continues through Dock controls
+```
+
+Changing the Dock shortcut follows the same register-first, persist-on-success,
+rollback-on-conflict flow as the Launcher shortcut. It does not simulate input
+or install a keyboard hook.
+
 ## Dock window activation
 
 ```text

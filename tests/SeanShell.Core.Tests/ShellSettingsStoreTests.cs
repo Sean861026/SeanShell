@@ -17,6 +17,7 @@ public sealed class ShellSettingsStoreTests
         Assert.IsFalse(result.Settings.ReplaceWindowsTaskbar);
         Assert.AreEqual(string.Empty, result.Settings.PinnedApplicationIds);
         Assert.AreEqual(LauncherShortcut.AltSpace, result.Settings.LauncherShortcut);
+        Assert.AreEqual(DockShortcut.ControlAltD, result.Settings.DockShortcut);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
         Assert.AreEqual(ShellDisplayDensity.Comfortable, result.Settings.DisplayDensity);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
@@ -36,6 +37,7 @@ public sealed class ShellSettingsStoreTests
             PinnedApplicationIds =
                 "app:C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Terminal.lnk",
             LauncherShortcut = LauncherShortcut.ControlAltSpace,
+            DockShortcut = DockShortcut.ControlShiftD,
             Theme = ShellThemePreference.Dark,
             DisplayDensity = ShellDisplayDensity.Compact,
             AutomaticGamingModeEnabled = true,
@@ -160,6 +162,7 @@ public sealed class ShellSettingsStoreTests
         Assert.AreEqual(string.Empty, result.Settings.GameProcessRules);
         Assert.AreEqual(string.Empty, result.Settings.DisabledPluginIds);
         Assert.AreEqual(ShellThemePreference.System, result.Settings.Theme);
+        Assert.AreEqual(DockShortcut.ControlAltD, result.Settings.DockShortcut);
     }
 
     [TestMethod]
@@ -292,6 +295,60 @@ public sealed class ShellSettingsStoreTests
             result.Settings.SchemaVersion);
         Assert.IsTrue(result.Settings.ReplaceWindowsTaskbar);
         Assert.AreEqual(string.Empty, result.Settings.PinnedApplicationIds);
+    }
+
+    [TestMethod]
+    public void LoadMigratesVersionSevenSettingsWithDefaultDockShortcut()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "schemaVersion": 7,
+              "dockAutoHide": true,
+              "replaceWindowsTaskbar": true,
+              "launcherShortcut": "controlAltSpace",
+              "theme": "dark",
+              "displayDensity": "compact",
+              "pinnedApplicationIds": ""
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(
+            ShellSettings.CurrentSchemaVersion,
+            result.Settings.SchemaVersion);
+        Assert.AreEqual(
+            DockShortcut.ControlAltD,
+            result.Settings.DockShortcut);
+        Assert.AreEqual(
+            LauncherShortcut.ControlAltSpace,
+            result.Settings.LauncherShortcut);
+    }
+
+    [TestMethod]
+    public void LoadRejectsUnsupportedDockShortcut()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "settings.json");
+        File.WriteAllText(
+            path,
+            $$"""
+            {
+              "schemaVersion": {{ShellSettings.CurrentSchemaVersion}},
+              "dockShortcut": 99
+            }
+            """);
+        var store = new ShellSettingsStore(path);
+
+        var result = store.Load();
+
+        Assert.AreEqual(new ShellSettings(), result.Settings);
+        Assert.IsNotNull(result.Warning);
     }
 
     private sealed class TemporaryDirectory : IDisposable

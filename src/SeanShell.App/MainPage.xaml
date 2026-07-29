@@ -276,6 +276,10 @@
                                     x:Name="DockStatus"
                                     Style="{StaticResource SeanSecondaryTextStyle}"
                                     Text="Visible above the primary taskbar" />
+                                <TextBlock
+                                    x:Name="DockShortcutStatus"
+                                    Style="{StaticResource SeanCaptionTextStyle}"
+                                    Text="Keyboard shortcut: Ctrl + Alt + D" />
                             </StackPanel>
                         </Border>
 
@@ -392,6 +396,23 @@
                                 <TextBlock
                                     Style="{StaticResource SeanSecondaryTextStyle}"
                                     Text="The shortcut changes only after Windows confirms that it is available." />
+
+                                <ComboBox
+                                    x:Name="DockShortcutComboBox"
+                                    MinWidth="260"
+                                    MaxWidth="360"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.HelpText="Choose a supported global shortcut for expanding and focusing the primary Dock."
+                                    Header="Focus Dock shortcut"
+                                    SelectionChanged="OnDockShortcutSelectionChanged">
+                                    <ComboBoxItem Content="Ctrl + Alt + D" Tag="ControlAltD" />
+                                    <ComboBoxItem Content="Ctrl + Shift + D" Tag="ControlShiftD" />
+                                </ComboBox>
+
+                                <TextBlock
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="The shortcut expands the primary display Dock and places keyboard focus on its Launcher button."
+                                    TextWrapping="Wrap" />
 
                                 <ComboBox
                                     x:Name="ThemePreferenceComboBox"

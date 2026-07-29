@@ -2,7 +2,7 @@ namespace SeanShell.Core;
 
 public sealed record ShellSettings
 {
-    public const int CurrentSchemaVersion = 7;
+    public const int CurrentSchemaVersion = 8;
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
@@ -13,6 +13,8 @@ public sealed record ShellSettings
     public string PinnedApplicationIds { get; init; } = string.Empty;
 
     public LauncherShortcut LauncherShortcut { get; init; } = LauncherShortcut.AltSpace;
+
+    public DockShortcut DockShortcut { get; init; } = DockShortcut.ControlAltD;
 
     public ShellThemePreference Theme { get; init; } = ShellThemePreference.System;
 

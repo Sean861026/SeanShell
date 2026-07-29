@@ -124,6 +124,15 @@ public sealed partial class DockWindow : Window
         ScheduleAutoHide();
     }
 
+    public void FocusDock()
+    {
+        _autoHideTimer.Stop();
+        SetCollapsed(false);
+        AppWindow.Show();
+        Activate();
+        _ = LauncherButton.Focus(FocusState.Keyboard);
+    }
+
     public void SetAutoHide(bool enabled)
     {
         _autoHide = enabled;

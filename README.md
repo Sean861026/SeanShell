@@ -90,6 +90,13 @@ keyboard hook or intercept input sent to games. The dashboard can switch between
 the requested shortcut, SeanShell restores the previous shortcut and explains the
 conflict; the dashboard button always remains available.
 
+Press `Ctrl+Alt+D` to expand the Dock on the primary display and place keyboard
+focus on its Launcher button. From there, Tab and the standard WinUI navigation
+keys reach pinned applications, running windows, Show desktop, and system-area
+access without a mouse. `Ctrl+Shift+D` is available as an alternate preset. Dock
+and Launcher shortcuts are registered independently, and either one rolls back
+to its previous binding if Windows reports a conflict.
+
 The Launcher card measures the first successful window presentation and the most
 recent 50 successful provider/ranking operations. It shows the latest search and
 nearest-rank P95 beside the M1 targets. Measurements remain in memory for the
@@ -135,7 +142,7 @@ topology changes and rebuilds monitor-local Dock windows after a short debounce.
 If display monitoring or a rebuild fails, the existing Dock windows remain active
 and the dashboard explains that a restart is required.
 
-Dock auto-hide, Companion Taskbar mode, and the selected Launcher shortcut
+Dock auto-hide, Companion Taskbar mode, and the selected Launcher and Dock shortcuts
 persist in a versioned JSON file under `%LOCALAPPDATA%\SeanShell`. Writes use a
 temporary file and last-known-good backup. A damaged settings file falls back to
 the backup or safe defaults without preventing SeanShell from starting.
