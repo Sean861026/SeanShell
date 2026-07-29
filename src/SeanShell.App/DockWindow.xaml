@@ -42,10 +42,11 @@
                     Background="{ThemeResource AccentFillColorSecondaryBrush}"
                     Click="OnLauncherClicked"
                     ToolTipService.ToolTip="Open Launcher">
-                    <FontIcon
-                        FontFamily="Segoe Fluent Icons"
-                        FontSize="19"
-                        Glyph="&#xE721;" />
+                    <Image
+                        Width="24"
+                        Height="24"
+                        Source="Assets/Square44x44Logo.targetsize-48_altform-unplated.png"
+                        Stretch="Uniform" />
                 </Button>
 
                 <ListView

@@ -181,7 +181,10 @@ Production iconography now begins with native application icons while keeping
 SeanShell controls in the Segoe Fluent Icons family. Windows ExtraLarge Shell
 icons are retained as 48×48 BGRA sources and rendered into the stable 26px slot,
 improving high-DPI downsampling without changing Dock geometry. Additional
-effects remain subordinate to replacement reliability and accessibility.
+effects remain subordinate to replacement reliability and accessibility. The
+SeanShell package, title bar, and Dock Launcher now share a reproducibly
+generated terminal-prompt brand mark that stays legible from 16 to 256 pixels
+and across light, dark, and transparent Windows surfaces.
 
 ## Gaming mode preview
 
