@@ -113,7 +113,9 @@ icon-first taskbar items. Pinned and running icons float on one translucent
 application capsule instead of separate dark tiles. A short two-tone accent rail
 gives the expanded and collapsed Dock a recognizable SeanShell silhouette. The
 foreground app alone receives an accent backing and wide underline; compact
-neutral markers distinguish background and minimized windows.
+neutral markers distinguish background and minimized windows. When keyboard
+navigation temporarily makes the Dock itself the Windows foreground surface, the
+previous application keeps its active presentation until focus returns.
 Full titles, process names, and states remain available to accessibility tools
 and pointer tooltips. Multiple top-level windows owned by the same process share
 one Dock icon with a numeric badge. Selecting that group opens a native,

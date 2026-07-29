@@ -303,6 +303,7 @@ User presses Ctrl+Alt+D (or the selected Dock preset)
   -> stop its pending auto-hide timer
   -> expand and activate the Dock through the native window boundary
   -> place keyboard focus on the Launcher button
+  -> preserve the captured application's active state while no live app is foreground
   -> standard WinUI Tab and arrow navigation continues through Dock controls
 
 User presses Escape while the Dock owns keyboard focus
