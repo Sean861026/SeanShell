@@ -85,13 +85,15 @@ running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
 dense sessions and small displays.
 
-The Dock's transparent Layer surface allows its BaseAlt Mica system backdrop to
-remain visible instead of covering it with an opaque card. All foreground,
-stroke, and fallback colors remain Windows ThemeResources. Pointer input resolves
-through `DockItemMotion` to a bounded 1.06 scale and two-pixel lift on hover or a
-0.94 press state. MainWindow propagates the existing reduced-effects policy to
-every Dock; Windows reduced motion and Gaming Mode remove Mica, transitions,
-scale, and translation while retaining native focus and pointer states.
+The Dock's transparent Layer surface allows its desktop Acrylic system backdrop
+to remain visible instead of covering it with an opaque card. Acrylic is used
+only for the transient, always-on-top taskbar surface; the larger dashboard and
+Launcher retain Mica. All foreground, stroke, and fallback colors remain Windows
+ThemeResources. Pointer input resolves through `DockItemMotion` to a bounded
+1.03 scale and one-pixel lift on hover or a 0.97 press state. MainWindow
+propagates the existing reduced-effects policy to every Dock; Windows reduced
+motion, high contrast, and Gaming Mode remove Acrylic, transitions, scale, and
+translation while retaining native focus and pointer states.
 
 `TaskbarWindowGrouper` combines monitor-local windows by case-insensitive process
 name and keeps the foreground window first inside each group. Generic Windows

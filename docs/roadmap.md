@@ -101,7 +101,7 @@
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] Dock active, minimized, hover, and keyboard-focus states
-- [x] BaseAlt Mica Dock surface with reduced-effects-aware hover and press motion
+- [x] Desktop Acrylic Dock surface with reduced-effects-aware hover and press motion
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] ExtraLarge 48px Shell icon sources with bounded high-DPI downsampling
 - [x] Production SeanShell brand icon across package, title-bar, and Dock Launcher surfaces
@@ -112,7 +112,7 @@
 - [x] High-contrast and text-scaling layout checks through native Windows signals
 - [x] Follow Windows reduced-motion, high-contrast, and text-scale signals
 - [x] Persisted comfortable and compact display density with schema v5 migration
-- [x] Reduced-effects Gaming Mode removes Mica and pauses background providers
+- [x] Reduced-effects Gaming Mode removes translucent Dock material and pauses background providers
 
 ## Later: shell modes
 
