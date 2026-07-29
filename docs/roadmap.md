@@ -47,7 +47,7 @@
 - [x] Versioned local settings with atomic writes and backup recovery
 - [x] Persistent Dock auto-hide preference
 - [x] Configurable Launcher shortcut presets with conflict rollback
-- [x] Configurable primary-Dock focus shortcut with independent registration and conflict rollback
+- [x] Configurable active-display Dock focus shortcut with independent registration and conflict rollback
 - [x] Source-aware manual and rule-based gaming mode
 - [x] Persisted opt-in process rules with schema v1 to v2 migration
 - [x] Pause/resume policy for dashboard sampling and all Dock windows
@@ -140,7 +140,7 @@
 - [x] Safe Open new instance action for explicitly matched running applications
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input
-- [x] Keyboard-only Dock entry point with primary-display focus and auto-hide expansion
+- [x] Keyboard-only Dock entry point with active-display targeting and auto-hide expansion
 - [x] Escape dismissal returns to the previous foreground window and collapses the Dock
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions

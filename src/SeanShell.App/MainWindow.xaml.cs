@@ -1407,19 +1407,12 @@ public sealed partial class MainWindow : Window
 
     private void OnDockRequested(object? sender, EventArgs e)
     {
-        var primaryIndex = -1;
-        for (var index = 0; index < _monitors.Count; index++)
-        {
-            if (_monitors[index].IsPrimary)
-            {
-                primaryIndex = index;
-                break;
-            }
-        }
-
-        var dock = primaryIndex >= 0 && primaryIndex < _dockWindows.Count
-            ? _dockWindows[primaryIndex]
-            : _dockWindows.FirstOrDefault();
+        var targetIndex = DockTargetMonitorResolver.Resolve(
+            _monitors,
+            _desktopWindows.CaptureForegroundMonitorHandle());
+        var dock = targetIndex >= 0 && targetIndex < _dockWindows.Count
+            ? _dockWindows[targetIndex]
+            : null;
         dock?.FocusDock();
     }
 

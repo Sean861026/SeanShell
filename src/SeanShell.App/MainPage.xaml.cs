@@ -204,7 +204,7 @@ public sealed partial class MainPage : Page
         SetSettingsStatus(
             persisted ? "Dock shortcut updated" : "Dock shortcut active for this session",
             persisted
-                ? $"{shortcut.GetDisplayName()} now expands and focuses the primary Dock."
+                ? $"{shortcut.GetDisplayName()} now expands and focuses the Dock on the active display."
                 : $"{shortcut.GetDisplayName()} works now, but the settings file could not be updated.",
             persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }

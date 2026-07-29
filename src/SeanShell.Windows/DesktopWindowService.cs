@@ -143,6 +143,14 @@ public sealed class DesktopWindowService
 
     public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
 
+    public nint CaptureForegroundMonitorHandle()
+    {
+        var foregroundWindow = GetForegroundWindow();
+        return foregroundWindow == 0
+            ? 0
+            : MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
+    }
+
     public bool RestoreAndActivate(nint handle)
     {
         if (!IsWindow(handle))
