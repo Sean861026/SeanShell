@@ -341,15 +341,23 @@ flushes it to disk, and replaces the primary document while retaining
 shortcut values never reach the UI: the store loads the backup or safe defaults
 and returns a warning for the dashboard.
 
-Schema version 7 persists Dock auto-hide, the opt-in Companion Taskbar preference,
+Schema version 8 persists Dock auto-hide, the opt-in Companion Taskbar preference,
 up to eight ordered pinned application IDs, one of three reviewed Launcher shortcuts,
+one of two reviewed Dock-focus shortcuts,
 opt-in automatic game detection,
 newline-delimited game process rules, normalized disabled plugin IDs, appearance,
-and display density. Versions 1 through 6 migrate in memory without losing
+and display density. Versions 1 through 7 migrate in memory without losing
 existing preferences; taskbar replacement always defaults off when migrating.
 Arbitrary key capture is intentionally excluded so SeanShell never needs a
-keyboard hook. A shortcut change is committed only after `RegisterHotKey`
-succeeds; failed registration restores the previously active shortcut.
+keyboard hook. Each shortcut change is committed only after `RegisterHotKey`
+succeeds; failed registration restores the previously active shortcut. Every
+`GlobalHotKey` instance owns a distinct native registration and window-subclass
+identifier so Launcher and Dock shortcuts can coexist on the main HWND.
+
+The Dock shortcut selects the monitor snapshot marked primary, expands its
+monitor-local Dock, activates that window, and places keyboard focus on the
+Launcher button. If the display topology changes, the next invocation uses the
+rebuilt monitor and Dock collections rather than retaining a stale HWND.
 
 Plugin enablement is independent of Gaming Mode. Disabling a plugin suspends it
 and removes its Launcher commands; disabling before startup skips initialization.

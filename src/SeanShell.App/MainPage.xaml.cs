@@ -78,6 +78,8 @@ public sealed partial class MainPage : Page
 
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
 
+    public event Action<DockShortcut>? DockShortcutChanged;
+
     public event Action<ShellThemePreference>? ThemePreferenceChanged;
 
     public event Action<ShellDisplayDensity>? DisplayDensityChanged;
@@ -194,6 +196,19 @@ public sealed partial class MainPage : Page
             persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
     }
 
+    public void SetDockShortcutApplied(DockShortcut shortcut, bool persisted = true)
+    {
+        SelectDockShortcut(shortcut);
+        DockShortcutStatus.Text =
+            $"Keyboard shortcut: {shortcut.GetDisplayName()}";
+        SetSettingsStatus(
+            persisted ? "Dock shortcut updated" : "Dock shortcut active for this session",
+            persisted
+                ? $"{shortcut.GetDisplayName()} now expands and focuses the primary Dock."
+                : $"{shortcut.GetDisplayName()} works now, but the settings file could not be updated.",
+            persisted ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+    }
+
     public void SetTaskbarReplacementApplied(bool enabled, int taskbarCount)
     {
         var wasApplyingSettings = _applyingSettings;
@@ -274,6 +289,34 @@ public sealed partial class MainPage : Page
             "Shortcut unavailable",
             restored is null
                 ? $"Windows could not register {requested.GetDisplayName()}. Use Open Launcher or choose another shortcut. {reason}"
+                : $"Windows could not register {requested.GetDisplayName()}. {restored.Value.GetDisplayName()} remains active. {reason}",
+            InfoBarSeverity.Warning);
+    }
+
+    public void SetDockShortcutUnavailable(
+        DockShortcut requested,
+        DockShortcut? restored,
+        string reason)
+    {
+        if (restored is not null)
+        {
+            SelectDockShortcut(restored.Value);
+            DockShortcutStatus.Text =
+                $"Keyboard shortcut: {restored.Value.GetDisplayName()}";
+        }
+        else
+        {
+            _applyingSettings = true;
+            DockShortcutComboBox.SelectedItem = null;
+            _applyingSettings = false;
+            DockShortcutStatus.Text =
+                "No Dock shortcut is active. Use the Dock with the pointer.";
+        }
+
+        SetSettingsStatus(
+            "Dock shortcut unavailable",
+            restored is null
+                ? $"Windows could not register {requested.GetDisplayName()}. Use the Dock with the pointer or choose another shortcut. {reason}"
                 : $"Windows could not register {requested.GetDisplayName()}. {restored.Value.GetDisplayName()} remains active. {reason}",
             InfoBarSeverity.Warning);
     }
@@ -552,6 +595,20 @@ public sealed partial class MainPage : Page
         if (Enum.TryParse<LauncherShortcut>(item.Tag?.ToString(), out var shortcut))
         {
             LauncherShortcutChanged?.Invoke(shortcut);
+        }
+    }
+
+    private void OnDockShortcutSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_applyingSettings ||
+            DockShortcutComboBox.SelectedItem is not ComboBoxItem item)
+        {
+            return;
+        }
+
+        if (Enum.TryParse<DockShortcut>(item.Tag?.ToString(), out var shortcut))
+        {
+            DockShortcutChanged?.Invoke(shortcut);
         }
     }
 
@@ -962,9 +1019,12 @@ public sealed partial class MainPage : Page
         AutomaticGamingModeToggle.IsOn = settings.AutomaticGamingModeEnabled;
         GameProcessRulesTextBox.Text = settings.GameProcessRules;
         SelectShortcut(settings.LauncherShortcut);
+        SelectDockShortcut(settings.DockShortcut);
         SelectThemePreference(settings.Theme);
         SelectDisplayDensity(settings.DisplayDensity);
         ShortcutStatus.Text = $"Keyboard shortcut: {settings.LauncherShortcut.GetDisplayName()}";
+        DockShortcutStatus.Text =
+            $"Keyboard shortcut: {settings.DockShortcut.GetDisplayName()}";
         _applyingSettings = false;
     }
 
@@ -1015,6 +1075,19 @@ public sealed partial class MainPage : Page
         LauncherShortcutComboBox.SelectedItem = LauncherShortcutComboBox.Items
             .OfType<ComboBoxItem>()
             .First(item => string.Equals(item.Tag?.ToString(), shortcut.ToString(), StringComparison.Ordinal));
+        _applyingSettings = wasApplyingSettings;
+    }
+
+    private void SelectDockShortcut(DockShortcut shortcut)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        DockShortcutComboBox.SelectedItem = DockShortcutComboBox.Items
+            .OfType<ComboBoxItem>()
+            .First(item => string.Equals(
+                item.Tag?.ToString(),
+                shortcut.ToString(),
+                StringComparison.Ordinal));
         _applyingSettings = wasApplyingSettings;
     }
 

@@ -158,6 +158,11 @@ public sealed class ShellSettingsStore
                 throw new InvalidDataException("The launcher shortcut is not supported.");
             }
 
+            if (!Enum.IsDefined(settings.DockShortcut))
+            {
+                throw new InvalidDataException("The Dock shortcut is not supported.");
+            }
+
             if (!Enum.IsDefined(settings.Theme))
             {
                 throw new InvalidDataException("The shell theme preference is not supported.");

@@ -19,6 +19,7 @@ namespace SeanShell.App;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const uint DVirtualKey = 0x44;
     private const uint SpaceVirtualKey = 0x20;
     private static readonly TimeSpan GamingDetectionInterval = TimeSpan.FromSeconds(2);
     private readonly DesktopWindowService _desktopWindows;
@@ -50,6 +51,8 @@ public sealed partial class MainWindow : Window
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private bool _taskbarAccessRevealed;
+    private GlobalHotKey? _dockHotKey;
+    private DockShortcut? _registeredDockShortcut;
     private GlobalHotKey? _launcherHotKey;
     private LauncherShortcut? _registeredShortcut;
     private ShellSettings _settings;
@@ -101,6 +104,7 @@ public sealed partial class MainWindow : Window
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
             mainPage.TaskbarReplacementChanged += OnTaskbarReplacementChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
+            mainPage.DockShortcutChanged += OnDockShortcutChanged;
             mainPage.ThemePreferenceChanged += OnThemePreferenceChanged;
             mainPage.DisplayDensityChanged += OnDisplayDensityChanged;
             mainPage.AutomaticGamingModeChanged += OnAutomaticGamingModeChanged;
@@ -134,6 +138,7 @@ public sealed partial class MainWindow : Window
         TryObserveDisplayChanges();
 
         RegisterLauncherHotKey(_settings.LauncherShortcut);
+        RegisterDockHotKey(_settings.DockShortcut);
         _shellState.StateChanged += OnShellStateChanged;
         _gamingMode.StatusChanged += OnGamingSessionStatusChanged;
         Activated += OnActivated;
@@ -1219,6 +1224,105 @@ public sealed partial class MainWindow : Window
         return hotKey;
     }
 
+    private void OnDockShortcutChanged(DockShortcut shortcut)
+    {
+        if (_registeredDockShortcut == shortcut)
+        {
+            return;
+        }
+
+        if (!TryReplaceDockHotKey(shortcut, out var error))
+        {
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetDockShortcutUnavailable(
+                    shortcut,
+                    _registeredDockShortcut,
+                    error!);
+            }
+
+            return;
+        }
+
+        _settings = _settings with { DockShortcut = shortcut };
+        var persisted = PersistSettings();
+        if (RootFrame.Content is MainPage page)
+        {
+            page.SetDockShortcutApplied(shortcut, persisted);
+        }
+    }
+
+    private void RegisterDockHotKey(DockShortcut shortcut)
+    {
+        if (!TryReplaceDockHotKey(shortcut, out var error) &&
+            RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetDockShortcutUnavailable(
+                shortcut,
+                _registeredDockShortcut,
+                error!);
+        }
+    }
+
+    private bool TryReplaceDockHotKey(DockShortcut shortcut, out string? error)
+    {
+        var previousShortcut = _registeredDockShortcut;
+        _dockHotKey?.Dispose();
+        _dockHotKey = null;
+        _registeredDockShortcut = null;
+
+        try
+        {
+            _dockHotKey = CreateDockHotKey(shortcut);
+            _registeredDockShortcut = shortcut;
+            error = null;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+        }
+
+        if (previousShortcut is not null)
+        {
+            try
+            {
+                _dockHotKey = CreateDockHotKey(previousShortcut.Value);
+                _registeredDockShortcut = previousShortcut;
+            }
+            catch (Exception restoreException)
+            {
+                error =
+                    $"{error} The previous shortcut could not be restored: {restoreException.Message}";
+            }
+        }
+
+        return false;
+    }
+
+    private GlobalHotKey CreateDockHotKey(DockShortcut shortcut)
+    {
+        var modifiers = shortcut switch
+        {
+            DockShortcut.ControlAltD =>
+                HotKeyModifiers.Control | HotKeyModifiers.Alt,
+            DockShortcut.ControlShiftD =>
+                HotKeyModifiers.Control | HotKeyModifiers.Shift,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(shortcut),
+                shortcut,
+                null),
+        };
+
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var hotKey = new GlobalHotKey(
+            windowHandle,
+            modifiers | HotKeyModifiers.NoRepeat,
+            DVirtualKey);
+        hotKey.Pressed += OnDockRequested;
+        return hotKey;
+    }
+
     private bool PersistSettings()
     {
         try
@@ -1301,6 +1405,24 @@ public sealed partial class MainWindow : Window
         _ = _launcherWindow.ShowLauncherAsync();
     }
 
+    private void OnDockRequested(object? sender, EventArgs e)
+    {
+        var primaryIndex = -1;
+        for (var index = 0; index < _monitors.Count; index++)
+        {
+            if (_monitors[index].IsPrimary)
+            {
+                primaryIndex = index;
+                break;
+            }
+        }
+
+        var dock = primaryIndex >= 0 && primaryIndex < _dockWindows.Count
+            ? _dockWindows[primaryIndex]
+            : _dockWindows.FirstOrDefault();
+        dock?.FocusDock();
+    }
+
     private void OnShowDesktopRequested(object? sender, EventArgs e)
     {
         var result = _showDesktop.Toggle();
@@ -1335,6 +1457,7 @@ public sealed partial class MainWindow : Window
         }
 
         _gamingModeTimer.Stop();
+        _dockHotKey?.Dispose();
         _launcherHotKey?.Dispose();
         _shellState.StateChanged -= OnShellStateChanged;
         _gamingMode.StatusChanged -= OnGamingSessionStatusChanged;

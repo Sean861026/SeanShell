@@ -36,6 +36,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Button
+                    x:Name="LauncherButton"
                     AutomationProperties.Name="Open SeanShell Launcher"
                     Click="OnLauncherClicked"
                     PointerEntered="OnDockItemPointerEntered"

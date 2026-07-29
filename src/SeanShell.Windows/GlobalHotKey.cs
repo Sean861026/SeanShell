@@ -17,9 +17,10 @@ public enum HotKeyModifiers : uint
 public sealed class GlobalHotKey : IDisposable
 {
     private const uint WmHotKey = 0x0312;
-    private const int HotKeyId = 0x5348;
-    private static readonly nuint SubclassId = 0x5348;
+    private static int _nextRegistrationId = 0x5348;
 
+    private readonly int _registrationId;
+    private readonly nuint _subclassId;
     private readonly nint _windowHandle;
     private readonly SubclassProc _windowProc;
     private bool _disposed;
@@ -28,16 +29,18 @@ public sealed class GlobalHotKey : IDisposable
     {
         _windowHandle = windowHandle;
         _windowProc = WindowProc;
+        _registrationId = Interlocked.Increment(ref _nextRegistrationId);
+        _subclassId = (nuint)_registrationId;
 
-        if (!SetWindowSubclass(_windowHandle, _windowProc, SubclassId, 0))
+        if (!SetWindowSubclass(_windowHandle, _windowProc, _subclassId, 0))
         {
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to observe window messages.");
         }
 
-        if (!RegisterHotKey(_windowHandle, HotKeyId, (uint)modifiers, virtualKey))
+        if (!RegisterHotKey(_windowHandle, _registrationId, (uint)modifiers, virtualKey))
         {
-            RemoveWindowSubclass(_windowHandle, _windowProc, SubclassId);
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to register the launcher shortcut.");
+            RemoveWindowSubclass(_windowHandle, _windowProc, _subclassId);
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to register the global shortcut.");
         }
     }
 
@@ -50,8 +53,8 @@ public sealed class GlobalHotKey : IDisposable
             return;
         }
 
-        UnregisterHotKey(_windowHandle, HotKeyId);
-        RemoveWindowSubclass(_windowHandle, _windowProc, SubclassId);
+        UnregisterHotKey(_windowHandle, _registrationId);
+        RemoveWindowSubclass(_windowHandle, _windowProc, _subclassId);
         _disposed = true;
     }
 
@@ -63,7 +66,7 @@ public sealed class GlobalHotKey : IDisposable
         nuint subclassId,
         nuint referenceData)
     {
-        if (message == WmHotKey && (int)wParam == HotKeyId)
+        if (message == WmHotKey && (int)wParam == _registrationId)
         {
             Pressed?.Invoke(this, EventArgs.Empty);
             return 0;

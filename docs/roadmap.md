@@ -47,6 +47,7 @@
 - [x] Versioned local settings with atomic writes and backup recovery
 - [x] Persistent Dock auto-hide preference
 - [x] Configurable Launcher shortcut presets with conflict rollback
+- [x] Configurable primary-Dock focus shortcut with independent registration and conflict rollback
 - [x] Source-aware manual and rule-based gaming mode
 - [x] Persisted opt-in process rules with schema v1 to v2 migration
 - [x] Pause/resume policy for dashboard sampling and all Dock windows
@@ -120,7 +121,7 @@
 - [x] Opt-in Companion Taskbar with Explorer retained for shell services
 - [x] Hide and restore primary and secondary Windows taskbars
 - [x] Independent owner-process recovery guard with readiness handshake
-- [x] Persisted taskbar preference introduced in schema v6 and preserved by v7 migration
+- [x] Persisted taskbar preference introduced in schema v6 and preserved by later migrations
 - [x] Multi-display, restart, graceful-exit, and forced-exit recovery checks
 - [x] Pinned applications and Launcher/Start affordance in every Dock
 - [x] Persisted bounded pin list with schema v7 migration and missing-shortcut recovery
@@ -139,6 +140,7 @@
 - [x] Safe Open new instance action for explicitly matched running applications
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input
+- [x] Keyboard-only Dock entry point with primary-display focus and auto-hide expansion
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
