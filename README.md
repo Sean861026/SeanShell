@@ -109,8 +109,11 @@ current session; query text is never retained or written to disk.
 
 The M2 preview adds a compact always-on-top dock on each connected display. Each
 dock lists ordinary visible application windows on that display as native,
-icon-first taskbar items. A wide accent underline identifies the foreground
-window; compact neutral markers distinguish background and minimized windows.
+icon-first taskbar items. Pinned and running icons float on one translucent
+application capsule instead of separate dark tiles. A short two-tone accent rail
+gives the expanded and collapsed Dock a recognizable SeanShell silhouette. The
+foreground app alone receives an accent backing and wide underline; compact
+neutral markers distinguish background and minimized windows.
 Full titles, process names, and states remain available to accessibility tools
 and pointer tooltips. Multiple top-level windows owned by the same process share
 one Dock icon with a numeric badge. Selecting that group opens a native,
@@ -123,7 +126,7 @@ offers Minimize or Restore plus a standard close request, allowing the target
 application to show its own unsaved-work prompt. When an explicit Start Menu
 identity is available, it also offers Open new instance; ambiguous shortcuts
 remain separate choices in a native submenu. Running windows and pinned Start
-Menu applications use their Windows-provided icons in a stable 26-pixel slot;
+Menu applications use their Windows-provided icons in a stable 28-pixel slot;
 SeanShell falls back to a Fluent glyph when Windows cannot supply one. Pinned
 items, running items, and the system area share a compact 48-pixel visual rhythm.
 The floating surface uses the active Windows BaseAlt Mica and semantic Layer

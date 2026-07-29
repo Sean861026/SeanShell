@@ -12,7 +12,7 @@
     <x:Double x:Key="SeanSpace24">24</x:Double>
     <x:Double x:Key="SeanSpace32">32</x:Double>
     <x:Double x:Key="SeanDockActionSize">44</x:Double>
-    <x:Double x:Key="SeanDockAppIconSize">26</x:Double>
+    <x:Double x:Key="SeanDockAppIconSize">28</x:Double>
     <x:Double x:Key="SeanDockActionIconSize">24</x:Double>
     <x:Double x:Key="SeanDockGlyphIconSize">16</x:Double>
     <x:Double x:Key="SeanDockMenuMinWidth">260</x:Double>
@@ -165,6 +165,8 @@
         BasedOn="{StaticResource SeanDockActionButtonStyle}"
         TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
     </Style>
 
     <Style x:Key="SeanDockToggleButtonStyle" TargetType="ToggleButton">
@@ -179,7 +181,7 @@
 
     <Style x:Key="SeanDockApplicationRegionStyle" TargetType="Border">
         <Setter Property="Margin" Value="0,2" />
-        <Setter Property="Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanPillCornerRadius}" />
@@ -187,7 +189,7 @@
 
     <Style x:Key="SeanDockSystemRegionStyle" TargetType="Border">
         <Setter Property="Padding" Value="4,2" />
-        <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanPillCornerRadius}" />
