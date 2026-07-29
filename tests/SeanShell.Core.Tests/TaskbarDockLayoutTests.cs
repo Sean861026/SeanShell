@@ -36,4 +36,25 @@ public sealed class TaskbarDockLayoutTests
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(
             () => TaskbarDockLayout.CalculateExpandedWidth(0, 0, 0));
     }
+
+    [TestMethod]
+    [DataRow(0, 3, 1920, 1.0, 420)]
+    [DataRow(0, 3, 1920, 1.5, 464)]
+    [DataRow(2, 4, 1920, 2.25, 696)]
+    [DataRow(8, 10, 800, 2.25, 768)]
+    public void CalculateExpandedWidthReservesScaledFixedControls(
+        int pinnedItemCount,
+        int windowItemCount,
+        int monitorWorkAreaWidth,
+        double textScaleFactor,
+        int expected)
+    {
+        Assert.AreEqual(
+            expected,
+            TaskbarDockLayout.CalculateExpandedWidth(
+                pinnedItemCount,
+                windowItemCount,
+                monitorWorkAreaWidth,
+                textScaleFactor));
+    }
 }

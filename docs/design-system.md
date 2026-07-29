@@ -36,6 +36,9 @@ Raw colors must not be embedded in individual views.
 - Keyboard focus must remain visible and follow visual reading order.
 - Normal text should meet WCAG AA contrast in light and dark themes.
 - Text must remain usable with Windows text scaling and high-contrast themes.
+- High contrast disables translucent backdrops and motion while retaining native
+  ThemeResource colors; text scaling expands both Dock height and its fixed
+  launcher/system area before applying monitor-width bounds.
 - Dock hover feedback uses a 120 ms scale/translation transition; press feedback
   uses 80 ms. Both resolve to an identity transform with no transition when
   Windows requests reduced effects or Gaming Mode is active.

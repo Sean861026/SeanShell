@@ -40,7 +40,7 @@ public sealed partial class MainWindow : Window
     private readonly ShellSettingsStore _settingsStore;
     private readonly TaskbarReplacementSession _taskbarReplacement;
     private SystemAccessibilityService? _accessibility;
-    private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1);
+    private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1, false);
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
     private IReadOnlyList<DockWindow> _dockWindows;

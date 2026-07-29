@@ -60,7 +60,8 @@ public sealed partial class DockWindow : Window
         _expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
             0,
             0,
-            _monitor.WorkAreaWidth);
+            _monitor.WorkAreaWidth,
+            _textScaleFactor);
         ApplyDisplayDensity(density);
         PinnedList.ItemsSource = PinnedItems;
         WindowList.ItemsSource = Items;
@@ -127,6 +128,7 @@ public sealed partial class DockWindow : Window
     public void ApplyTextScaleFactor(double textScaleFactor)
     {
         _textScaleFactor = textScaleFactor;
+        RefreshExpandedWidth();
         SetCollapsed(_collapsed);
     }
 
@@ -350,7 +352,8 @@ public sealed partial class DockWindow : Window
         var expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
             PinnedItems.Count,
             Items.Count,
-            _monitor.WorkAreaWidth);
+            _monitor.WorkAreaWidth,
+            _textScaleFactor);
         if (_expandedDockWidth == expandedDockWidth)
         {
             return;
