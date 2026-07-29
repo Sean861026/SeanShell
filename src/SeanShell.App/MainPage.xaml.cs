@@ -234,6 +234,12 @@ public sealed partial class MainPage : Page
             InfoBarSeverity.Warning);
     }
 
+    public void SetShowDesktopFailed(string message) =>
+        SetSettingsStatus(
+            "Desktop visibility unchanged",
+            message,
+            InfoBarSeverity.Warning);
+
     public void SetTaskbarReplacementPreferenceUnchanged(
         bool enabled,
         string message)

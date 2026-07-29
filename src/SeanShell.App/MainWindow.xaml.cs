@@ -38,6 +38,7 @@ public sealed partial class MainWindow : Window
     private readonly ExternalPluginTrustManager _externalPluginTrust;
     private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
+    private readonly ShowDesktopSession _showDesktop;
     private readonly TaskbarReplacementSession _taskbarReplacement;
     private SystemAccessibilityService? _accessibility;
     private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1, false);
@@ -82,6 +83,8 @@ public sealed partial class MainWindow : Window
         _launcherWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
         _launcherWindow.SetPinnedApplicationIds(
             PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds));
+        _showDesktop = new ShowDesktopSession(
+            new WindowsShellDesktopController());
         _taskbarReplacement = new TaskbarReplacementSession(
             new WindowsTaskbarController(),
             new TaskbarRecoveryGuard(
@@ -687,6 +690,7 @@ public sealed partial class MainWindow : Window
                     monitor,
                     _systemAccessibility.TextScaleFactor);
                 dockWindow.LauncherRequested += OnLauncherRequested;
+                dockWindow.ShowDesktopRequested += OnShowDesktopRequested;
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
@@ -698,6 +702,7 @@ public sealed partial class MainWindow : Window
                     _settings.ReplaceWindowsTaskbar &&
                     _taskbarReplacement.IsEnabled,
                     _taskbarAccessRevealed);
+                dockWindow.SetShowDesktopState(_showDesktop.IsDesktopShown);
                 windows.Add(dockWindow);
             }
 
@@ -915,6 +920,14 @@ public sealed partial class MainWindow : Window
         try
         {
             var snapshot = await Task.Run(_desktopWindows.Capture).ConfigureAwait(true);
+            if (_showDesktop.IsDesktopShown &&
+                snapshot.Any(static window =>
+                    window.IsForeground && !window.IsMinimized))
+            {
+                _showDesktop.Reset();
+                UpdateDockShowDesktopState();
+            }
+
             foreach (var dockWindow in _dockWindows)
             {
                 dockWindow.ApplyWindowSnapshot(snapshot);
@@ -1288,6 +1301,25 @@ public sealed partial class MainWindow : Window
         _ = _launcherWindow.ShowLauncherAsync();
     }
 
+    private void OnShowDesktopRequested(object? sender, EventArgs e)
+    {
+        var result = _showDesktop.Toggle();
+        UpdateDockShowDesktopState();
+        if (!result.Success && RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetShowDesktopFailed(
+                result.Error ?? "Windows did not change desktop visibility.");
+        }
+    }
+
+    private void UpdateDockShowDesktopState()
+    {
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.SetShowDesktopState(_showDesktop.IsDesktopShown);
+        }
+    }
+
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _taskbarRefreshTimer.Stop();
@@ -1313,6 +1345,7 @@ public sealed partial class MainWindow : Window
         }
         foreach (var dockWindow in _dockWindows)
         {
+            dockWindow.ShowDesktopRequested -= OnShowDesktopRequested;
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
             dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;

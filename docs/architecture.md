@@ -161,6 +161,13 @@ the flyout closes. Open new instance remains an application-level action outside
 the per-window submenu because it launches the matched shortcut rather than
 operating on a specific window handle.
 
+Every Dock also exposes a native Show desktop toggle. `ShowDesktopSession`
+tracks only SeanShell-initiated minimize-all state and delegates to the Windows
+Shell `MinimizeAll` and `UndoMinimizeAll` automation methods. It does not
+synthesize Win+D. A foreground application detected by the shared window
+snapshot invalidates the pending restore state, and Shell automation failure
+leaves the previous toggle state unchanged.
+
 `NativeApplicationIconReader` stays in the Windows boundary. The background
 window capture asks each process for its `WM_GETICON` or class icon and falls
 back to the executable's Shell icon. A bounded process-ID cache prevents the

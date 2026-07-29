@@ -322,6 +322,25 @@ them with thread input attachment or injection. An application may reuse its
 existing process or window when its own single-instance policy handles the
 shortcut.
 
+## Show desktop
+
+```text
+User selects Show desktop on any Dock
+  -> ShowDesktopSession requests Windows Shell MinimizeAll
+  -> success: every Dock changes to Restore windows
+  -> failure: retain the previous state and surface a dashboard warning
+
+User selects Restore windows
+  -> ShowDesktopSession requests Windows Shell UndoMinimizeAll
+  -> success: every Dock returns to Show desktop
+
+Shared Dock snapshot detects another foreground application
+  -> invalidate SeanShell's pending restore state
+  -> every Dock returns to Show desktop
+```
+
+No keyboard input is simulated and no application process is injected.
+
 ## Multi-monitor dock and auto-hide
 
 ```text

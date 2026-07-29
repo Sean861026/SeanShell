@@ -167,6 +167,16 @@
         <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
     </Style>
 
+    <Style x:Key="SeanDockToggleButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="Height" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+    </Style>
+
     <Style x:Key="SeanDockApplicationRegionStyle" TargetType="Border">
         <Setter Property="Margin" Value="0,2" />
         <Setter Property="Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
