@@ -477,6 +477,11 @@ MainWindow 15-second clock timer
   -> capture one local timestamp
   -> each Dock formats system short-time and short-date patterns
 
+User opens a Dock clock
+  -> set the native CalendarView display date to the latest clock timestamp
+  -> preserve built-in keyboard month navigation and today highlighting
+  -> keep later clock ticks from resetting the month being viewed
+
 User selects the Dock system-area button
   -> require active Companion Taskbar replacement
   -> remove each Dock AppBar work-area reservation

@@ -471,19 +471,42 @@
                             ToolTipService.ToolTip="Date and time"
                             VerticalAlignment="Center">
                             <Button.Flyout>
-                                <MenuFlyout
-                                    Placement="TopEdgeAlignedRight"
-                                    MenuFlyoutPresenterStyle="{StaticResource SeanDockMenuFlyoutPresenterStyle}">
-                                    <MenuFlyoutItem
-                                        x:Name="ClockDetailsItem"
-                                        IsEnabled="False"
-                                        Text="Current date and time" />
-                                    <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem
-                                        Click="OnOpenDateTimeSettingsClicked"
-                                        Icon="Clock"
-                                        Text="Date and time settings" />
-                                </MenuFlyout>
+                                <Flyout
+                                    Closed="OnClockFlyoutClosed"
+                                    Opening="OnClockFlyoutOpening"
+                                    Placement="TopEdgeAlignedRight">
+                                    <Border
+                                        Width="360"
+                                        Padding="4">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock
+                                                x:Name="ClockDetailsText"
+                                                AutomationProperties.HeadingLevel="Level2"
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="Current date and time"
+                                                TextWrapping="Wrap" />
+                                            <CalendarView
+                                                x:Name="DockCalendarView"
+                                                AutomationProperties.Name="Calendar"
+                                                HorizontalAlignment="Stretch"
+                                                IsTodayHighlighted="True"
+                                                SelectionMode="None" />
+                                            <Button
+                                                Click="OnOpenDateTimeSettingsClicked"
+                                                HorizontalAlignment="Left">
+                                                <StackPanel
+                                                    Orientation="Horizontal"
+                                                    Spacing="8">
+                                                    <FontIcon
+                                                        FontFamily="Segoe Fluent Icons"
+                                                        Glyph="&#xE787;" />
+                                                    <TextBlock Text="Date and time settings" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Flyout>
                             </Button.Flyout>
                             <StackPanel>
                                 <TextBlock

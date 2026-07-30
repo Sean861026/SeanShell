@@ -46,6 +46,7 @@ public sealed partial class DockWindow : Window
     private bool _reducedEffects;
     private bool _updatingQuickAudioControls;
     private int _expandedDockWidth;
+    private DateTimeOffset _clockTimestamp = DateTimeOffset.Now;
     private nint _returnFocusWindow;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
@@ -208,6 +209,7 @@ public sealed partial class DockWindow : Window
 
     public void ApplyClock(DateTimeOffset timestamp)
     {
+        _clockTimestamp = timestamp;
         var local = timestamp.LocalDateTime;
         var culture = CultureInfo.CurrentCulture;
         ClockTimeText.Text = local.ToString("t", culture);
@@ -215,7 +217,7 @@ public sealed partial class DockWindow : Window
         var accessibleTimestamp =
             $"Current date and time: {local.ToString("F", culture)}";
         AutomationProperties.SetName(ClockButton, accessibleTimestamp);
-        ClockDetailsItem.Text = local.ToString("F", culture);
+        ClockDetailsText.Text = local.ToString("F", culture);
     }
 
     public void SetSystemAreaAccessState(bool available, bool revealed)
@@ -1039,6 +1041,16 @@ public sealed partial class DockWindow : Window
     private void OnOpenDateTimeSettingsClicked(object sender, RoutedEventArgs e)
     {
         LaunchShellTarget("ms-settings:dateandtime");
+        ScheduleAutoHide();
+    }
+
+    private void OnClockFlyoutOpening(object sender, object e)
+    {
+        DockCalendarView.SetDisplayDate(_clockTimestamp);
+    }
+
+    private void OnClockFlyoutClosed(object sender, object e)
+    {
         ScheduleAutoHide();
     }
 
