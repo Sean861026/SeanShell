@@ -371,38 +371,86 @@
                             Style="{StaticResource SeanDockActionButtonStyle}"
                             ToolTipService.ToolTip="Quick settings">
                             <Button.Flyout>
-                                <MenuFlyout
+                                <Flyout
+                                    Closed="OnQuickSettingsClosed"
                                     Opening="OnQuickSettingsOpening"
-                                    Placement="TopEdgeAlignedRight"
-                                    MenuFlyoutPresenterStyle="{StaticResource SeanDockMenuFlyoutPresenterStyle}">
-                                    <MenuFlyoutItem
-                                        x:Name="QuickNetworkItem"
-                                        Click="OnOpenSystemSettingsClicked"
-                                        Tag="ms-settings:network"
-                                        Text="Network &amp; internet">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE774;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem
-                                        x:Name="QuickSoundItem"
-                                        Click="OnOpenSystemSettingsClicked"
-                                        Tag="ms-settings:sound"
-                                        Text="Sound">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE767;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem
-                                        x:Name="QuickPowerItem"
-                                        Click="OnOpenSystemSettingsClicked"
-                                        Tag="ms-settings:powersleep"
-                                        Text="Power &amp; battery">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE83F;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                </MenuFlyout>
+                                    Placement="TopEdgeAlignedRight">
+                                    <Border
+                                        Width="320"
+                                        Padding="4">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="Quick settings" />
+                                            <Button
+                                                Click="OnOpenSystemSettingsClicked"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Left"
+                                                Tag="ms-settings:network">
+                                                <StackPanel
+                                                    Orientation="Horizontal"
+                                                    Spacing="12">
+                                                    <FontIcon
+                                                        FontFamily="Segoe Fluent Icons"
+                                                        Glyph="&#xE774;" />
+                                                    <TextBlock
+                                                        x:Name="QuickNetworkText"
+                                                        Text="Network &amp; internet"
+                                                        TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Button>
+                                            <StackPanel Spacing="6">
+                                                <StackPanel
+                                                    Orientation="Horizontal"
+                                                    Spacing="12">
+                                                    <FontIcon
+                                                        FontFamily="Segoe Fluent Icons"
+                                                        Glyph="&#xE767;" />
+                                                    <TextBlock
+                                                        x:Name="QuickSoundText"
+                                                        VerticalAlignment="Center"
+                                                        FontWeight="SemiBold"
+                                                        Text="Sound" />
+                                                </StackPanel>
+                                                <Slider
+                                                    x:Name="QuickVolumeSlider"
+                                                    AutomationProperties.Name="Output volume"
+                                                    Header="Output volume"
+                                                    Maximum="100"
+                                                    Minimum="0"
+                                                    StepFrequency="1"
+                                                    ValueChanged="OnQuickVolumeChanged" />
+                                                <ToggleSwitch
+                                                    x:Name="QuickSoundMuteToggle"
+                                                    Header="Mute output"
+                                                    Toggled="OnQuickSoundMuteToggled" />
+                                                <Button
+                                                    Click="OnOpenSystemSettingsClicked"
+                                                    Content="Open sound settings"
+                                                    HorizontalAlignment="Left"
+                                                    Tag="ms-settings:sound" />
+                                            </StackPanel>
+                                            <Button
+                                                Click="OnOpenSystemSettingsClicked"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Left"
+                                                Tag="ms-settings:powersleep">
+                                                <StackPanel
+                                                    Orientation="Horizontal"
+                                                    Spacing="12">
+                                                    <FontIcon
+                                                        FontFamily="Segoe Fluent Icons"
+                                                        Glyph="&#xE83F;" />
+                                                    <TextBlock
+                                                        x:Name="QuickPowerText"
+                                                        Text="Power &amp; battery"
+                                                        TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Flyout>
                             </Button.Flyout>
                             <PathIcon
                                 Width="{StaticResource SeanDockGlyphIconSize}"

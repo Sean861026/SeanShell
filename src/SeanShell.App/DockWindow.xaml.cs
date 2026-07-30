@@ -29,6 +29,7 @@ public sealed partial class DockWindow : Window
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
+    private readonly AudioEndpointService _audioEndpoint = new();
     private readonly SystemStatusSnapshotService _systemStatus = new();
     private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
@@ -41,7 +42,9 @@ public sealed partial class DockWindow : Window
     private bool _hasKeyboardFocus;
     private bool _modalDialogOpen;
     private bool _pointerInside;
+    private bool _quickAudioControlsActive;
     private bool _reducedEffects;
+    private bool _updatingQuickAudioControls;
     private int _expandedDockWidth;
     private nint _returnFocusWindow;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
@@ -1051,14 +1054,75 @@ public sealed partial class DockWindow : Window
 
     private void OnQuickSettingsOpening(object sender, object e)
     {
-        var text = SystemStatusTextFormatter.Format(_systemStatus.Capture());
-        QuickNetworkItem.Text = text.Network;
-        QuickSoundItem.Text = "Sound";
-        QuickPowerItem.Text = text.Power;
-        AutomationProperties.SetName(QuickSettingsButton, text.AccessibleSummary);
+        _quickAudioControlsActive = false;
+        var systemText =
+            SystemStatusTextFormatter.Format(_systemStatus.Capture());
+        var audioText = ApplyQuickAudioSnapshot(_audioEndpoint.Capture());
+        QuickNetworkText.Text = systemText.Network;
+        QuickPowerText.Text = systemText.Power;
+        AutomationProperties.SetName(
+            QuickSettingsButton,
+            $"{systemText.AccessibleSummary} {audioText.AccessibleSummary}");
         ToolTipService.SetToolTip(
             QuickSettingsButton,
-            $"{text.Network}\n{text.Power}");
+            $"{systemText.Network}\n{audioText.Summary}\n{systemText.Power}");
+        _quickAudioControlsActive = true;
+    }
+
+    private void OnQuickSettingsClosed(object sender, object e)
+    {
+        _quickAudioControlsActive = false;
+        ScheduleAutoHide();
+    }
+
+    private void OnQuickVolumeChanged(
+        object sender,
+        Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (!_quickAudioControlsActive || _updatingQuickAudioControls)
+        {
+            return;
+        }
+
+        ApplyQuickAudioSnapshot(
+            _audioEndpoint.SetVolume((int)Math.Round(e.NewValue)));
+    }
+
+    private void OnQuickSoundMuteToggled(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (!_quickAudioControlsActive || _updatingQuickAudioControls)
+        {
+            return;
+        }
+
+        ApplyQuickAudioSnapshot(
+            _audioEndpoint.SetMuted(QuickSoundMuteToggle.IsOn));
+    }
+
+    private AudioEndpointDisplayText ApplyQuickAudioSnapshot(
+        AudioEndpointSnapshot snapshot)
+    {
+        var text = AudioEndpointTextFormatter.Format(snapshot);
+        _updatingQuickAudioControls = true;
+        try
+        {
+            QuickSoundText.Text = text.Summary;
+            QuickVolumeSlider.IsEnabled = snapshot.IsAvailable;
+            QuickSoundMuteToggle.IsEnabled = snapshot.IsAvailable;
+            QuickVolumeSlider.Value = snapshot.VolumePercent ?? 0;
+            QuickSoundMuteToggle.IsOn = snapshot.IsMuted;
+            AutomationProperties.SetName(
+                QuickSoundText,
+                text.AccessibleSummary);
+        }
+        finally
+        {
+            _updatingQuickAudioControls = false;
+        }
+
+        return text;
     }
 
     private static void LaunchShellTarget(string target) =>
