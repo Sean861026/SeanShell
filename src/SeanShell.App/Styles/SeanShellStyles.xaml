@@ -152,7 +152,9 @@
 
     <Style x:Key="SeanDockActionButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="MinWidth" Value="{StaticResource SeanDockActionSize}" />
         <Setter Property="Height" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="MinHeight" Value="{StaticResource SeanDockActionSize}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -190,7 +192,9 @@
 
     <Style x:Key="SeanDockToggleButtonStyle" TargetType="ToggleButton">
         <Setter Property="Width" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="MinWidth" Value="{StaticResource SeanDockActionSize}" />
         <Setter Property="Height" Value="{StaticResource SeanDockActionSize}" />
+        <Setter Property="MinHeight" Value="{StaticResource SeanDockActionSize}" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />

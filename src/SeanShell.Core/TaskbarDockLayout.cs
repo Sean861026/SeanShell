@@ -6,7 +6,7 @@ public static class TaskbarDockLayout
     public const int PreferredMaximumWidth = 1000;
     public const int MonitorEdgeMargin = 32;
 
-    private const int FixedControlsWidth = 324;
+    private const int FixedControlsWidth = 360;
     private const int ItemSlotWidth = 52;
 
     public static int CalculateExpandedWidth(

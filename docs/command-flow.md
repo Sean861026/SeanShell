@@ -457,6 +457,13 @@ SeanShell starts or rebuilds monitor-local Docks
   -> initial manual launch: restore the Dashboard and request foreground activation
   -> display rebuild: preserve the current foreground window
 
+Desktop-window snapshot changes
+  -> filter taskbar-eligible windows to each monitor
+  -> group matching process windows into one Dock item
+  -> reserve fixed width for the Launcher and complete system region
+  -> reserve one stable slot for every visible pinned and running item
+  -> resize and recenter the Dock within the monitor work area
+
 User searches for an installed application and selects Pin
   -> require ShellCommandKind.Application
   -> verify the exact app ID against the cached Start Menu index
