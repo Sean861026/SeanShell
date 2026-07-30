@@ -117,6 +117,7 @@
 - [x] Follow Windows reduced-motion, high-contrast, and text-scale signals
 - [x] Persisted comfortable and compact display density with schema v5 migration
 - [x] Reduced-effects Gaming Mode removes translucent Dock material and pauses background providers
+- [x] Shared acrylic-card visual language for Dock system flyouts
 
 ## Later: shell modes
 
