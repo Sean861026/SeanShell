@@ -255,6 +255,11 @@ then applies explicit Slider or mute-toggle changes through
 `IAudioEndpointVolume`. COM objects are released after each bounded operation;
 there is no audio callback, process injection, or background audio poller.
 
+Quick settings and the clock calendar share theme-resource-driven Flyout
+presenter, surface, section, action, and icon-tile styles. The styles retain
+native control templates and focus visuals while adding one consistent
+acrylic-layer hierarchy across light, dark, and high-contrast themes.
+
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented
 `ABM_NEW`, `ABM_QUERYPOS`, and `ABM_SETPOS` sequence for that Dock window and

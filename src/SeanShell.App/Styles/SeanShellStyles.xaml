@@ -213,6 +213,46 @@
         <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
     </Style>
 
+    <Style x:Key="SeanDockFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
+    </Style>
+
+    <Style x:Key="SeanDockFlyoutSurfaceStyle" TargetType="Border">
+        <Setter Property="Padding" Value="{StaticResource SeanSpace16}" />
+        <Setter Property="Background" Value="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
+    </Style>
+
+    <Style x:Key="SeanDockFlyoutSectionStyle" TargetType="Border">
+        <Setter Property="Padding" Value="{StaticResource SeanSpace12}" />
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+    </Style>
+
+    <Style x:Key="SeanDockFlyoutActionButtonStyle" TargetType="Button">
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="Padding" Value="{StaticResource SeanSpace12}" />
+        <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+    </Style>
+
+    <Style x:Key="SeanDockFlyoutIconTileStyle" TargetType="Border">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
+    </Style>
+
     <Style x:Key="SeanDockItemStyle" TargetType="ListViewItem">
         <Setter Property="Width" Value="48" />
         <Setter Property="MinWidth" Value="48" />
