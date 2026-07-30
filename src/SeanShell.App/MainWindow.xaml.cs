@@ -158,6 +158,9 @@ public sealed partial class MainWindow : Window
             dockWindow.SetAutoHide(_settings.DockAutoHide);
         }
 
+        Activate();
+        var dashboardHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        _ = _desktopWindows.RestoreAndActivate(dashboardHandle);
         ApplyTaskbarReplacementOnStartup();
         RefreshClock();
         _clockRefreshTimer.Start();
@@ -695,6 +698,7 @@ public sealed partial class MainWindow : Window
                     monitor,
                     _systemAccessibility.TextScaleFactor);
                 dockWindow.LauncherRequested += OnLauncherRequested;
+                dockWindow.DashboardRequested += OnDashboardRequested;
                 dockWindow.ShowDesktopRequested += OnShowDesktopRequested;
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
@@ -1403,6 +1407,14 @@ public sealed partial class MainWindow : Window
     private void OnLauncherRequested(object? sender, EventArgs e)
     {
         _ = _launcherWindow.ShowLauncherAsync();
+    }
+
+    private void OnDashboardRequested(object? sender, EventArgs e)
+    {
+        AppWindow.Show();
+        Activate();
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        _ = _desktopWindows.RestoreAndActivate(windowHandle);
     }
 
     private void OnDockRequested(object? sender, EventArgs e)

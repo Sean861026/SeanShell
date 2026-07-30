@@ -99,6 +99,14 @@ propagates the existing reduced-effects policy to every Dock; Windows reduced
 motion, high contrast, and Gaming Mode remove Acrylic, transitions, scale, and
 translation while retaining native focus and pointer states.
 
+Normal Dock creation and display-topology rebuilds use non-activating
+`AppWindow.Show(false)` calls, so an auto-hiding Dock cannot replace the
+Dashboard or the user's current application as foreground merely by appearing.
+The explicit Dock keyboard shortcut remains the only path that activates a Dock.
+The Launcher/Start context menu also exposes a native Open Dashboard command,
+which restores and activates the existing MainWindow without creating another
+process or window.
+
 The expanded Dock groups floating application icons inside one
 Layer-on-Acrylic capsule rather than giving every icon an opaque tile. Only the
 foreground application receives an accent backing. A bounded system-accent
