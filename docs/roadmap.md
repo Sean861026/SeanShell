@@ -132,6 +132,7 @@
 - [x] Persisted Move left / Move right pin ordering synchronized across displays
 - [x] Native drag-to-reorder for visible pins with hidden running-pin preservation
 - [x] Regional-format clock and date on every Dock
+- [x] Native keyboard-accessible monthly calendar in the Dock clock flyout
 - [x] On-demand network and battery/power status in Dock Quick settings
 - [x] Native master-volume Slider and mute control in Dock Quick settings
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration

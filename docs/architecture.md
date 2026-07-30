@@ -239,6 +239,9 @@ or shell-process injection.
 MainWindow owns one 15-second clock timer and distributes the same local timestamp
 to every Dock. Each Dock formats short time and short date through
 `CultureInfo.CurrentCulture`, so Windows regional preferences remain authoritative.
+Opening the clock flyout sets a native WinUI `CalendarView` to that captured
+local date. The timer continues updating the clock label but does not reset a
+month the user navigated to while the flyout remains open.
 
 Opening a Dock Quick settings flyout captures network availability and native
 power status once through `SystemStatusSnapshotService`. Core formats that
