@@ -29,6 +29,7 @@ public sealed partial class DockWindow : Window
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
+    private readonly SystemStatusSnapshotService _systemStatus = new();
     private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
     private readonly bool _compactDensity;
@@ -1046,6 +1047,18 @@ public sealed partial class DockWindow : Window
         }
 
         ScheduleAutoHide();
+    }
+
+    private void OnQuickSettingsOpening(object sender, object e)
+    {
+        var text = SystemStatusTextFormatter.Format(_systemStatus.Capture());
+        QuickNetworkItem.Text = text.Network;
+        QuickSoundItem.Text = "Sound";
+        QuickPowerItem.Text = text.Power;
+        AutomationProperties.SetName(QuickSettingsButton, text.AccessibleSummary);
+        ToolTipService.SetToolTip(
+            QuickSettingsButton,
+            $"{text.Network}\n{text.Power}");
     }
 
     private static void LaunchShellTarget(string target) =>

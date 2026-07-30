@@ -372,9 +372,11 @@
                             ToolTipService.ToolTip="Quick settings">
                             <Button.Flyout>
                                 <MenuFlyout
+                                    Opening="OnQuickSettingsOpening"
                                     Placement="TopEdgeAlignedRight"
                                     MenuFlyoutPresenterStyle="{StaticResource SeanDockMenuFlyoutPresenterStyle}">
                                     <MenuFlyoutItem
+                                        x:Name="QuickNetworkItem"
                                         Click="OnOpenSystemSettingsClicked"
                                         Tag="ms-settings:network"
                                         Text="Network &amp; internet">
@@ -383,6 +385,7 @@
                                         </MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                     <MenuFlyoutItem
+                                        x:Name="QuickSoundItem"
                                         Click="OnOpenSystemSettingsClicked"
                                         Tag="ms-settings:sound"
                                         Text="Sound">
@@ -391,6 +394,7 @@
                                         </MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                     <MenuFlyoutItem
+                                        x:Name="QuickPowerItem"
                                         Click="OnOpenSystemSettingsClicked"
                                         Tag="ms-settings:powersleep"
                                         Text="Power &amp; battery">

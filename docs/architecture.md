@@ -240,6 +240,12 @@ MainWindow owns one 15-second clock timer and distributes the same local timesta
 to every Dock. Each Dock formats short time and short date through
 `CultureInfo.CurrentCulture`, so Windows regional preferences remain authoritative.
 
+Opening a Dock Quick settings flyout captures network availability and native
+power status once through `SystemStatusSnapshotService`. Core formats that
+snapshot into visible and accessible text before the flyout is shown. The
+capture is demand-driven: no network or battery polling timer remains active
+while Quick settings is closed.
+
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented
 `ABM_NEW`, `ABM_QUERYPOS`, and `ABM_SETPOS` sequence for that Dock window and

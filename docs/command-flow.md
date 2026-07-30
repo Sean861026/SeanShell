@@ -495,6 +495,13 @@ Gaming Mode starts while the system area is revealed
   -> clear the session-only reveal state
   -> ensure all Dock AppBar reservations are removed
   -> hide SeanShell Docks and suspend optional providers
+
+User opens Dock Quick settings
+  -> capture current network availability
+  -> capture current native battery and AC-line state
+  -> format visible status and an accessible summary in Core
+  -> update Network and Power menu items
+  -> show the flyout without starting a background polling timer
 ```
 
 Failure of either visibility transition fails safe by restoring native taskbars,
