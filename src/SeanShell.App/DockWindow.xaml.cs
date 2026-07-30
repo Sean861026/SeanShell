@@ -119,6 +119,8 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler? LauncherRequested;
 
+    public event EventHandler? DashboardRequested;
+
     public event EventHandler? ShowDesktopRequested;
 
     public event EventHandler? SystemAreaRequested;
@@ -148,7 +150,7 @@ public sealed partial class DockWindow : Window
     {
         SetCollapsed(false);
         EmptyState.Visibility = Visibility.Visible;
-        AppWindow.Show();
+        AppWindow.Show(false);
         ScheduleAutoHide();
     }
 
@@ -1019,6 +1021,15 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
         var flyout = CreateDockMenuFlyout();
+        var dashboardItem = new MenuFlyoutItem
+        {
+            Text = "Open Dashboard",
+            Icon = CreateMenuIcon("\uE80F"),
+        };
+        dashboardItem.Click += (_, _) =>
+            DashboardRequested?.Invoke(this, EventArgs.Empty);
+        flyout.Items.Add(dashboardItem);
+        flyout.Items.Add(new MenuFlyoutSeparator());
         AddSystemTool(flyout, "File Explorer", "\uEC50", "explorer.exe");
         AddSystemTool(flyout, "Windows Terminal", "\uE756", "wt.exe");
         AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
@@ -1694,7 +1705,7 @@ public sealed partial class DockWindow : Window
         }
 
         SetCollapsed(false);
-        AppWindow.Show();
+        AppWindow.Show(false);
         ScheduleAutoHide();
     }
 

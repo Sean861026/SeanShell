@@ -447,6 +447,16 @@ User selects the Launcher/Start button on any Dock
   -> MainWindow requests the existing Launcher window
   -> Launcher opens on the current display
 
+User opens the Launcher/Start context menu and selects Open Dashboard
+  -> show the existing MainWindow without creating another instance
+  -> restore the window when minimized
+  -> request foreground activation through the normal Windows boundary
+
+SeanShell starts or rebuilds monitor-local Docks
+  -> show each Dock without activating it
+  -> initial manual launch: restore the Dashboard and request foreground activation
+  -> display rebuild: preserve the current foreground window
+
 User searches for an installed application and selects Pin
   -> require ShellCommandKind.Application
   -> verify the exact app ID against the cached Start Menu index
