@@ -132,6 +132,7 @@
 - [x] Persisted Move left / Move right pin ordering synchronized across displays
 - [x] Native drag-to-reorder for visible pins with hidden running-pin preservation
 - [x] Regional-format clock and date on every Dock
+- [x] On-demand network and battery/power status in Dock Quick settings
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
