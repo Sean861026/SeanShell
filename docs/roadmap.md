@@ -128,6 +128,7 @@
 - [x] Persisted taskbar preference introduced in schema v6 and preserved by later migrations
 - [x] Multi-display, restart, graceful-exit, and forced-exit recovery checks
 - [x] Pinned applications and Launcher/Start affordance in every Dock
+- [x] Guaranteed running-window viewport beside fixed Dock controls
 - [x] Non-activating Dock startup with a keyboard-accessible Dashboard recovery action
 - [x] Persisted bounded pin list with schema v7 migration and missing-shortcut recovery
 - [x] Coalesce desktop shortcut pins with matching monitor-local running windows

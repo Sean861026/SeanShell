@@ -87,7 +87,10 @@ makes the Dock itself foreground, without guessing a replacement window.
 `TaskbarDockLayout` derives a bounded expanded width from the current pinned and
 running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
-dense sessions and small displays.
+dense sessions and small displays. Its fixed-control allowance includes the
+Launcher and complete system region so those controls cannot consume the
+monitor-local running-window viewport. Fixed icon buttons explicitly override
+the native Button minimum size while retaining a 44-by-44 interaction target.
 
 The Dock's transparent Layer surface allows its desktop Acrylic system backdrop
 to remain visible instead of covering it with an opaque card. Acrylic is used
