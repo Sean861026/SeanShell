@@ -11,8 +11,24 @@ internal static class ApplicationIconSourceCache
     private static readonly ConditionalWeakTable<ApplicationIconSnapshot, ImageSource>
         Sources = new();
 
-    public static ImageSource? Get(ApplicationIconSnapshot? icon) =>
-        icon is null ? null : Sources.GetValue(icon, Create);
+    public static ImageSource? Get(ApplicationIconSnapshot? icon)
+    {
+        if (icon is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return Sources.GetValue(icon, Create);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"Unable to create a Dock icon bitmap. {exception}");
+            return null;
+        }
+    }
 
     private static ImageSource Create(ApplicationIconSnapshot icon)
     {
