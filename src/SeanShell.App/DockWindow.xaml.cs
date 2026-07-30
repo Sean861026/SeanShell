@@ -47,6 +47,10 @@ public sealed partial class DockWindow : Window
     private bool _updatingQuickAudioControls;
     private int _expandedDockWidth;
     private DateTimeOffset _clockTimestamp = DateTimeOffset.Now;
+    private AudioEndpointSnapshot _lastAudioStatus =
+        new(false, null, false);
+    private SystemStatusSnapshot _lastSystemStatus =
+        new(null, false, null, null, false);
     private nint _returnFocusWindow;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
@@ -83,6 +87,7 @@ public sealed partial class DockWindow : Window
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ConfigurePresenter();
+        RefreshDockSystemIndicators();
 
         _autoHideTimer = DispatcherQueue.CreateTimer();
         _autoHideTimer.Interval = TimeSpan.FromMilliseconds(900);
@@ -1067,17 +1072,13 @@ public sealed partial class DockWindow : Window
     private void OnQuickSettingsOpening(object sender, object e)
     {
         _quickAudioControlsActive = false;
+        _lastSystemStatus = _systemStatus.Capture();
         var systemText =
-            SystemStatusTextFormatter.Format(_systemStatus.Capture());
+            SystemStatusTextFormatter.Format(_lastSystemStatus);
         var audioText = ApplyQuickAudioSnapshot(_audioEndpoint.Capture());
         QuickNetworkText.Text = systemText.Network;
         QuickPowerText.Text = systemText.Power;
-        AutomationProperties.SetName(
-            QuickSettingsButton,
-            $"{systemText.AccessibleSummary} {audioText.AccessibleSummary}");
-        ToolTipService.SetToolTip(
-            QuickSettingsButton,
-            $"{systemText.Network}\n{audioText.Summary}\n{systemText.Power}");
+        UpdateDockSystemIndicators(systemText, audioText);
         _quickAudioControlsActive = true;
     }
 
@@ -1116,6 +1117,7 @@ public sealed partial class DockWindow : Window
     private AudioEndpointDisplayText ApplyQuickAudioSnapshot(
         AudioEndpointSnapshot snapshot)
     {
+        _lastAudioStatus = snapshot;
         var text = AudioEndpointTextFormatter.Format(snapshot);
         _updatingQuickAudioControls = true;
         try
@@ -1134,7 +1136,53 @@ public sealed partial class DockWindow : Window
             _updatingQuickAudioControls = false;
         }
 
+        UpdateDockSystemIndicators(
+            SystemStatusTextFormatter.Format(_lastSystemStatus),
+            text);
         return text;
+    }
+
+    private void RefreshDockSystemIndicators()
+    {
+        _lastSystemStatus = _systemStatus.Capture();
+        _lastAudioStatus = _audioEndpoint.Capture();
+        UpdateDockSystemIndicators(
+            SystemStatusTextFormatter.Format(_lastSystemStatus),
+            AudioEndpointTextFormatter.Format(_lastAudioStatus));
+    }
+
+    private void UpdateDockSystemIndicators(
+        SystemStatusDisplayText systemText,
+        AudioEndpointDisplayText audioText)
+    {
+        var networkUnavailable = _lastSystemStatus.NetworkAvailable != true;
+        DockNetworkOfflineMark.Visibility =
+            networkUnavailable ? Visibility.Visible : Visibility.Collapsed;
+        DockNetworkStatusIcon.Opacity =
+            _lastSystemStatus.NetworkAvailable is null ? 0.45 : 1;
+
+        DockAudioStatusIcon.Glyph =
+            _lastAudioStatus.IsMuted ? "\uE74F" : "\uE767";
+        DockAudioStatusIcon.Opacity =
+            _lastAudioStatus.IsAvailable ? 1 : 0.45;
+
+        DockPowerStatusIcon.Opacity =
+            _lastSystemStatus.IsPluggedIn is null ? 0.45 : 1;
+        DockPowerPercentText.Text =
+            _lastSystemStatus.BatteryPercent?.ToString(
+                CultureInfo.CurrentCulture) ?? string.Empty;
+        DockPowerPercentText.Visibility =
+            _lastSystemStatus.HasBattery &&
+            _lastSystemStatus.BatteryPercent is not null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+        AutomationProperties.SetName(
+            QuickSettingsButton,
+            $"{systemText.AccessibleSummary} {audioText.AccessibleSummary}");
+        ToolTipService.SetToolTip(
+            QuickSettingsButton,
+            $"{systemText.Network}\n{audioText.Summary}\n{systemText.Power}");
     }
 
     private static void LaunchShellTarget(string target) =>
