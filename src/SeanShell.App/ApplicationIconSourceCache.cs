@@ -3,6 +3,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SeanShell.Core;
+using Windows.Graphics.Imaging;
 
 namespace SeanShell.App;
 
@@ -10,17 +11,45 @@ internal static class ApplicationIconSourceCache
 {
     private static readonly ConditionalWeakTable<ApplicationIconSnapshot, ImageSource>
         Sources = new();
+    private static readonly object Gate = new();
 
-    public static ImageSource? Get(ApplicationIconSnapshot? icon)
+    public static async Task<ImageSource?> GetAsync(ApplicationIconSnapshot? icon)
     {
         if (icon is null)
         {
             return null;
         }
 
+        lock (Gate)
+        {
+            if (Sources.TryGetValue(icon, out var cached))
+            {
+                return cached;
+            }
+        }
+
         try
         {
-            return Sources.GetValue(icon, Create);
+            var pixels = icon.BgraPixels.ToArray();
+            using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(
+                pixels.AsBuffer(),
+                BitmapPixelFormat.Bgra8,
+                icon.Width,
+                icon.Height,
+                BitmapAlphaMode.Premultiplied);
+            var source = new SoftwareBitmapSource();
+            await source.SetBitmapAsync(bitmap);
+
+            lock (Gate)
+            {
+                if (Sources.TryGetValue(icon, out var cached))
+                {
+                    return cached;
+                }
+
+                Sources.Add(icon, source);
+                return source;
+            }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -28,19 +57,5 @@ internal static class ApplicationIconSourceCache
                 $"Unable to create a Dock icon bitmap. {exception}");
             return null;
         }
-    }
-
-    private static ImageSource Create(ApplicationIconSnapshot icon)
-    {
-        var bitmap = new WriteableBitmap(icon.Width, icon.Height);
-        using (var stream = bitmap.PixelBuffer.AsStream())
-        {
-            stream.Position = 0;
-            stream.Write(icon.BgraPixels.Span);
-            stream.Flush();
-        }
-
-        bitmap.Invalidate();
-        return bitmap;
     }
 }

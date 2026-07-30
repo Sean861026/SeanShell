@@ -110,6 +110,7 @@
 - [x] Flushed WinUI icon buffers before compositor invalidation
 - [x] Per-icon failure isolation with accessible Fluent fallback
 - [x] Native icon extraction failure isolation from desktop-window snapshots
+- [x] Asynchronous SoftwareBitmapSource loading with no blank icon state
 - [x] ExtraLarge 48px Shell icon sources with bounded high-DPI downsampling
 - [x] Production SeanShell brand icon across package, title-bar, and Dock Launcher surfaces
 - [x] Icon-first taskbar presentation with distinct active, running, and minimized indicators
@@ -146,6 +147,7 @@
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
+- [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
 - [x] Window context actions for minimize, restore, and graceful close
 - [x] Process-based multi-window grouping with an accessible native window picker

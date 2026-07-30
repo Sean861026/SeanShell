@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
@@ -6,12 +8,16 @@ namespace SeanShell.App;
 
 public sealed class DockItemViewModel(
     TaskbarWindowGroup group,
-    bool isPinned = false)
+    bool isPinned = false) : INotifyPropertyChanged
 {
+    private readonly ApplicationIconSnapshot? _iconSnapshot =
+        group.PrimaryWindow.Icon ??
+        group.Windows.FirstOrDefault(static window => window.Icon is not null)?.Icon;
     private readonly TaskbarItemVisualState _visualState =
         TaskbarItemVisualStateResolver.Resolve(
             group.IsForeground,
             group.IsMinimized);
+    private ImageSource? _icon;
 
     public IReadOnlyList<DesktopWindowSnapshot> Windows { get; } = group.Windows;
 
@@ -30,10 +36,7 @@ public sealed class DockItemViewModel(
 
     public int WindowCount => Windows.Count;
 
-    public ImageSource? Icon { get; } =
-        ApplicationIconSourceCache.Get(
-            group.PrimaryWindow.Icon ??
-            group.Windows.FirstOrDefault(static window => window.Icon is not null)?.Icon);
+    public ImageSource? Icon => _icon;
 
     public Visibility IconVisibility =>
         Icon is null ? Visibility.Collapsed : Visibility.Visible;
@@ -89,5 +92,24 @@ public sealed class DockItemViewModel(
         ? $"Switch to {Title}, {ProcessName}, {StateText}{PinnedText}"
         : $"{ProcessName}, {WindowCount} windows, {StateText}{PinnedText}. Open window picker";
 
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public async Task LoadIconAsync()
+    {
+        var icon = await ApplicationIconSourceCache.GetAsync(_iconSnapshot);
+        if (icon is null || ReferenceEquals(_icon, icon))
+        {
+            return;
+        }
+
+        _icon = icon;
+        OnPropertyChanged(nameof(Icon));
+        OnPropertyChanged(nameof(IconVisibility));
+        OnPropertyChanged(nameof(FallbackIconVisibility));
+    }
+
     private string PinnedText => IsPinned ? ", Pinned" : string.Empty;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

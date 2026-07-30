@@ -5,9 +5,10 @@ namespace SeanShell.Core.Tests;
 [TestClass]
 public sealed class TaskbarDockLayoutTests
 {
-    [DataRow(0, 0, 1920, 420)]
-    [DataRow(0, 3, 1920, 516)]
-    [DataRow(2, 4, 1920, 672)]
+    [DataRow(0, 0, 1920, 480)]
+    [DataRow(0, 2, 1920, 504)]
+    [DataRow(0, 3, 1920, 564)]
+    [DataRow(2, 4, 1920, 744)]
     [DataRow(8, 10, 1920, 1000)]
     [DataRow(8, 10, 800, 768)]
     [DataRow(0, 0, 300, 268)]
@@ -38,9 +39,9 @@ public sealed class TaskbarDockLayoutTests
     }
 
     [TestMethod]
-    [DataRow(0, 3, 1920, 1.0, 516)]
-    [DataRow(0, 3, 1920, 1.5, 588)]
-    [DataRow(2, 4, 1920, 2.25, 852)]
+    [DataRow(0, 3, 1920, 1.0, 564)]
+    [DataRow(0, 3, 1920, 1.5, 641)]
+    [DataRow(2, 4, 1920, 2.25, 936)]
     [DataRow(8, 10, 800, 2.25, 768)]
     public void CalculateExpandedWidthReservesScaledFixedControls(
         int pinnedItemCount,
