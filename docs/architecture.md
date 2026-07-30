@@ -254,6 +254,9 @@ Core Audio render endpoint. It reads master volume and mute state on opening,
 then applies explicit Slider or mute-toggle changes through
 `IAudioEndpointVolume`. COM objects are released after each bounded operation;
 there is no audio callback, process injection, or background audio poller.
+Each Dock captures one initial system and audio snapshot for its compact
+network, speaker, power, and battery-percentage cluster. Opening Quick settings
+or changing audio refreshes that cluster; no additional status timer is created.
 
 Quick settings and the clock calendar share theme-resource-driven Flyout
 presenter, surface, section, action, and icon-tile styles. The styles retain
