@@ -107,7 +107,17 @@ public sealed class DesktopWindowService
             _iconCache.Clear();
         }
 
-        icon = _iconReader.ReadWindowIcon(windowHandle, processId);
+        try
+        {
+            icon = _iconReader.ReadWindowIcon(windowHandle, processId);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Debug.WriteLine(
+                $"Unable to read the application icon for process {processId}. {exception}");
+            icon = null;
+        }
+
         _iconCache[processId] = icon;
         return icon;
     }

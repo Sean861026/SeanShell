@@ -108,6 +108,8 @@
 - [x] Semantic application and system-area surface hierarchy with stable tabular clock figures
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] Flushed WinUI icon buffers before compositor invalidation
+- [x] Per-icon failure isolation with accessible Fluent fallback
+- [x] Native icon extraction failure isolation from desktop-window snapshots
 - [x] ExtraLarge 48px Shell icon sources with bounded high-DPI downsampling
 - [x] Production SeanShell brand icon across package, title-bar, and Dock Launcher surfaces
 - [x] Icon-first taskbar presentation with distinct active, running, and minimized indicators

@@ -209,9 +209,11 @@ leaves the previous toggle state unchanged.
 window capture asks each process for its `WM_GETICON` or class icon and falls
 back to the executable's Shell icon. A bounded process-ID cache prevents the
 two-second Dock refresh from repeating native extraction and evicts processes
-that no longer own a visible Dock window, preventing stale PID reuse. Pinned
-Start Menu commands resolve and path-cache their shortcut icons on a background
-thread only when the bounded pin list is loaded, not during every Launcher query.
+that no longer own a visible Dock window, preventing stale PID reuse. Native
+icon extraction failure is cached as an unavailable image for that process and
+cannot abort or clear the desktop-window snapshot. Pinned Start Menu commands
+resolve and path-cache their shortcut icons on a background thread only when the
+bounded pin list is loaded, not during every Launcher query.
 
 The reader asks the Windows ExtraLarge system image list for file and shortcut
 icons, then falls back to `SHGetFileInfo` when that interface is unavailable.
@@ -221,11 +223,13 @@ Shell/GDI handle is released. On the UI thread,
 `ApplicationIconSourceCache` converts that immutable snapshot once into a shared
 WinUI `WriteableBitmap`. The complete BGRA buffer is positioned, written,
 flushed, and disposed before the bitmap is invalidated, ensuring the compositor
-never observes the initial transparent buffer. Dock templates reserve a stable
-26-pixel slot and show either the native icon or a Segoe Fluent fallback, never
-both. Process paths and pixel data remain session-local and are not written to
-SeanShell settings or telemetry. At 9,216 bytes per icon, the existing
-128-process and 32-shortcut cache caps bound raw pixel storage to roughly 1.4 MB.
+never observes the initial transparent buffer. Conversion failure is isolated to
+that image and returns no `ImageSource`; it cannot abort the monitor's window
+snapshot or clear taskbar items. Dock templates reserve a stable 26-pixel slot
+and show either the native icon or a Segoe Fluent fallback, never both. Process
+paths and pixel data remain session-local and are not written to SeanShell
+settings or telemetry. At 9,216 bytes per icon, the existing 128-process and
+32-shortcut cache caps bound raw pixel storage to roughly 1.4 MB.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded
