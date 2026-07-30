@@ -33,9 +33,11 @@ public sealed partial class DockWindow : Window
     private readonly SystemStatusSnapshotService _systemStatus = new();
     private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
+    private readonly DispatcherQueueTimer _displayScaleRefreshTimer;
     private readonly DispatcherQueueTimer _previewDelayTimer;
     private readonly DispatcherQueueTimer _previewDismissTimer;
     private readonly bool _compactDensity;
+    private double _displayScaleFactor;
     private double _textScaleFactor = 1;
     private bool _allowClose;
     private bool _autoHide = true;
@@ -82,12 +84,10 @@ public sealed partial class DockWindow : Window
         var density = ((App)Application.Current).SettingsLoad.Settings.DisplayDensity;
         _compactDensity = density == ShellDisplayDensity.Compact;
         _textScaleFactor = textScaleFactor;
-        _expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
-            0,
-            0,
-            _monitor.WorkAreaWidth,
-            _textScaleFactor);
+        _displayScaleFactor = DisplayDpiService.GetScaleFactor(_monitor.Handle);
+        _expandedDockWidth = CalculateExpandedWidth(0, 0);
         ApplyDisplayDensity(density);
+        ExpandedDock.Loaded += OnExpandedDockLoaded;
         PinnedList.ItemsSource = PinnedItems;
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
@@ -98,6 +98,11 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Interval = TimeSpan.FromMilliseconds(900);
         _autoHideTimer.IsRepeating = false;
         _autoHideTimer.Tick += OnAutoHideTimerTick;
+
+        _displayScaleRefreshTimer = DispatcherQueue.CreateTimer();
+        _displayScaleRefreshTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _displayScaleRefreshTimer.IsRepeating = false;
+        _displayScaleRefreshTimer.Tick += OnDisplayScaleRefreshTimerTick;
 
         _previewDelayTimer = DispatcherQueue.CreateTimer();
         _previewDelayTimer.Interval = TimeSpan.FromMilliseconds(450);
@@ -151,6 +156,7 @@ public sealed partial class DockWindow : Window
         SetCollapsed(false);
         EmptyState.Visibility = Visibility.Visible;
         AppWindow.Show(false);
+        ScheduleDisplayScaleRefresh();
         ScheduleAutoHide();
     }
 
@@ -166,6 +172,7 @@ public sealed partial class DockWindow : Window
 
         SetCollapsed(false);
         AppWindow.Show();
+        ScheduleDisplayScaleRefresh();
         Activate();
         _ = _windowService.RestoreAndActivate(dockWindow);
         _ = LauncherButton.Focus(FocusState.Keyboard);
@@ -217,13 +224,14 @@ public sealed partial class DockWindow : Window
             return released;
         }
 
-        var dockHeight = AccessibilityLayout.ScaleDockHeight(
-            _compactDensity ? CompactDockHeight : DockHeight,
-            _textScaleFactor);
+        var dockHeight = ToPhysicalPixels(
+            AccessibilityLayout.ScaleDockHeight(
+                _compactDensity ? CompactDockHeight : DockHeight,
+                _textScaleFactor));
         var result = _workAreaReservation.Reserve(
             WinRT.Interop.WindowNative.GetWindowHandle(this),
             _monitor.Handle,
-            dockHeight + WorkAreaVerticalMargin);
+            dockHeight + ToPhysicalPixels(WorkAreaVerticalMargin));
         _reservedArea = result.Success ? result.ReservedArea : null;
         SetCollapsed(_collapsed);
         return result;
@@ -281,6 +289,7 @@ public sealed partial class DockWindow : Window
     public void Shutdown()
     {
         _autoHideTimer.Stop();
+        _displayScaleRefreshTimer.Stop();
         _previewDelayTimer.Stop();
         _previewDismissTimer.Stop();
         _previewWindow?.Shutdown();
@@ -325,12 +334,13 @@ public sealed partial class DockWindow : Window
         var bounds = DockPlacement.Calculate(
             placementMonitor,
             _expandedDockWidth,
-            AccessibilityLayout.ScaleDockHeight(
-                _compactDensity ? CompactDockHeight : DockHeight,
-                _textScaleFactor),
+            ToPhysicalPixels(
+                AccessibilityLayout.ScaleDockHeight(
+                    _compactDensity ? CompactDockHeight : DockHeight,
+                    _textScaleFactor)),
             collapsed,
-            PeekWidth,
-            PeekHeight);
+            ToPhysicalPixels(PeekWidth),
+            ToPhysicalPixels(PeekHeight));
         AppWindow.Resize(new SizeInt32(bounds.Width, bounds.Height));
         AppWindow.Move(new PointInt32(bounds.X, bounds.Y));
     }
@@ -394,7 +404,9 @@ public sealed partial class DockWindow : Window
             var isPinned = TaskbarDockPinResolver.FindPinnedApplication(
                 _pinnedApplications,
                 group.Windows) is not null;
-            Items.Add(new DockItemViewModel(group, isPinned));
+            var item = new DockItemViewModel(group, isPinned);
+            Items.Add(item);
+            _ = item.LoadIconAsync();
         }
 
         WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
@@ -453,11 +465,9 @@ public sealed partial class DockWindow : Window
 
     private void RefreshExpandedWidth()
     {
-        var expandedDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
+        var expandedDockWidth = CalculateExpandedWidth(
             PinnedItems.Count,
-            Items.Count,
-            _monitor.WorkAreaWidth,
-            _textScaleFactor);
+            Items.Count);
         if (_expandedDockWidth == expandedDockWidth)
         {
             return;
@@ -465,6 +475,62 @@ public sealed partial class DockWindow : Window
 
         _expandedDockWidth = expandedDockWidth;
         SetCollapsed(_collapsed);
+    }
+
+    private int CalculateExpandedWidth(int pinnedItemCount, int windowItemCount)
+    {
+        var logicalWorkAreaWidth =
+            DisplayScaleLayout.ToDeviceIndependentPixels(
+                _monitor.WorkAreaWidth,
+                _displayScaleFactor);
+        var logicalDockWidth = TaskbarDockLayout.CalculateExpandedWidth(
+            pinnedItemCount,
+            windowItemCount,
+            logicalWorkAreaWidth,
+            _textScaleFactor);
+        return ToPhysicalPixels(logicalDockWidth);
+    }
+
+    private int ToPhysicalPixels(int deviceIndependentPixels) =>
+        DisplayScaleLayout.ToPhysicalPixels(
+            deviceIndependentPixels,
+            _displayScaleFactor);
+
+    private void RefreshWindowScaleFactor()
+    {
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var displayScaleFactor =
+            DisplayDpiService.GetWindowScaleFactor(windowHandle);
+        if (Math.Abs(_displayScaleFactor - displayScaleFactor) < 0.001)
+        {
+            return;
+        }
+
+        _displayScaleFactor = displayScaleFactor;
+        _expandedDockWidth = CalculateExpandedWidth(
+            PinnedItems.Count,
+            Items.Count);
+        SetCollapsed(_collapsed);
+    }
+
+    private void OnExpandedDockLoaded(object sender, RoutedEventArgs e)
+    {
+        ExpandedDock.Loaded -= OnExpandedDockLoaded;
+        ScheduleDisplayScaleRefresh();
+    }
+
+    private void ScheduleDisplayScaleRefresh()
+    {
+        _displayScaleRefreshTimer.Stop();
+        _displayScaleRefreshTimer.Start();
+    }
+
+    private void OnDisplayScaleRefreshTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        sender.Stop();
+        RefreshWindowScaleFactor();
     }
 
     private void RefreshPinnedItems()
@@ -482,7 +548,9 @@ public sealed partial class DockWindow : Window
             PinnedItems.Clear();
             foreach (var application in visibleApplications)
             {
-                PinnedItems.Add(new PinnedDockItemViewModel(application));
+                var item = new PinnedDockItemViewModel(application);
+                PinnedItems.Add(item);
+                _ = item.LoadIconAsync();
             }
         }
 

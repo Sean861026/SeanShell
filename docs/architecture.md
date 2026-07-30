@@ -87,10 +87,16 @@ makes the Dock itself foreground, without guessing a replacement window.
 `TaskbarDockLayout` derives a bounded expanded width from the current pinned and
 running item counts, capped to both the preferred maximum and the monitor work
 area. This keeps sparse Docks compact while preserving horizontal scrolling for
-dense sessions and small displays. Its fixed-control allowance includes the
+dense sessions and small displays. The normal window budget includes breathing
+room beyond each item's visual width, so typical sessions expand before a
+horizontal scrollbar is needed. Its fixed-control allowance includes the
 Launcher and complete system region so those controls cannot consume the
 monitor-local running-window viewport. Fixed icon buttons explicitly override
 the native Button minimum size while retaining a 44-by-44 interaction target.
+Dock dimensions remain device-independent inside Core and are converted to
+physical pixels at the `AppWindow` boundary using the target monitor's effective
+DPI. A one-shot post-show refresh handles the WinUI/`WM_DPICHANGED` startup race
+without adding continuous polling.
 
 The Dock's transparent Layer surface allows its desktop Acrylic system backdrop
 to remain visible instead of covering it with an opaque card. Acrylic is used
@@ -221,15 +227,15 @@ Window/class icons remain the first source for live windows. Every resulting
 `HICON` is rendered into a validated 48-by-48 BGRA snapshot and each owned
 Shell/GDI handle is released. On the UI thread,
 `ApplicationIconSourceCache` converts that immutable snapshot once into a shared
-WinUI `WriteableBitmap`. The complete BGRA buffer is positioned, written,
-flushed, and disposed before the bitmap is invalidated, ensuring the compositor
-never observes the initial transparent buffer. Conversion failure is isolated to
-that image and returns no `ImageSource`; it cannot abort the monitor's window
-snapshot or clear taskbar items. Dock templates reserve a stable 26-pixel slot
-and show either the native icon or a Segoe Fluent fallback, never both. Process
-paths and pixel data remain session-local and are not written to SeanShell
-settings or telemetry. At 9,216 bytes per icon, the existing 128-process and
-32-shortcut cache caps bound raw pixel storage to roughly 1.4 MB.
+WinUI `SoftwareBitmapSource`. The UI first renders the Segoe Fluent fallback in
+the reserved icon slot, then asynchronously copies the premultiplied BGRA buffer
+into a `SoftwareBitmap` and swaps the native image into the same geometry after
+`SetBitmapAsync` completes. Conversion failure is isolated to that image and
+leaves the fallback visible; it cannot abort the monitor's window snapshot or
+clear taskbar items. Process paths and pixel data remain session-local and are
+not written to SeanShell settings or telemetry. At 9,216 bytes per icon, the
+existing 128-process and 32-shortcut cache caps bound raw pixel storage to
+roughly 1.4 MB.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded

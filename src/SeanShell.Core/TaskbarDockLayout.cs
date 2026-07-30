@@ -2,12 +2,12 @@ namespace SeanShell.Core;
 
 public static class TaskbarDockLayout
 {
-    public const int PreferredMinimumWidth = 420;
+    public const int PreferredMinimumWidth = 480;
     public const int PreferredMaximumWidth = 1000;
     public const int MonitorEdgeMargin = 32;
 
-    private const int FixedControlsWidth = 360;
-    private const int ItemSlotWidth = 52;
+    private const int FixedControlsWidth = 384;
+    private const int ItemSlotWidth = 60;
 
     public static int CalculateExpandedWidth(
         int pinnedItemCount,
