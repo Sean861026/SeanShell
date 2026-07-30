@@ -124,6 +124,17 @@ icons while retaining system theme, high-contrast, and keyboard behavior. Duplic
 titles receive a stable ordinal in both menus so every handle remains
 distinguishable without process injection.
 
+Hovering a running Dock group starts a bounded delay before opening one reusable
+`WindowPreviewWindow`. `WindowPreviewLayout` caps the surface at six windows and
+uses a one-, two-, or three-column grid. Each card keeps its title and graceful
+close action outside the preview rectangle. `DwmThumbnail` owns the native
+source-to-destination relationship and unregisters it whenever the preview hides,
+the Dock snapshot changes, or SeanShell shuts down. DWM supplies the live pixels;
+SeanShell does not capture, poll, inject, or hook the source process. Selecting a
+preview uses the same validated restore-and-activate boundary as the Dock, while
+the existing native window picker and context menu remain the keyboard
+alternatives to hover-only discovery.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses

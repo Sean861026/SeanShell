@@ -341,6 +341,17 @@ User opens an entry context menu
   -> multiple shortcut identities: require a native submenu selection
   -> execute the original cached shortcut command
 
+User hovers a running application entry
+  -> wait 450 ms to reject pointer transit
+  -> calculate a bounded one-to-six-window preview grid
+  -> create DWM thumbnail relationships into SeanShell's preview HWND
+  -> render live source-window previews without capture or injection
+  -> pointer enters preview: cancel pending dismissal
+  -> select preview: restore and activate that exact window, then dismiss
+  -> select close: post WM_CLOSE to that exact window, then dismiss
+  -> pointer leaves Dock and preview: wait 320 ms, unregister thumbnails, hide
+  -> Dock snapshot changes or shutdown begins: unregister and dismiss immediately
+
 User middle-clicks a Dock application
   -> standalone pin: execute its exact cached application command
   -> running item with no reliable application candidate: do not launch
