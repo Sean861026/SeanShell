@@ -219,11 +219,13 @@ Window/class icons remain the first source for live windows. Every resulting
 `HICON` is rendered into a validated 48-by-48 BGRA snapshot and each owned
 Shell/GDI handle is released. On the UI thread,
 `ApplicationIconSourceCache` converts that immutable snapshot once into a shared
-WinUI `WriteableBitmap`. Dock templates reserve a stable 26-pixel slot and show
-either the native icon or a Segoe Fluent fallback, never both. Process paths and
-pixel data remain session-local and are not written to SeanShell settings or
-telemetry. At 9,216 bytes per icon, the existing 128-process and 32-shortcut
-cache caps bound raw pixel storage to roughly 1.4 MB.
+WinUI `WriteableBitmap`. The complete BGRA buffer is positioned, written,
+flushed, and disposed before the bitmap is invalidated, ensuring the compositor
+never observes the initial transparent buffer. Dock templates reserve a stable
+26-pixel slot and show either the native icon or a Segoe Fluent fallback, never
+both. Process paths and pixel data remain session-local and are not written to
+SeanShell settings or telemetry. At 9,216 bytes per icon, the existing
+128-process and 32-shortcut cache caps bound raw pixel storage to roughly 1.4 MB.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded
