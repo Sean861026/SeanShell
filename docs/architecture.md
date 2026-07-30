@@ -246,6 +246,12 @@ snapshot into visible and accessible text before the flyout is shown. The
 capture is demand-driven: no network or battery polling timer remains active
 while Quick settings is closed.
 
+The same flyout uses `AudioEndpointService` to activate the current Windows
+Core Audio render endpoint. It reads master volume and mute state on opening,
+then applies explicit Slider or mute-toggle changes through
+`IAudioEndpointVolume`. COM objects are released after each bounded operation;
+there is no audio callback, process injection, or background audio poller.
+
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented
 `ABM_NEW`, `ABM_QUERYPOS`, and `ABM_SETPOS` sequence for that Dock window and

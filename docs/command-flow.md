@@ -499,9 +499,16 @@ Gaming Mode starts while the system area is revealed
 User opens Dock Quick settings
   -> capture current network availability
   -> capture current native battery and AC-line state
+  -> capture current default render-endpoint volume and mute state
   -> format visible status and an accessible summary in Core
-  -> update Network and Power menu items
+  -> update Network, Sound, and Power controls
   -> show the flyout without starting a background polling timer
+
+User changes the output-volume Slider or mute toggle
+  -> activate the current default Windows Core Audio render endpoint
+  -> apply the explicit master-volume or mute request
+  -> read back and display the resulting endpoint state
+  -> release the endpoint COM objects
 ```
 
 Failure of either visibility transition fails safe by restoring native taskbars,
