@@ -500,6 +500,7 @@ MainWindow 15-second clock timer
 
 User opens a Dock clock
   -> set the native CalendarView display date to the latest clock timestamp
+  -> place the flyout above the Dock without constraining it to the compact Dock root
   -> preserve built-in keyboard month navigation and today highlighting
   -> keep later clock ticks from resetting the month being viewed
 
@@ -528,6 +529,7 @@ User opens Dock Quick settings
   -> capture current default render-endpoint volume and mute state
   -> format visible status and an accessible summary in Core
   -> update Network, Sound, and Power controls
+  -> place the flyout above the Dock without constraining it to the compact Dock root
   -> show the flyout without starting a background polling timer
 
 User changes the output-volume Slider or mute toggle

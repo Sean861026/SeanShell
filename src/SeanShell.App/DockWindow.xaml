@@ -375,7 +375,8 @@
                                     Closed="OnQuickSettingsClosed"
                                     FlyoutPresenterStyle="{StaticResource SeanDockFlyoutPresenterStyle}"
                                     Opening="OnQuickSettingsOpening"
-                                    Placement="TopEdgeAlignedRight">
+                                    Placement="TopEdgeAlignedRight"
+                                    ShouldConstrainToRootBounds="False">
                                     <Border
                                         Width="340"
                                         Style="{StaticResource SeanDockFlyoutSurfaceStyle}">
@@ -525,7 +526,8 @@
                                     Closed="OnClockFlyoutClosed"
                                     FlyoutPresenterStyle="{StaticResource SeanDockFlyoutPresenterStyle}"
                                     Opening="OnClockFlyoutOpening"
-                                    Placement="TopEdgeAlignedRight">
+                                    Placement="TopEdgeAlignedRight"
+                                    ShouldConstrainToRootBounds="False">
                                     <Border
                                         Width="360"
                                         Style="{StaticResource SeanDockFlyoutSurfaceStyle}">
