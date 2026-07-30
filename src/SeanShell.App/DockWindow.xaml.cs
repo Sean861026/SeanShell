@@ -33,6 +33,8 @@ public sealed partial class DockWindow : Window
     private readonly SystemStatusSnapshotService _systemStatus = new();
     private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
+    private readonly DispatcherQueueTimer _previewDelayTimer;
+    private readonly DispatcherQueueTimer _previewDismissTimer;
     private readonly bool _compactDensity;
     private double _textScaleFactor = 1;
     private bool _allowClose;
@@ -56,6 +58,9 @@ public sealed partial class DockWindow : Window
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
     private DockBounds? _reservedArea;
+    private WindowPreviewWindow? _previewWindow;
+    private DockItemViewModel? _pendingPreviewItem;
+    private FrameworkElement? _pendingPreviewAnchor;
 
     public DockWindow(
         DesktopWindowService windowService,
@@ -93,6 +98,16 @@ public sealed partial class DockWindow : Window
         _autoHideTimer.Interval = TimeSpan.FromMilliseconds(900);
         _autoHideTimer.IsRepeating = false;
         _autoHideTimer.Tick += OnAutoHideTimerTick;
+
+        _previewDelayTimer = DispatcherQueue.CreateTimer();
+        _previewDelayTimer.Interval = TimeSpan.FromMilliseconds(450);
+        _previewDelayTimer.IsRepeating = false;
+        _previewDelayTimer.Tick += OnPreviewDelayTimerTick;
+
+        _previewDismissTimer = DispatcherQueue.CreateTimer();
+        _previewDismissTimer.Interval = TimeSpan.FromMilliseconds(320);
+        _previewDismissTimer.IsRepeating = false;
+        _previewDismissTimer.Tick += OnPreviewDismissTimerTick;
 
         _shellState.StateChanged += OnShellStateChanged;
         AppWindow.Closing += OnWindowClosing;
@@ -264,6 +279,10 @@ public sealed partial class DockWindow : Window
     public void Shutdown()
     {
         _autoHideTimer.Stop();
+        _previewDelayTimer.Stop();
+        _previewDismissTimer.Stop();
+        _previewWindow?.Shutdown();
+        _previewWindow = null;
         _shellState.StateChanged -= OnShellStateChanged;
         _ = _workAreaReservation.Release();
         _allowClose = true;
@@ -283,6 +302,11 @@ public sealed partial class DockWindow : Window
 
     private void SetCollapsed(bool collapsed)
     {
+        if (collapsed)
+        {
+            DismissWindowPreview();
+        }
+
         _collapsed = collapsed;
         ExpandedDock.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         PeekIndicator.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
@@ -314,6 +338,7 @@ public sealed partial class DockWindow : Window
         if (!_autoHide ||
             _contextMenuOpen ||
             _modalDialogOpen ||
+            _previewWindow?.IsVisible == true ||
             _shellState.Current.Mode == ShellMode.Gaming)
         {
             return;
@@ -351,6 +376,7 @@ public sealed partial class DockWindow : Window
         }
 
         _monitorWindows = windows;
+        DismissWindowPreview();
         RefreshWindowItems();
         DockCountText.Text = windows.Count == 1 ? "1 window" : $"{windows.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
@@ -486,6 +512,10 @@ public sealed partial class DockWindow : Window
         if (sender is FrameworkElement element)
         {
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
+            if (element.DataContext is DockItemViewModel item)
+            {
+                ScheduleWindowPreview(item, element);
+            }
         }
     }
 
@@ -496,7 +526,97 @@ public sealed partial class DockWindow : Window
         if (sender is FrameworkElement element)
         {
             ApplyDockItemMotion(element, isPointerOver: false, isPressed: false);
+            if (element.DataContext is DockItemViewModel)
+            {
+                _previewDelayTimer.Stop();
+                _pendingPreviewItem = null;
+                _pendingPreviewAnchor = null;
+                ScheduleWindowPreviewDismissal();
+            }
         }
+    }
+
+    private void ScheduleWindowPreview(
+        DockItemViewModel item,
+        FrameworkElement anchor)
+    {
+        _previewDismissTimer.Stop();
+        _pendingPreviewItem = item;
+        _pendingPreviewAnchor = anchor;
+        _previewDelayTimer.Stop();
+        _previewDelayTimer.Start();
+    }
+
+    private void ScheduleWindowPreviewDismissal()
+    {
+        _previewDismissTimer.Stop();
+        _previewDismissTimer.Start();
+    }
+
+    private void OnPreviewDelayTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        sender.Stop();
+        var item = _pendingPreviewItem;
+        var anchor = _pendingPreviewAnchor;
+        _pendingPreviewItem = null;
+        _pendingPreviewAnchor = null;
+        if (item is null ||
+            anchor is null ||
+            _collapsed ||
+            !anchor.IsLoaded)
+        {
+            return;
+        }
+
+        _previewWindow ??= CreateWindowPreview();
+        var point = anchor
+            .TransformToVisual(DockRoot)
+            .TransformPoint(new global::Windows.Foundation.Point(0, 0));
+        var scale = DockRoot.XamlRoot?.RasterizationScale ?? 1;
+        var anchorCenterX =
+            AppWindow.Position.X +
+            (int)Math.Round((point.X + (anchor.ActualWidth / 2)) * scale);
+        _autoHideTimer.Stop();
+        _previewWindow.Show(
+            item,
+            anchorCenterX,
+            AppWindow.Position.Y,
+            _monitor,
+            scale);
+    }
+
+    private WindowPreviewWindow CreateWindowPreview()
+    {
+        var preview = new WindowPreviewWindow(_windowService);
+        preview.PreviewEntered += (_, _) =>
+        {
+            _previewDismissTimer.Stop();
+            _autoHideTimer.Stop();
+        };
+        preview.PreviewExited += (_, _) =>
+            ScheduleWindowPreviewDismissal();
+        preview.Dismissed += (_, _) =>
+            ScheduleAutoHide();
+        return preview;
+    }
+
+    private void OnPreviewDismissTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        sender.Stop();
+        DismissWindowPreview();
+    }
+
+    private void DismissWindowPreview()
+    {
+        _previewDelayTimer.Stop();
+        _previewDismissTimer.Stop();
+        _pendingPreviewItem = null;
+        _pendingPreviewAnchor = null;
+        _previewWindow?.Dismiss();
     }
 
     private async void OnDockItemPointerPressed(
@@ -637,6 +757,7 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        DismissWindowPreview();
         if (item.WindowCount == 1)
         {
             _ = _windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle);
@@ -660,6 +781,7 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        DismissWindowPreview();
         if (item.WindowCount > 1)
         {
             ShowGroupWindowContextMenu(item, element);
@@ -1566,6 +1688,7 @@ public sealed partial class DockWindow : Window
         if (state.Mode == ShellMode.Gaming)
         {
             _autoHideTimer.Stop();
+            DismissWindowPreview();
             AppWindow.Hide();
             return;
         }
@@ -1583,6 +1706,7 @@ public sealed partial class DockWindow : Window
         }
 
         args.Cancel = true;
+        DismissWindowPreview();
         AppWindow.Hide();
     }
 }

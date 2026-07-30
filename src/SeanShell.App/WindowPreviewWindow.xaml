@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="SeanShell.App.WindowPreviewWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Window previews"
+    mc:Ignorable="d">
+
+    <Window.SystemBackdrop>
+        <DesktopAcrylicBackdrop />
+    </Window.SystemBackdrop>
+
+    <Border
+        x:Name="PreviewRoot"
+        Padding="10"
+        AutomationProperties.Name="Open window previews"
+        Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        CornerRadius="18"
+        PointerEntered="OnPointerEntered"
+        PointerExited="OnPointerExited">
+        <Grid
+            x:Name="PreviewGrid"
+            ColumnSpacing="8"
+            RowSpacing="8" />
+    </Border>
+</Window>
