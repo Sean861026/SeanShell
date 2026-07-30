@@ -280,7 +280,10 @@ or changing audio refreshes that cluster; no additional status timer is created.
 Quick settings and the clock calendar share theme-resource-driven Flyout
 presenter, surface, section, action, and icon-tile styles. The styles retain
 native control templates and focus visuals while adding one consistent
-acrylic-layer hierarchy across light, dark, and high-contrast themes.
+acrylic-layer hierarchy across light, dark, and high-contrast themes. These
+system flyouts opt out of the compact Dock XAML root bounds so their primary
+controls and calendar can render at their natural size above the Dock instead
+of being compressed into an internal scrolling viewport.
 
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented

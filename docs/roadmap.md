@@ -138,6 +138,7 @@
 - [x] Native keyboard-accessible monthly calendar in the Dock clock flyout
 - [x] On-demand network and battery/power status in Dock Quick settings
 - [x] Native master-volume Slider and mute control in Dock Quick settings
+- [x] Unconstrained clock and Quick settings flyouts above the compact Dock root
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
