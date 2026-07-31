@@ -1,6 +1,7 @@
 # SeanShell design system
 
-SeanShell uses a native Fluent visual language for a dense developer workspace.
+SeanShell uses a native Fluent visual language with a macOS-inspired floating
+glass Dock for a dense developer workspace.
 The application follows the active Windows theme and accent color instead of
 shipping a separate brand palette.
 
@@ -12,6 +13,9 @@ shipping a separate brand palette.
 - Use color together with text or an icon; never use color as the only status.
 - Keep effects subtle so idle CPU, memory use, and gaming compatibility remain
   first-class requirements.
+- Borrow interaction qualities rather than Apple identity: floating glass,
+  restrained depth, rounded icon grouping, and concise status surfaces. Do not
+  copy Apple logos, fonts, icons, or fixed brand colors.
 
 ## Tokens and styles
 
@@ -45,6 +49,20 @@ Raw colors must not be embedded in individual views.
 - The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
   Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
   colors are not embedded in the Dock.
+- The Dock glass shell uses a 24 px outer radius without a drawn outer stroke or
+  full-width highlight. Its translucent material defines the silhouette, while
+  16 px application/system capsules provide the internal structure.
+  Theme-specific neutral layers keep the desktop Acrylic visibly frosted even
+  on dark wallpapers. Reduced effects replaces these layers with the native
+  opaque card surface while preserving the hierarchy.
+- The Dock removes native caption/frame and extended edge styles after the HWND
+  has loaded and after every AppWindow placement update, because presenter
+  resize/move operations can restore `WS_DLGFRAME`. The presenter can preserve
+  that native style even after a direct update, so the visible HWND region is
+  clipped two device-independent pixels inside the frame with a DPI-aware
+  rounded region. DWM non-client rendering is explicitly disabled so Windows
+  does not redraw an outline along that region; client-area Acrylic remains
+  active. The Dock never hooks or injects into another process.
 - Dock chrome has three semantic depth levels: Acrylic window shell, a tertiary
   application region, and a secondary bordered system region. Clock figures use
   tabular numerals so time changes do not shift neighboring content.

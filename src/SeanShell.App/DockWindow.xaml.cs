@@ -93,6 +93,8 @@ public sealed partial class DockWindow : Window
         WindowList.ItemsSource = Items;
         AppWindow.SetIcon("Assets/AppIcon.ico");
         ConfigurePresenter();
+        _ = DwmWindowChrome.TryConfigureFloatingSurface(
+            WinRT.Interop.WindowNative.GetWindowHandle(this));
         RefreshDockSystemIndicators();
 
         _autoHideTimer = DispatcherQueue.CreateTimer();
@@ -208,7 +210,15 @@ public sealed partial class DockWindow : Window
         ExpandedDock.Background = Application.Current.Resources[
             enabled
                 ? "CardBackgroundFillColorDefaultBrush"
-                : "LayerFillColorAltBrush"] as Brush;
+                : "SeanDockGlassShellBrush"] as Brush;
+        ApplicationRegion.Background = Application.Current.Resources[
+            enabled
+                ? "CardBackgroundFillColorDefaultBrush"
+                : "SeanDockGlassRegionBrush"] as Brush;
+        SystemRegion.Background = Application.Current.Resources[
+            enabled
+                ? "CardBackgroundFillColorDefaultBrush"
+                : "SeanDockGlassSystemBrush"] as Brush;
     }
 
     public WorkAreaReservationResult SetWorkAreaReservation(bool enabled)
@@ -349,6 +359,14 @@ public sealed partial class DockWindow : Window
             ToPhysicalPixels(PeekHeight));
         AppWindow.Resize(new SizeInt32(bounds.Width, bounds.Height));
         AppWindow.Move(new PointInt32(bounds.X, bounds.Y));
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        _ = DwmWindowChrome.TryConfigureFloatingSurface(windowHandle);
+        _ = DwmWindowChrome.TryApplyRoundedClip(
+            windowHandle,
+            bounds.Width,
+            bounds.Height,
+            ToPhysicalPixels(collapsed ? 5 : 24),
+            ToPhysicalPixels(2));
     }
 
     private void ScheduleAutoHide()
@@ -647,6 +665,8 @@ public sealed partial class DockWindow : Window
     private void OnExpandedDockLoaded(object sender, RoutedEventArgs e)
     {
         ExpandedDock.Loaded -= OnExpandedDockLoaded;
+        _ = DwmWindowChrome.TryConfigureFloatingSurface(
+            WinRT.Interop.WindowNative.GetWindowHandle(this));
         ScheduleDisplayScaleRefresh();
     }
 
