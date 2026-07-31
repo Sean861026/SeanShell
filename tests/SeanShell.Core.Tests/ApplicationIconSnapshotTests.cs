@@ -48,8 +48,8 @@ public sealed class ApplicationIconSnapshotTests
             ApplicationIconSnapshot.PreferredDimension,
             new byte[byteCount]);
 
-        Assert.AreEqual(48, snapshot.Width);
-        Assert.AreEqual(48, snapshot.Height);
-        Assert.AreEqual(9_216, snapshot.BgraPixels.Length);
+        Assert.AreEqual(128, snapshot.Width);
+        Assert.AreEqual(128, snapshot.Height);
+        Assert.AreEqual(65_536, snapshot.BgraPixels.Length);
     }
 }

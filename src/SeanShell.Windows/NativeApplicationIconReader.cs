@@ -18,7 +18,7 @@ internal sealed class NativeApplicationIconReader
     private const uint ShgfiIcon = 0x000000100;
     private const uint ShgfiLargeIcon = 0x000000000;
     private const uint ShgfiSystemIconIndex = 0x000004000;
-    private const int ShellImageListExtraLarge = 2;
+    private const int ShellImageListJumbo = 4;
     private const int ImageListDrawTransparent = 0x00000001;
     private const uint DibRgbColors = 0;
     private const uint BiRgb = 0;
@@ -26,14 +26,17 @@ internal sealed class NativeApplicationIconReader
 
     public ApplicationIconSnapshot? ReadWindowIcon(nint windowHandle, int processId)
     {
-        var iconHandle = GetWindowIcon(windowHandle);
-        if (iconHandle != 0)
+        var executablePath = GetProcessImagePath(processId);
+        var fileIcon = executablePath is null
+            ? null
+            : ReadFileIcon(executablePath);
+        if (fileIcon is not null)
         {
-            return Render(iconHandle);
+            return fileIcon;
         }
 
-        var executablePath = GetProcessImagePath(processId);
-        return executablePath is null ? null : ReadFileIcon(executablePath);
+        var iconHandle = GetWindowIcon(windowHandle);
+        return iconHandle == 0 ? null : Render(iconHandle);
     }
 
     public ApplicationIconSnapshot? ReadFileIcon(string path)
@@ -43,16 +46,16 @@ internal sealed class NativeApplicationIconReader
             return null;
         }
 
-        var extraLargeIcon = GetExtraLargeFileIcon(path);
-        if (extraLargeIcon != 0)
+        var jumboIcon = GetJumboFileIcon(path);
+        if (jumboIcon != 0)
         {
             try
             {
-                return Render(extraLargeIcon);
+                return Render(jumboIcon);
             }
             finally
             {
-                _ = DestroyIcon(extraLargeIcon);
+                _ = DestroyIcon(jumboIcon);
             }
         }
 
@@ -77,7 +80,7 @@ internal sealed class NativeApplicationIconReader
         }
     }
 
-    private static nint GetExtraLargeFileIcon(string path)
+    private static nint GetJumboFileIcon(string path)
     {
         var result = SHGetFileInfo(
             path,
@@ -92,7 +95,7 @@ internal sealed class NativeApplicationIconReader
 
         var interfaceId = typeof(IImageList).GUID;
         var status = SHGetImageList(
-            ShellImageListExtraLarge,
+            ShellImageListJumbo,
             ref interfaceId,
             out var imageList);
         if (status < 0 || imageList is null)

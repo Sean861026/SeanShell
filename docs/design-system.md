@@ -43,9 +43,20 @@ Raw colors must not be embedded in individual views.
 - High contrast disables translucent backdrops and motion while retaining native
   ThemeResource colors; text scaling expands both Dock height and its fixed
   launcher/system area before applying monitor-width bounds.
-- Dock hover feedback uses a 140 ms scale/translation transition; press feedback
-  uses 80 ms. Both resolve to an identity transform with no transition when
-  Windows requests reduced effects or Gaming Mode is active.
+- Dock hover feedback uses a 220 ms, bottom-anchored 1.35 scale with a 6 px
+  lift; press feedback uses a 90 ms 0.92 scale. The fixed layout slot prevents
+  reflow while the hovered item rises above its siblings. Both resolve to an
+  identity transform with no transition when Windows requests reduced effects
+  or Gaming Mode is active.
+- Dock ListView containers keep native pointer-over, pressed, and selection
+  surfaces transparent. The icon, badge, running indicator, and keyboard focus
+  visual carry interaction state without exposing the container's tall safety
+  lane during magnification.
+- Dock icons use 128 px BGRA snapshots sourced from the executable's 256 px
+  Shell jumbo image before falling back to the window-provided icon. The 104 px
+  normal Dock height and centered 88 px item lane preserve the full 1.35
+  magnification without clipping; a future transparent overlay window will
+  allow icons to extend beyond the glass base itself.
 - The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
   Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
   colors are not embedded in the Dock.
