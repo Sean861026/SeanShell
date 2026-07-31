@@ -46,23 +46,29 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Button
-                    x:Name="LauncherButton"
-                    AutomationProperties.Name="Open SeanShell Launcher"
-                    Click="OnLauncherClicked"
-                    ContextRequested="OnLauncherContextRequested"
+                <Grid
+                    x:Name="LauncherItem"
+                    Width="{StaticResource SeanDockActionSize}"
+                    Height="{StaticResource SeanDockActionSize}"
                     PointerEntered="OnDockItemPointerEntered"
                     PointerExited="OnDockItemPointerExited"
                     PointerPressed="OnDockItemPointerPressed"
                     PointerReleased="OnDockItemPointerReleased"
-                    Style="{StaticResource SeanDockLauncherButtonStyle}"
                     ToolTipService.ToolTip="Open Launcher">
+                    <Button
+                        x:Name="LauncherButton"
+                        AutomationProperties.Name="Open SeanShell Launcher"
+                        Click="OnLauncherClicked"
+                        ContextRequested="OnLauncherContextRequested"
+                        Style="{StaticResource SeanDockLauncherButtonStyle}" />
                     <Image
-                        Width="{StaticResource SeanDockActionIconSize}"
-                        Height="{StaticResource SeanDockActionIconSize}"
+                        x:Name="LauncherIcon"
+                        Width="{StaticResource SeanDockAppIconSize}"
+                        Height="{StaticResource SeanDockAppIconSize}"
+                        IsHitTestVisible="False"
                         Source="Assets/Square44x44Logo.targetsize-48_altform-unplated.png"
                         Stretch="Uniform" />
-                </Button>
+                </Grid>
 
                 <Border
                     x:Name="ApplicationRegion"
