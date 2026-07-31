@@ -93,6 +93,11 @@ horizontal scrollbar is needed. Its fixed-control allowance includes the
 Launcher and complete system region so those controls cannot consume the
 monitor-local running-window viewport. Fixed icon buttons explicitly override
 the native Button minimum size while retaining a 44-by-44 interaction target.
+When the Dock reaches its monitor-bound maximum, the running-window viewport
+replaces its thin horizontal scrollbar with explicit previous/next Fluent
+buttons. `DockOverflowNavigation` keeps their enabled state and page target
+bounded; mouse-wheel paging uses the same path, and reduced-effects mode disables
+the optional scroll animation.
 Dock dimensions remain device-independent inside Core and are converted to
 physical pixels at the `AppWindow` boundary using the target monitor's effective
 DPI. A one-shot post-show refresh handles the WinUI/`WM_DPICHANGED` startup race

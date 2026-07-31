@@ -464,6 +464,13 @@ Desktop-window snapshot changes
   -> reserve one stable slot for every visible pinned and running item
   -> resize and recenter the Dock within the monitor work area
 
+Running-window items exceed the bounded viewport
+  -> hide the precision-dependent horizontal scrollbar
+  -> show keyboard-focusable previous and next controls
+  -> resolve enabled state from current and maximum horizontal offsets
+  -> button or mouse-wheel request advances by a bounded viewport page
+  -> disable scroll animation when reduced effects are active
+
 User searches for an installed application and selects Pin
   -> require ShellCommandKind.Application
   -> verify the exact app ID against the cached Start Menu index
