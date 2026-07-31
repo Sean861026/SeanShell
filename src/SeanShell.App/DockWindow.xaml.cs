@@ -61,6 +61,7 @@ public sealed partial class DockWindow : Window
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
     private DockBounds? _reservedArea;
     private WindowPreviewWindow? _previewWindow;
+    private ScrollViewer? _windowListScrollViewer;
     private DockItemViewModel? _pendingPreviewItem;
     private FrameworkElement? _pendingPreviewAnchor;
 
@@ -294,6 +295,11 @@ public sealed partial class DockWindow : Window
         _previewDismissTimer.Stop();
         _previewWindow?.Shutdown();
         _previewWindow = null;
+        if (_windowListScrollViewer is not null)
+        {
+            _windowListScrollViewer.ViewChanged -= OnWindowListViewChanged;
+            _windowListScrollViewer = null;
+        }
         _shellState.StateChanged -= OnShellStateChanged;
         _ = _workAreaReservation.Release();
         _allowClose = true;
@@ -410,6 +416,131 @@ public sealed partial class DockWindow : Window
         }
 
         WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
+        ResetWindowOverflowControls();
+    }
+
+    private void OnWindowListLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_windowListScrollViewer is null)
+        {
+            _windowListScrollViewer =
+                FindDescendant<ScrollViewer>(WindowList);
+            if (_windowListScrollViewer is not null)
+            {
+                _windowListScrollViewer.ViewChanged += OnWindowListViewChanged;
+            }
+        }
+
+        QueueWindowOverflowRefresh();
+    }
+
+    private void OnWindowListSizeChanged(object sender, SizeChangedEventArgs e) =>
+        QueueWindowOverflowRefresh();
+
+    private void OnWindowListViewChanged(
+        object? sender,
+        ScrollViewerViewChangedEventArgs e) =>
+        RefreshWindowOverflowControls();
+
+    private void OnWindowOverflowPreviousClicked(
+        object sender,
+        RoutedEventArgs e) =>
+        NavigateWindowOverflow(DockOverflowDirection.Previous);
+
+    private void OnWindowOverflowNextClicked(
+        object sender,
+        RoutedEventArgs e) =>
+        NavigateWindowOverflow(DockOverflowDirection.Next);
+
+    private void OnWindowListPointerWheelChanged(
+        object sender,
+        PointerRoutedEventArgs e)
+    {
+        var delta = e.GetCurrentPoint(WindowList).Properties.MouseWheelDelta;
+        if (_windowListScrollViewer is null ||
+            _windowListScrollViewer.ScrollableWidth <= 0 ||
+            delta == 0)
+        {
+            return;
+        }
+
+        NavigateWindowOverflow(
+            delta > 0
+                ? DockOverflowDirection.Previous
+                : DockOverflowDirection.Next);
+        e.Handled = true;
+    }
+
+    private void NavigateWindowOverflow(DockOverflowDirection direction)
+    {
+        if (_windowListScrollViewer is null)
+        {
+            return;
+        }
+
+        var targetOffset = DockOverflowNavigation.CalculateTargetOffset(
+            _windowListScrollViewer.HorizontalOffset,
+            _windowListScrollViewer.ViewportWidth,
+            _windowListScrollViewer.ScrollableWidth,
+            direction);
+        _ = _windowListScrollViewer.ChangeView(
+            targetOffset,
+            null,
+            null,
+            disableAnimation: _reducedEffects);
+    }
+
+    private void ResetWindowOverflowControls()
+    {
+        WindowOverflowPreviousButton.Visibility = Visibility.Collapsed;
+        WindowOverflowNextButton.Visibility = Visibility.Collapsed;
+        QueueWindowOverflowRefresh();
+    }
+
+    private void QueueWindowOverflowRefresh() =>
+        _ = DispatcherQueue.TryEnqueue(
+            DispatcherQueuePriority.Low,
+            RefreshWindowOverflowControls);
+
+    private void RefreshWindowOverflowControls()
+    {
+        if (_windowListScrollViewer is null)
+        {
+            return;
+        }
+
+        var state = DockOverflowNavigation.Resolve(
+            _windowListScrollViewer.HorizontalOffset,
+            _windowListScrollViewer.ScrollableWidth);
+        var visibility = state.IsVisible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        WindowOverflowPreviousButton.Visibility = visibility;
+        WindowOverflowPreviousButton.IsEnabled = state.CanNavigatePrevious;
+        WindowOverflowNextButton.Visibility = visibility;
+        WindowOverflowNextButton.IsEnabled = state.CanNavigateNext;
+    }
+
+    private static T? FindDescendant<T>(DependencyObject root)
+        where T : DependencyObject
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (var index = 0; index < childCount; index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            if (child is T match)
+            {
+                return match;
+            }
+
+            var descendant = FindDescendant<T>(child);
+            if (descendant is not null)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
     }
 
     public void ApplyPinnedApplications(

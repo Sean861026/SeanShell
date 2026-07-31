@@ -164,13 +164,37 @@
                     Visibility="Collapsed" />
 
                 <Grid Grid.Column="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button
+                        x:Name="WindowOverflowPreviousButton"
+                        Grid.Column="0"
+                        AutomationProperties.Name="Show previous open windows"
+                        Click="OnWindowOverflowPreviousClicked"
+                        Style="{StaticResource SeanDockActionButtonStyle}"
+                        ToolTipService.ToolTip="Previous open windows"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="14"
+                            Glyph="&#xE76B;" />
+                    </Button>
+
                     <ListView
                         x:Name="WindowList"
+                        Grid.Column="1"
                         AutomationProperties.Name="Open windows on this display"
                         IsItemClickEnabled="True"
                         ItemClick="OnWindowClicked"
+                        Loaded="OnWindowListLoaded"
+                        PointerWheelChanged="OnWindowListPointerWheelChanged"
                         SelectionMode="Single"
-                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        SizeChanged="OnWindowListSizeChanged"
+                        ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                         ScrollViewer.HorizontalScrollMode="Enabled"
                         ScrollViewer.VerticalScrollMode="Disabled">
                         <ListView.ItemsPanel>
@@ -280,8 +304,23 @@
                         </ListView.ItemTemplate>
                     </ListView>
 
+                    <Button
+                        x:Name="WindowOverflowNextButton"
+                        Grid.Column="2"
+                        AutomationProperties.Name="Show next open windows"
+                        Click="OnWindowOverflowNextClicked"
+                        Style="{StaticResource SeanDockActionButtonStyle}"
+                        ToolTipService.ToolTip="Next open windows"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            FontFamily="Segoe Fluent Icons"
+                            FontSize="14"
+                            Glyph="&#xE76C;" />
+                    </Button>
+
                     <StackPanel
                         x:Name="EmptyState"
+                        Grid.ColumnSpan="3"
                         HorizontalAlignment="Center"
                         Orientation="Horizontal"
                         Spacing="{StaticResource SeanSpace8}"

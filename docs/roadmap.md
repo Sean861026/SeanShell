@@ -148,6 +148,7 @@
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
+- [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
 - [x] Window context actions for minimize, restore, and graceful close
 - [x] Process-based multi-window grouping with an accessible native window picker

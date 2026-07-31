@@ -232,7 +232,7 @@ WM_GETICON / class icon / process executable Shell icon
   -> SHGetFileInfo fallback
   -> bounded process-ID icon cache
   -> validated 48x48 BGRA ApplicationIconSnapshot
-  -> UI-thread shared WriteableBitmap
+  -> UI-thread shared SoftwareBitmapSource
   -> fixed 26px Dock icon slot or Fluent fallback
 
 Foreground + minimized flags
@@ -258,6 +258,12 @@ Monitor-local DesktopWindowSnapshot[]
 Pinned count + monitor-local window count + monitor work area
   -> TaskbarDockLayout
   -> bounded floating Dock width
+
+Window-list horizontal offset + viewport width + scrollable width
+  -> DockOverflowNavigation
+  -> previous / next visibility and enabled state
+  -> bounded page target
+  -> WinUI ScrollViewer.ChangeView
 
 Pinned Start Menu shortcut path
   -> SHGetFileInfo only when the bounded pin list is loaded
