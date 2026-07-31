@@ -5,9 +5,9 @@ namespace SeanShell.Core.Tests;
 [TestClass]
 public sealed class DockItemMotionTests
 {
-    [DataRow(false, false, 1.0f, 0.0f, 120)]
-    [DataRow(true, false, 1.03f, -1.0f, 140)]
-    [DataRow(true, true, 0.97f, 0.0f, 80)]
+    [DataRow(false, false, 1.0f, 0.0f, 180)]
+    [DataRow(true, false, 1.35f, -6.0f, 220)]
+    [DataRow(true, true, 0.92f, 0.0f, 90)]
     [TestMethod]
     public void ResolveReturnsBoundedPointerFeedback(
         bool isPointerOver,

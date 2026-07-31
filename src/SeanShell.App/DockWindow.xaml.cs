@@ -21,10 +21,10 @@ namespace SeanShell.App;
 
 public sealed partial class DockWindow : Window
 {
-    private const int DockHeight = 76;
+    private const int DockHeight = 104;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
-    private const int CompactDockHeight = 72;
+    private const int CompactDockHeight = 92;
     private const int WorkAreaVerticalMargin = 16;
     private readonly DesktopWindowService _windowService;
     private readonly ShellStateStore _shellState;
@@ -920,8 +920,9 @@ public sealed partial class DockWindow : Window
             _reducedEffects);
         element.CenterPoint = new Vector3(
             (float)(element.ActualWidth / 2),
-            (float)(element.ActualHeight / 2),
+            (float)element.ActualHeight,
             0);
+        Canvas.SetZIndex(element, isPointerOver ? 10 : 0);
         var duration = TimeSpan.FromMilliseconds(motion.DurationMilliseconds);
         element.ScaleTransition = motion.DurationMilliseconds == 0
             ? null
