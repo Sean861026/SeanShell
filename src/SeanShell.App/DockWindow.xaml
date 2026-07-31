@@ -23,11 +23,7 @@
         PointerExited="OnDockPointerExited">
         <Border
             x:Name="ExpandedDock"
-            Padding="7,7,7,7"
-            Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-            BorderThickness="1"
-            CornerRadius="20">
+            Style="{StaticResource SeanDockGlassShellStyle}">
             <Grid ColumnSpacing="{StaticResource SeanSpace8}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -36,24 +32,6 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
-                <Border
-                    Grid.ColumnSpan="5"
-                    Width="112"
-                    Height="2"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    CornerRadius="1"
-                    IsHitTestVisible="False">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                            <GradientStop Offset="0" Color="Transparent" />
-                            <GradientStop Offset="0.3" Color="{ThemeResource SystemAccentColorLight1}" />
-                            <GradientStop Offset="0.7" Color="{ThemeResource SystemAccentColor}" />
-                            <GradientStop Offset="1" Color="Transparent" />
-                        </LinearGradientBrush>
-                    </Border.Background>
-                </Border>
 
                 <Button
                     x:Name="LauncherButton"
@@ -74,6 +52,7 @@
                 </Button>
 
                 <Border
+                    x:Name="ApplicationRegion"
                     Grid.Column="1"
                     Grid.ColumnSpan="3"
                     IsHitTestVisible="False"
@@ -332,6 +311,7 @@
                 </Grid>
 
                 <Border
+                    x:Name="SystemRegion"
                     Grid.Column="4"
                     Style="{StaticResource SeanDockSystemRegionStyle}">
                     <StackPanel
