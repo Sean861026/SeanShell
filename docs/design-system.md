@@ -85,6 +85,10 @@ Raw colors must not be embedded in individual views.
   surface with the wide underline, running and minimized windows retain distinct
   underline lengths and emphasis, and pinned applications carry a compact pin
   badge. Tooltips and automation names repeat the same state in text.
+- Application artwork and the Launcher brand mark share the 40 px icon token and
+  magnify only their visual layer, leaving the 44 px interaction target stable.
+  System controls and the clock use contained 1.03 hover feedback without lift,
+  so their wider content remains aligned and cannot escape the Dock shell.
 
 ## Planned surfaces
 

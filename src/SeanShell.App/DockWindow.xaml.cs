@@ -914,24 +914,32 @@ public sealed partial class DockWindow : Window
         bool isPointerOver,
         bool isPressed)
     {
-        var motion = DockItemMotion.Resolve(
-            isPointerOver,
-            isPressed,
-            _reducedEffects);
-        element.CenterPoint = new Vector3(
-            (float)(element.ActualWidth / 2),
-            (float)element.ActualHeight,
+        var usesApplicationMotion = ReferenceEquals(element, LauncherItem)
+            || element.DataContext is DockItemViewModel
+            || element.DataContext is PinnedDockItemViewModel;
+        var motionTarget = ReferenceEquals(element, LauncherItem)
+            ? LauncherIcon
+            : element;
+        var motion = usesApplicationMotion
+            ? DockItemMotion.Resolve(isPointerOver, isPressed, _reducedEffects)
+            : DockControlMotion.Resolve(isPointerOver, isPressed, _reducedEffects);
+        motionTarget.CenterPoint = new Vector3(
+            (float)(motionTarget.ActualWidth / 2),
+            usesApplicationMotion
+                ? (float)motionTarget.ActualHeight
+                : (float)(motionTarget.ActualHeight / 2),
             0);
         Canvas.SetZIndex(element, isPointerOver ? 10 : 0);
+        Canvas.SetZIndex(motionTarget, isPointerOver ? 10 : 0);
         var duration = TimeSpan.FromMilliseconds(motion.DurationMilliseconds);
-        element.ScaleTransition = motion.DurationMilliseconds == 0
+        motionTarget.ScaleTransition = motion.DurationMilliseconds == 0
             ? null
             : new Vector3Transition { Duration = duration };
-        element.TranslationTransition = motion.DurationMilliseconds == 0
+        motionTarget.TranslationTransition = motion.DurationMilliseconds == 0
             ? null
             : new Vector3Transition { Duration = duration };
-        element.Scale = new Vector3(motion.Scale, motion.Scale, 1);
-        element.Translation = new Vector3(0, motion.TranslationY, 0);
+        motionTarget.Scale = new Vector3(motion.Scale, motion.Scale, 1);
+        motionTarget.Translation = new Vector3(0, motion.TranslationY, 0);
     }
 
     private void OnDockGotFocus(object sender, RoutedEventArgs e)
