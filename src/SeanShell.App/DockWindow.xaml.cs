@@ -885,29 +885,46 @@ public sealed partial class DockWindow : Window
             return;
         }
 
-        await OpenNewInstanceForDockItemAsync(dockItem, anchor)
+        await OpenNewInstanceForDockItemAsync(
+                dockItem,
+                anchor,
+                elevated: false)
             .ConfigureAwait(true);
     }
 
     private async Task OpenNewInstanceForDockItemAsync(
         DockItemViewModel dockItem,
-        FrameworkElement anchor)
+        FrameworkElement anchor,
+        bool elevated)
     {
-        var candidates = TaskbarDockPinResolver.FindApplicationCandidates(
+        IReadOnlyList<ShellCommand> candidates =
+            TaskbarDockPinResolver.FindApplicationCandidates(
             _availableApplications,
             dockItem.Windows);
+        if (elevated)
+        {
+            candidates = candidates
+                .Where(candidate =>
+                    IsVerifiedLocalExecutable(
+                        candidate.ApplicationExecutablePath))
+                .ToArray();
+        }
+
         switch (TaskbarMiddleClickResolver.Resolve(candidates.Count))
         {
             case TaskbarMiddleClickAction.Open:
-                await OpenNewInstanceAsync(candidates[0]).ConfigureAwait(true);
+                await OpenApplicationInstanceAsync(candidates[0], elevated)
+                    .ConfigureAwait(true);
                 break;
             case TaskbarMiddleClickAction.Choose:
-                ShowOpenNewInstancePicker(candidates, anchor);
+                ShowOpenNewInstancePicker(candidates, anchor, elevated);
                 break;
             case TaskbarMiddleClickAction.None:
                 ToolTipService.SetToolTip(
                     anchor,
-                    $"{dockItem.ToolTipText}\nNew instance unavailable: no matching installed application.");
+                    elevated
+                        ? $"{dockItem.ToolTipText}\nElevated launch unavailable: no verified local executable."
+                        : $"{dockItem.ToolTipText}\nNew instance unavailable: no matching installed application.");
                 break;
             default:
                 throw new InvalidOperationException(
@@ -1117,13 +1134,18 @@ public sealed partial class DockWindow : Window
         }
 
         DismissWindowPreview();
-        if (TaskbarClickActionResolver.Resolve(
-                KeyboardModifierStateReader.IsShiftPressed()) ==
-            TaskbarClickAction.OpenNewInstance)
+        var clickAction = TaskbarClickActionResolver.Resolve(
+            KeyboardModifierStateReader.IsShiftPressed(),
+            KeyboardModifierStateReader.IsControlPressed());
+        if (clickAction != TaskbarClickAction.Default)
         {
             if (WindowList.ContainerFromItem(item) is FrameworkElement shiftAnchor)
             {
-                await OpenNewInstanceForDockItemAsync(item, shiftAnchor)
+                await OpenNewInstanceForDockItemAsync(
+                        item,
+                        shiftAnchor,
+                        elevated: clickAction ==
+                            TaskbarClickAction.OpenElevatedInstance)
                     .ConfigureAwait(true);
             }
 
@@ -1784,11 +1806,19 @@ public sealed partial class DockWindow : Window
 
         try
         {
-            if (TaskbarClickActionResolver.Resolve(
-                    KeyboardModifierStateReader.IsShiftPressed()) ==
-                TaskbarClickAction.OpenNewInstance)
+            var clickAction = TaskbarClickActionResolver.Resolve(
+                KeyboardModifierStateReader.IsShiftPressed(),
+                KeyboardModifierStateReader.IsControlPressed());
+            if (clickAction == TaskbarClickAction.OpenNewInstance)
             {
                 await OpenNewInstanceAsync(item.Command).ConfigureAwait(true);
+            }
+            else if (clickAction == TaskbarClickAction.OpenElevatedInstance)
+            {
+                await OpenApplicationInstanceAsync(
+                        item.Command,
+                        elevated: true)
+                    .ConfigureAwait(true);
             }
             else
             {
@@ -1955,7 +1985,8 @@ public sealed partial class DockWindow : Window
 
     private void ShowOpenNewInstancePicker(
         IReadOnlyList<ShellCommand> candidates,
-        FrameworkElement anchor)
+        FrameworkElement anchor,
+        bool elevated)
     {
         _autoHideTimer.Stop();
         _contextMenuOpen = true;
@@ -1969,7 +2000,8 @@ public sealed partial class DockWindow : Window
                 Icon = CreateOpenNewInstanceIcon(),
             };
             item.Click += async (_, _) =>
-                await OpenNewInstanceAsync(candidate).ConfigureAwait(true);
+                await OpenApplicationInstanceAsync(candidate, elevated)
+                    .ConfigureAwait(true);
             flyout.Items.Add(item);
         }
 
@@ -2016,6 +2048,29 @@ public sealed partial class DockWindow : Window
                 DockCountText,
                 $"Unable to open {application.Title}: {exception.Message}");
         }
+    }
+
+    private async Task OpenApplicationInstanceAsync(
+        ShellCommand application,
+        bool elevated)
+    {
+        if (!elevated)
+        {
+            await OpenNewInstanceAsync(application).ConfigureAwait(true);
+            return;
+        }
+
+        var executablePath = application.ApplicationExecutablePath;
+        if (!IsVerifiedLocalExecutable(executablePath))
+        {
+            DockCountText.Text = "Elevated launch unavailable";
+            ToolTipService.SetToolTip(
+                DockCountText,
+                $"{application.Title} does not expose a verified local executable.");
+            return;
+        }
+
+        RunApplicationElevated(application, executablePath!);
     }
 
     private void AddPinnedApplicationActions(

@@ -110,7 +110,7 @@
                             <Grid
                                 Width="40"
                                 Height="44"
-                                AutomationProperties.HelpText="Middle-click to open a new instance. Drag to reorder, or use Move left and Move right in the context menu."
+                                AutomationProperties.HelpText="Middle-click or Shift-click to open a new instance. Ctrl+Shift-click requests an elevated instance. Drag to reorder, or use Move left and Move right in the context menu."
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 ContextRequested="OnPinnedApplicationContextRequested"
                                 Loaded="OnDockMotionItemLoaded"
@@ -219,7 +219,7 @@
                                 <Grid
                                     Width="40"
                                     Height="44"
-                                    AutomationProperties.HelpText="Middle-click opens a new instance when a matching installed application is available."
+                                    AutomationProperties.HelpText="Middle-click or Shift-click opens a new instance when a matching installed application is available. Ctrl+Shift-click requests an elevated instance from a verified local executable."
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ContextRequested="OnWindowContextRequested"
                                     Loaded="OnDockMotionItemLoaded"
