@@ -1296,6 +1296,25 @@ public sealed partial class DockWindow : Window
             flyout.Items.Add(windowMenu);
         }
 
+        var windowHandles = item.Windows
+            .Select(static window => window.Handle)
+            .Distinct()
+            .ToArray();
+        var closeAllItem = new MenuFlyoutItem
+        {
+            Text = $"Close all windows ({windowHandles.Length})",
+            Icon = CreateMenuIcon("\uE8BB"),
+        };
+        closeAllItem.Click += (_, _) =>
+        {
+            foreach (var handle in windowHandles)
+            {
+                _ = _windowService.RequestClose(handle);
+            }
+        };
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(closeAllItem);
+
         AddOpenNewInstanceAction(flyout.Items, item);
         AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
