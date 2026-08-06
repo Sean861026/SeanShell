@@ -885,6 +885,14 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        await OpenNewInstanceForDockItemAsync(dockItem, anchor)
+            .ConfigureAwait(true);
+    }
+
+    private async Task OpenNewInstanceForDockItemAsync(
+        DockItemViewModel dockItem,
+        FrameworkElement anchor)
+    {
         var candidates = TaskbarDockPinResolver.FindApplicationCandidates(
             _availableApplications,
             dockItem.Windows);
@@ -1101,7 +1109,7 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    private void OnWindowClicked(object sender, ItemClickEventArgs e)
+    private async void OnWindowClicked(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is not DockItemViewModel item)
         {
@@ -1109,6 +1117,20 @@ public sealed partial class DockWindow : Window
         }
 
         DismissWindowPreview();
+        if (TaskbarClickActionResolver.Resolve(
+                KeyboardModifierStateReader.IsShiftPressed()) ==
+            TaskbarClickAction.OpenNewInstance)
+        {
+            if (WindowList.ContainerFromItem(item) is FrameworkElement shiftAnchor)
+            {
+                await OpenNewInstanceForDockItemAsync(item, shiftAnchor)
+                    .ConfigureAwait(true);
+            }
+
+            ScheduleAutoHide();
+            return;
+        }
+
         if (item.WindowCount == 1)
         {
             _ = _windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle);
@@ -1762,8 +1784,17 @@ public sealed partial class DockWindow : Window
 
         try
         {
-            await item.Command.ExecuteAsync(CancellationToken.None)
-                .ConfigureAwait(true);
+            if (TaskbarClickActionResolver.Resolve(
+                    KeyboardModifierStateReader.IsShiftPressed()) ==
+                TaskbarClickAction.OpenNewInstance)
+            {
+                await OpenNewInstanceAsync(item.Command).ConfigureAwait(true);
+            }
+            else
+            {
+                await item.Command.ExecuteAsync(CancellationToken.None)
+                    .ConfigureAwait(true);
+            }
         }
         catch (Exception exception)
         {

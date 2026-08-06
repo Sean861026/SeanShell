@@ -358,6 +358,13 @@ User middle-clicks a Dock application
   -> running item with one candidate: open a new instance
   -> running item with multiple candidates: show a native selection flyout
   -> selected candidate: execute its exact cached application command
+
+User Shift-clicks a Dock application
+  -> standalone pin: execute its exact cached application command as a new instance
+  -> running item: follow the same verified candidate resolution as middle-click
+  -> no reliable candidate: retain the current windows and do not guess
+  -> one candidate: open a new instance
+  -> multiple candidates: require a native selection flyout
 ```
 
 Windows foreground restrictions remain authoritative; SeanShell does not bypass
@@ -489,6 +496,10 @@ User opens a running application's Dock context menu
 User selects a pinned Dock application
   -> execute the original installed-application ShellCommand
   -> Windows Shell opens the exact indexed shortcut
+
+User Shift-clicks a pinned Dock application
+  -> request a new instance through the same exact indexed shortcut
+  -> the target application remains authoritative when it enforces single-instance behavior
 
 User selects Unpin in Launcher, on a standalone pin, or on its running item
   -> remove the exact app ID
