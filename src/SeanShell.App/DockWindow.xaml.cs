@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using SeanShell.Core;
 using SeanShell.Windows;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI.Text;
 
@@ -36,6 +37,8 @@ public sealed partial class DockWindow : Window
     private readonly DispatcherQueueTimer _displayScaleRefreshTimer;
     private readonly DispatcherQueueTimer _previewDelayTimer;
     private readonly DispatcherQueueTimer _previewDismissTimer;
+    private readonly HashSet<FrameworkElement> _dockMotionItems = [];
+    private readonly HashSet<FrameworkElement> _activeDockNeighborItems = [];
     private readonly bool _compactDensity;
     private double _displayScaleFactor;
     private double _textScaleFactor = 1;
@@ -732,7 +735,9 @@ public sealed partial class DockWindow : Window
     {
         if (sender is FrameworkElement element)
         {
+            ResetDockNeighborMotion();
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
+            ApplyDockNeighborMotion(element);
             if (element.DataContext is DockItemViewModel item)
             {
                 ScheduleWindowPreview(item, element);
@@ -746,6 +751,7 @@ public sealed partial class DockWindow : Window
     {
         if (sender is FrameworkElement element)
         {
+            ResetDockNeighborMotion();
             ApplyDockItemMotion(element, isPointerOver: false, isPressed: false);
             if (element.DataContext is DockItemViewModel)
             {
@@ -923,14 +929,127 @@ public sealed partial class DockWindow : Window
         var motion = usesApplicationMotion
             ? DockItemMotion.Resolve(isPointerOver, isPressed, _reducedEffects)
             : DockControlMotion.Resolve(isPointerOver, isPressed, _reducedEffects);
+        ApplyDockMotion(
+            element,
+            motionTarget,
+            motion,
+            usesApplicationMotion,
+            isPointerOver ? 10 : 0);
+    }
+
+    private void OnDockMotionItemLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            _dockMotionItems.Add(element);
+        }
+    }
+
+    private void OnDockMotionItemUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element)
+        {
+            _dockMotionItems.Remove(element);
+            _activeDockNeighborItems.Remove(element);
+        }
+    }
+
+    private void ApplyDockNeighborMotion(FrameworkElement source)
+    {
+        if (_reducedEffects || !_dockMotionItems.Contains(source))
+        {
+            return;
+        }
+
+        var orderedItems = _dockMotionItems
+            .Where(item => item.IsLoaded && item.ActualWidth > 0)
+            .Select(item => new
+            {
+                Item = item,
+                CenterX = GetDockMotionItemCenterX(item),
+            })
+            .Where(position => position.CenterX >= 0
+                && position.CenterX <= DockRoot.ActualWidth)
+            .OrderBy(position => position.CenterX)
+            .Select(position => position.Item)
+            .ToList();
+        var sourceIndex = orderedItems.IndexOf(source);
+        if (sourceIndex < 0)
+        {
+            return;
+        }
+
+        foreach (var neighborIndex in new[] { sourceIndex - 1, sourceIndex + 1 })
+        {
+            if (neighborIndex < 0 || neighborIndex >= orderedItems.Count)
+            {
+                continue;
+            }
+
+            var neighbor = orderedItems[neighborIndex];
+            var motionTarget = ReferenceEquals(neighbor, LauncherItem)
+                ? LauncherIcon
+                : neighbor;
+            ApplyDockMotion(
+                neighbor,
+                motionTarget,
+                DockItemMotion.ResolveNeighbor(
+                    isHighlighted: true,
+                    reducedEffects: _reducedEffects),
+                bottomAnchored: true,
+                zIndex: 5);
+            _activeDockNeighborItems.Add(neighbor);
+        }
+    }
+
+    private void ResetDockNeighborMotion()
+    {
+        foreach (var neighbor in _activeDockNeighborItems)
+        {
+            var motionTarget = ReferenceEquals(neighbor, LauncherItem)
+                ? LauncherIcon
+                : neighbor;
+            ApplyDockMotion(
+                neighbor,
+                motionTarget,
+                DockItemMotion.ResolveNeighbor(
+                    isHighlighted: false,
+                    reducedEffects: _reducedEffects),
+                bottomAnchored: true,
+                zIndex: 0);
+        }
+
+        _activeDockNeighborItems.Clear();
+    }
+
+    private double GetDockMotionItemCenterX(FrameworkElement item)
+    {
+        try
+        {
+            return item.TransformToVisual(DockRoot).TransformPoint(
+                new Point(item.ActualWidth / 2, item.ActualHeight / 2)).X;
+        }
+        catch (InvalidOperationException)
+        {
+            return double.MaxValue;
+        }
+    }
+
+    private static void ApplyDockMotion(
+        FrameworkElement source,
+        FrameworkElement motionTarget,
+        DockItemMotionState motion,
+        bool bottomAnchored,
+        int zIndex)
+    {
         motionTarget.CenterPoint = new Vector3(
             (float)(motionTarget.ActualWidth / 2),
-            usesApplicationMotion
+            bottomAnchored
                 ? (float)motionTarget.ActualHeight
                 : (float)(motionTarget.ActualHeight / 2),
             0);
-        Canvas.SetZIndex(element, isPointerOver ? 10 : 0);
-        Canvas.SetZIndex(motionTarget, isPointerOver ? 10 : 0);
+        Canvas.SetZIndex(source, zIndex);
+        Canvas.SetZIndex(motionTarget, zIndex);
         var duration = TimeSpan.FromMilliseconds(motion.DurationMilliseconds);
         motionTarget.ScaleTransition = motion.DurationMilliseconds == 0
             ? null

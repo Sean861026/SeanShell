@@ -123,6 +123,7 @@
 - [x] Reduced-effects Gaming Mode removes translucent Dock material and pauses background providers
 - [x] Shared acrylic-card visual language for Dock system flyouts
 - [x] Compact network, audio, power, and battery status cluster on every Dock
+- [x] Layout-stable macOS-inspired primary and nearest-neighbor icon magnification
 
 ## Later: shell modes
 
