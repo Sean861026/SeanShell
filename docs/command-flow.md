@@ -365,6 +365,13 @@ User Shift-clicks a Dock application
   -> no reliable candidate: retain the current windows and do not guess
   -> one candidate: open a new instance
   -> multiple candidates: require a native selection flyout
+
+User Ctrl+Shift-clicks a Dock application
+  -> require a cached application with an existing fully-qualified local .exe
+  -> reject network paths, unresolved shortcuts, and non-executable targets
+  -> one verified candidate: request an elevated new instance through Windows Shell
+  -> multiple verified candidates: require a native selection flyout
+  -> Windows owns the UAC consent boundary; cancellation is reported without retry
 ```
 
 Windows foreground restrictions remain authoritative; SeanShell does not bypass
@@ -500,6 +507,11 @@ User selects a pinned Dock application
 User Shift-clicks a pinned Dock application
   -> request a new instance through the same exact indexed shortcut
   -> the target application remains authoritative when it enforces single-instance behavior
+
+User Ctrl+Shift-clicks a pinned Dock application
+  -> require the cached shortcut to expose an existing fully-qualified local .exe
+  -> request elevation with the exact cached arguments and the Windows `runas` verb
+  -> Windows displays UAC and remains authoritative for consent
 
 User selects Unpin in Launcher, on a standalone pin, or on its running item
   -> remove the exact app ID

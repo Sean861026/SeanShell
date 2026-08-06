@@ -164,6 +164,7 @@
 - [x] Native Dock background menu for settings, Task Manager, system-area access, and safe exit
 - [x] Verified local executable actions for file location and elevated launch
 - [x] Standard Shift-click new-instance behavior for pinned and running applications
+- [x] Standard Ctrl+Shift-click elevated launch for verified local executables
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
 
