@@ -10,7 +10,7 @@ internal static class ShellShortcutTargetResolver
     private static readonly Guid ShellLinkClassId =
         new("00021401-0000-0000-C000-000000000046");
 
-    public static string? GetProcessName(string shortcutPath)
+    public static ShellShortcutTarget? Resolve(string shortcutPath)
     {
         if (!Path.GetExtension(shortcutPath).Equals(
                 ".lnk",
@@ -37,11 +37,19 @@ internal static class ShellShortcutTargetResolver
 
             var expanded = Environment.ExpandEnvironmentVariables(
                 target.ToString().Trim());
-            return Path.GetExtension(expanded).Equals(
-                ".exe",
-                StringComparison.OrdinalIgnoreCase)
-                ? Path.GetFileNameWithoutExtension(expanded)
-                : null;
+            if (!Path.GetExtension(expanded).Equals(
+                    ".exe",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var arguments = new StringBuilder(MaximumPath);
+            shellLink.GetArguments(arguments, arguments.Capacity);
+            return new ShellShortcutTarget(
+                expanded,
+                arguments.ToString().Trim(),
+                Path.GetFileNameWithoutExtension(expanded));
         }
         catch (COMException)
         {
@@ -59,6 +67,11 @@ internal static class ShellShortcutTargetResolver
             }
         }
     }
+
+    internal sealed record ShellShortcutTarget(
+        string ExecutablePath,
+        string Arguments,
+        string ProcessName);
 
     [ComImport]
     [Guid("000214F9-0000-0000-C000-000000000046")]

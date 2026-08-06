@@ -1997,6 +1997,7 @@ public sealed partial class DockWindow : Window
             items.Add(new MenuFlyoutSeparator());
         }
 
+        AddExecutableActions(items, application);
         items.Add(CreatePinMenuItem(application, shouldPin: false));
         items.Add(new MenuFlyoutSeparator());
         items.Add(CreateMoveMenuItem(
@@ -2005,6 +2006,87 @@ public sealed partial class DockWindow : Window
         items.Add(CreateMoveMenuItem(
             application,
             PinnedApplicationMoveDirection.Right));
+    }
+
+    private void AddExecutableActions(
+        IList<MenuFlyoutItemBase> items,
+        ShellCommand application)
+    {
+        var executablePath = application.ApplicationExecutablePath;
+        if (!IsVerifiedLocalExecutable(executablePath))
+        {
+            return;
+        }
+
+        var openLocationItem = new MenuFlyoutItem
+        {
+            Text = "Open file location",
+            Icon = CreateMenuIcon("\uEC50"),
+        };
+        openLocationItem.Click += (_, _) =>
+            OpenExecutableLocation(executablePath!);
+        items.Add(openLocationItem);
+
+        var runElevatedItem = new MenuFlyoutItem
+        {
+            Text = "Run as administrator",
+            Icon = CreateMenuIcon("\uE7EF"),
+        };
+        runElevatedItem.Click += (_, _) =>
+            RunApplicationElevated(application, executablePath!);
+        items.Add(runElevatedItem);
+        items.Add(new MenuFlyoutSeparator());
+    }
+
+    private static bool IsVerifiedLocalExecutable(string? path) =>
+        ApplicationExecutablePolicy.IsSupportedLocalPath(path) &&
+        File.Exists(path);
+
+    private void OpenExecutableLocation(string executablePath)
+    {
+        try
+        {
+            Process.Start(
+                new ProcessStartInfo("explorer.exe")
+                {
+                    Arguments = $"/select,\"{executablePath}\"",
+                    UseShellExecute = true,
+                });
+        }
+        catch (Exception exception)
+        {
+            ReportApplicationActionFailure("Open location failed", exception);
+        }
+    }
+
+    private void RunApplicationElevated(
+        ShellCommand application,
+        string executablePath)
+    {
+        try
+        {
+            Process.Start(
+                new ProcessStartInfo(executablePath)
+                {
+                    Arguments = application.ApplicationArguments ?? string.Empty,
+                    UseShellExecute = true,
+                    Verb = "runas",
+                });
+        }
+        catch (Exception exception)
+        {
+            ReportApplicationActionFailure("Elevated launch failed", exception);
+        }
+    }
+
+    private void ReportApplicationActionFailure(
+        string title,
+        Exception exception)
+    {
+        DockCountText.Text = title;
+        ToolTipService.SetToolTip(
+            DockCountText,
+            exception.Message);
     }
 
     private MenuFlyoutItem CreatePinMenuItem(
