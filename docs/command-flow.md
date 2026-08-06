@@ -551,6 +551,19 @@ User changes the output-volume Slider or mute toggle
   -> apply the explicit master-volume or mute request
   -> read back and display the resulting endpoint state
   -> release the endpoint COM objects
+
+User right-clicks the Dock background
+  -> open one native keyboard-accessible MenuFlyout
+  -> offer SeanShell settings and Task Manager
+  -> offer Windows taskbar and general Settings pages
+  -> when replacement is active, offer the current show/resume system-area action
+  -> keep Exit SeanShell separated as the final action
+
+User selects Exit SeanShell
+  -> close the owner MainWindow
+  -> remove every Dock AppBar reservation
+  -> restore and verify native Windows taskbars
+  -> stop timers and shut down every Dock, Launcher, and plugin host
 ```
 
 Failure of either visibility transition fails safe by restoring native taskbars,

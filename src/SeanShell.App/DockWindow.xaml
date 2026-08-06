@@ -36,6 +36,7 @@
 
         <Border
             x:Name="ExpandedDock"
+            ContextRequested="OnDockContextRequested"
             Style="{StaticResource SeanDockGlassShellStyle}">
             <Grid ColumnSpacing="{StaticResource SeanSpace8}">
                 <Grid.ColumnDefinitions>

@@ -136,6 +136,8 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler? SystemAreaRequested;
 
+    public event EventHandler? ExitRequested;
+
     public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
 
     public event Func<ShellCommand, PinnedApplicationMoveDirection, Task<bool>>?
@@ -1384,6 +1386,69 @@ public sealed partial class DockWindow : Window
         AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
         flyout.Items.Add(new MenuFlyoutSeparator());
         AddPowerMenu(flyout);
+        flyout.Closed += (_, _) =>
+        {
+            _contextMenuOpen = false;
+            ScheduleAutoHide();
+        };
+        flyout.ShowAt(anchor);
+        args.Handled = true;
+    }
+
+    private void OnDockContextRequested(
+        UIElement sender,
+        ContextRequestedEventArgs args)
+    {
+        if (sender is not FrameworkElement anchor)
+        {
+            return;
+        }
+
+        _autoHideTimer.Stop();
+        _contextMenuOpen = true;
+        var flyout = CreateDockMenuFlyout();
+
+        var settingsItem = new MenuFlyoutItem
+        {
+            Text = "SeanShell settings",
+            Icon = CreateMenuIcon("\uE713"),
+        };
+        settingsItem.Click += (_, _) =>
+            DashboardRequested?.Invoke(this, EventArgs.Empty);
+        flyout.Items.Add(settingsItem);
+
+        AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        AddSystemTool(
+            flyout,
+            "Windows taskbar settings",
+            "\uE713",
+            "ms-settings:taskbar");
+        AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
+
+        if (SystemAreaButton.Visibility == Visibility.Visible)
+        {
+            flyout.Items.Add(new MenuFlyoutSeparator());
+            var systemAreaItem = new MenuFlyoutItem
+            {
+                Text = AutomationProperties.GetName(SystemAreaButton),
+                Icon = CreateMenuIcon("\uE7F4"),
+            };
+            systemAreaItem.Click += (_, _) =>
+                SystemAreaRequested?.Invoke(this, EventArgs.Empty);
+            flyout.Items.Add(systemAreaItem);
+        }
+
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        var exitItem = new MenuFlyoutItem
+        {
+            Text = "Exit SeanShell",
+            Icon = CreateMenuIcon("\uE8BB"),
+        };
+        exitItem.Click += (_, _) =>
+            ExitRequested?.Invoke(this, EventArgs.Empty);
+        flyout.Items.Add(exitItem);
+
         flyout.Closed += (_, _) =>
         {
             _contextMenuOpen = false;

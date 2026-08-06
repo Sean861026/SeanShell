@@ -643,6 +643,7 @@ public sealed partial class MainWindow : Window
             _monitors = monitors;
             foreach (var dockWindow in previous)
             {
+                dockWindow.ExitRequested -= OnExitRequested;
                 dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
                 dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;
@@ -701,6 +702,7 @@ public sealed partial class MainWindow : Window
                 dockWindow.DashboardRequested += OnDashboardRequested;
                 dockWindow.ShowDesktopRequested += OnShowDesktopRequested;
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
+                dockWindow.ExitRequested += OnExitRequested;
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
                 dockWindow.PinOrderRequested += OnPinnedApplicationOrderChangedAsync;
@@ -1417,6 +1419,8 @@ public sealed partial class MainWindow : Window
         _ = _desktopWindows.RestoreAndActivate(windowHandle);
     }
 
+    private void OnExitRequested(object? sender, EventArgs e) => Close();
+
     private void OnDockRequested(object? sender, EventArgs e)
     {
         var targetIndex = DockTargetMonitorResolver.Resolve(
@@ -1474,6 +1478,7 @@ public sealed partial class MainWindow : Window
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.ShowDesktopRequested -= OnShowDesktopRequested;
+            dockWindow.ExitRequested -= OnExitRequested;
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
             dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;

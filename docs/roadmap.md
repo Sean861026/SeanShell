@@ -161,6 +161,7 @@
 - [x] Keyboard-only Dock entry point with active-display targeting and auto-hide expansion
 - [x] Escape dismissal returns to the previous foreground window and collapses the Dock
 - [x] Explorer recovery script and automatic-start crash-loop protection
+- [x] Native Dock background menu for settings, Task Manager, system-area access, and safe exit
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
 
