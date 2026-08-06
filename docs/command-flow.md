@@ -505,6 +505,12 @@ Selecting a pin command does not execute the result. A missing Start Menu
 shortcut is not launched or displayed and is not removed from settings, allowing
 the pin to recover if the shortcut returns.
 
+For a pinned Start Menu shortcut whose resolved target is an existing local
+`.exe`, its context menu also exposes **Open file location** and **Run as
+administrator**. URI, UNC, missing, and indirect targets never receive those
+actions. Elevated launch preserves the shortcut arguments and remains an
+explicit user action subject to the normal Windows UAC prompt.
+
 ## Clock and Windows system-area access
 
 ```text

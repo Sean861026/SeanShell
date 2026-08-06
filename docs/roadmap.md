@@ -162,6 +162,7 @@
 - [x] Escape dismissal returns to the previous foreground window and collapses the Dock
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - [x] Native Dock background menu for settings, Task Manager, system-area access, and safe exit
+- [x] Verified local executable actions for file location and elevated launch
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
 

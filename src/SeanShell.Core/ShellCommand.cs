@@ -17,4 +17,8 @@ public sealed record ShellCommand(
     public ApplicationIconSnapshot? Icon { get; init; }
 
     public string? ApplicationProcessName { get; init; }
+
+    public string? ApplicationExecutablePath { get; init; }
+
+    public string? ApplicationArguments { get; init; }
 }

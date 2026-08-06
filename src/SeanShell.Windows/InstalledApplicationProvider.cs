@@ -130,6 +130,7 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
         }
 
         var parent = Path.GetFileName(Path.GetDirectoryName(path));
+        var shortcutTarget = ShellShortcutTargetResolver.Resolve(path);
         return new ShellCommand(
             $"app:{path}",
             title,
@@ -140,7 +141,9 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
             Keywords = [title, parent ?? string.Empty, "app", "application", "program"],
             Glyph = "\uE8B7",
             IconSourcePath = path,
-            ApplicationProcessName = ShellShortcutTargetResolver.GetProcessName(path),
+            ApplicationProcessName = shortcutTarget?.ProcessName,
+            ApplicationExecutablePath = shortcutTarget?.ExecutablePath,
+            ApplicationArguments = shortcutTarget?.Arguments,
         };
     }
 
