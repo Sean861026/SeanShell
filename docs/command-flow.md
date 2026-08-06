@@ -316,6 +316,10 @@ Changing the Dock shortcut follows the same register-first, persist-on-success,
 rollback-on-conflict flow as the Launcher shortcut. It does not simulate input
 or install a keyboard hook.
 
+While the Dock owns keyboard focus, Left and Right Arrow use native XY focus
+navigation and Tab cycles within the Dock. Enter or Space invokes the focused
+control. Escape restores the foreground window captured by the Dock shortcut.
+
 ## Dock window activation
 
 ```text

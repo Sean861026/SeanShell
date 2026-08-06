@@ -14,13 +14,15 @@
 
     <Grid
         x:Name="DockRoot"
-        AutomationProperties.HelpText="Press Escape to return to the previous window."
+        AutomationProperties.HelpText="Use Left and Right Arrow or Tab to move between Dock controls. Press Enter or Space to activate the focused control. Press Escape to return to the previous window."
         Background="Transparent"
         GotFocus="OnDockGotFocus"
         KeyDown="OnDockKeyDown"
         LostFocus="OnDockLostFocus"
         PointerEntered="OnDockPointerEntered"
-        PointerExited="OnDockPointerExited">
+        PointerExited="OnDockPointerExited"
+        TabFocusNavigation="Cycle"
+        XYFocusKeyboardNavigation="Enabled">
         <Grid.Resources>
             <!-- Dock items provide their own icon and running-state feedback. Keep the
                  native ListView container transparent so magnification never reveals

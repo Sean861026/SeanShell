@@ -165,6 +165,7 @@
 - [x] Verified local executable actions for file location and elevated launch
 - [x] Standard Shift-click new-instance behavior for pinned and running applications
 - [x] Standard Ctrl+Shift-click elevated launch for verified local executables
+- [x] Cyclic Tab and native arrow-key navigation across focused Dock controls
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
 
