@@ -337,6 +337,8 @@ User opens an entry context menu
   -> selected toggle: perform the named bounded window operation
   -> selected Close window: post WM_CLOSE
   -> target application may close, cancel, or prompt for unsaved work
+  -> selected Close all windows: snapshot distinct group HWNDs and post WM_CLOSE to each
+  -> every target application remains free to close, cancel, or prompt independently
   -> explicit cached application identity: offer Open new instance
   -> multiple shortcut identities: require a native submenu selection
   -> execute the original cached shortcut command

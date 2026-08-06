@@ -154,6 +154,7 @@
 - [x] Window context actions for minimize, restore, and graceful close
 - [x] Process-based multi-window grouping with an accessible native window picker
 - [x] Per-window context actions inside multi-window groups
+- [x] Safe Close all windows action for multi-window groups
 - [x] Live DWM hover previews with per-window switch and graceful-close actions
 - [x] Safe Open new instance action for explicitly matched running applications
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
