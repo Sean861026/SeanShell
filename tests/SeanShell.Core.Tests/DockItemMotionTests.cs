@@ -41,4 +41,33 @@ public sealed class DockItemMotionTests
                 isPressed,
                 reducedEffects: true));
     }
+
+    [DataRow(false, 1.0f, 0.0f, 160)]
+    [DataRow(true, 1.14f, -2.0f, 180)]
+    [TestMethod]
+    public void ResolveNeighborReturnsSubordinateMagnification(
+        bool isHighlighted,
+        float expectedScale,
+        float expectedTranslationY,
+        int expectedDuration)
+    {
+        Assert.AreEqual(
+            new DockItemMotionState(
+                expectedScale,
+                expectedTranslationY,
+                expectedDuration),
+            DockItemMotion.ResolveNeighbor(
+                isHighlighted,
+                reducedEffects: false));
+    }
+
+    [TestMethod]
+    public void ReducedEffectsDisableNeighborMagnification()
+    {
+        Assert.AreEqual(
+            new DockItemMotionState(1, 0, 0),
+            DockItemMotion.ResolveNeighbor(
+                isHighlighted: true,
+                reducedEffects: true));
+    }
 }

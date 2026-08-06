@@ -21,6 +21,20 @@ public static class DockItemMotion
             ? new DockItemMotionState(1.35f, -6, 220)
             : new DockItemMotionState(1, 0, 180);
     }
+
+    public static DockItemMotionState ResolveNeighbor(
+        bool isHighlighted,
+        bool reducedEffects)
+    {
+        if (reducedEffects)
+        {
+            return new DockItemMotionState(1, 0, 0);
+        }
+
+        return isHighlighted
+            ? new DockItemMotionState(1.14f, -2, 180)
+            : new DockItemMotionState(1, 0, 160);
+    }
 }
 
 public sealed record DockItemMotionState(

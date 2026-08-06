@@ -50,11 +50,13 @@
                     x:Name="LauncherItem"
                     Width="{StaticResource SeanDockActionSize}"
                     Height="{StaticResource SeanDockActionSize}"
+                    Loaded="OnDockMotionItemLoaded"
                     PointerEntered="OnDockItemPointerEntered"
                     PointerExited="OnDockItemPointerExited"
                     PointerPressed="OnDockItemPointerPressed"
                     PointerReleased="OnDockItemPointerReleased"
-                    ToolTipService.ToolTip="Open Launcher">
+                    ToolTipService.ToolTip="Open Launcher"
+                    Unloaded="OnDockMotionItemUnloaded">
                     <Button
                         x:Name="LauncherButton"
                         AutomationProperties.Name="Open SeanShell Launcher"
@@ -110,11 +112,13 @@
                                 AutomationProperties.HelpText="Middle-click to open a new instance. Drag to reorder, or use Move left and Move right in the context menu."
                                 AutomationProperties.Name="{Binding AccessibleName}"
                                 ContextRequested="OnPinnedApplicationContextRequested"
+                                Loaded="OnDockMotionItemLoaded"
                                 PointerEntered="OnDockItemPointerEntered"
                                 PointerExited="OnDockItemPointerExited"
                                 PointerPressed="OnDockItemPointerPressed"
                                 PointerReleased="OnDockItemPointerReleased"
-                                ToolTipService.ToolTip="{Binding ToolTipText}">
+                                ToolTipService.ToolTip="{Binding ToolTipText}"
+                                Unloaded="OnDockMotionItemUnloaded">
                                 <Border
                                     Width="40"
                                     Height="40"
@@ -217,12 +221,14 @@
                                     AutomationProperties.HelpText="Middle-click opens a new instance when a matching installed application is available."
                                     AutomationProperties.Name="{Binding AccessibleName}"
                                     ContextRequested="OnWindowContextRequested"
+                                    Loaded="OnDockMotionItemLoaded"
                                     Opacity="{Binding ContentOpacity}"
                                     PointerEntered="OnDockItemPointerEntered"
                                     PointerExited="OnDockItemPointerExited"
                                     PointerPressed="OnDockItemPointerPressed"
                                     PointerReleased="OnDockItemPointerReleased"
-                                    ToolTipService.ToolTip="{Binding ToolTipText}">
+                                    ToolTipService.ToolTip="{Binding ToolTipText}"
+                                    Unloaded="OnDockMotionItemUnloaded">
                                     <Border
                                         Width="40"
                                         Height="40"

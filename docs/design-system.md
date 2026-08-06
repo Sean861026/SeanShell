@@ -89,6 +89,10 @@ Raw colors must not be embedded in individual views.
   magnify only their visual layer, leaving the 44 px interaction target stable.
   System controls and the clock use contained 1.03 hover feedback without lift,
   so their wider content remains aligned and cannot escape the Dock shell.
+- Application hover also gives the nearest visible icon on either side a
+  subordinate 1.14 scale and 2 px lift. The three visual transforms never resize
+  their layout lanes, and Windows reduced-effects mode disables the complete
+  magnification wave.
 
 ## Planned surfaces
 
