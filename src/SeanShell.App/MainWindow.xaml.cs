@@ -54,7 +54,7 @@ public sealed partial class MainWindow : Window
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private bool _taskbarAccessRevealed;
-    private nint _immersiveMonitorHandle;
+    private HashSet<nint> _immersiveMonitorHandles = [];
     private GlobalHotKey? _dockHotKey;
     private DockShortcut? _registeredDockShortcut;
     private GlobalHotKey? _launcherHotKey;
@@ -724,7 +724,7 @@ public sealed partial class MainWindow : Window
                     _taskbarAccessRevealed);
                 dockWindow.SetShowDesktopState(_showDesktop.IsDesktopShown);
                 dockWindow.SetImmersiveSuppressed(
-                    dockWindow.MonitorHandle == _immersiveMonitorHandle);
+                    _immersiveMonitorHandles.Contains(dockWindow.MonitorHandle));
                 windows.Add(dockWindow);
             }
 
@@ -779,30 +779,23 @@ public sealed partial class MainWindow : Window
         DispatcherQueueTimer sender,
         object args)
     {
-        var presentation = _settings.ReplaceWindowsTaskbar &&
+        var monitorHandles = _settings.ReplaceWindowsTaskbar &&
             _taskbarReplacement.IsEnabled &&
             !_taskbarAccessRevealed &&
             !_gamingMode.Current.IsGaming
-                ? _desktopWindows.CaptureForegroundPresentation()
-                : ForegroundWindowPresentation.None;
-        if (presentation.PreserveCurrentState)
+                ? _desktopWindows.CaptureImmersiveMonitorHandles()
+                : [];
+        var updatedHandles = monitorHandles.ToHashSet();
+        if (_immersiveMonitorHandles.SetEquals(updatedHandles))
         {
             return;
         }
 
-        var monitorHandle = presentation.IsImmersive
-            ? presentation.MonitorHandle
-            : 0;
-        if (monitorHandle == _immersiveMonitorHandle)
-        {
-            return;
-        }
-
-        _immersiveMonitorHandle = monitorHandle;
+        _immersiveMonitorHandles = updatedHandles;
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.SetImmersiveSuppressed(
-                dockWindow.MonitorHandle == monitorHandle);
+                updatedHandles.Contains(dockWindow.MonitorHandle));
         }
 
         if (ShouldReserveDockWorkArea())
@@ -957,7 +950,7 @@ public sealed partial class MainWindow : Window
         {
             var current = dockWindow.SetWorkAreaReservation(
                 enabled &&
-                dockWindow.MonitorHandle != _immersiveMonitorHandle);
+                !_immersiveMonitorHandles.Contains(dockWindow.MonitorHandle));
             if (!current.Success && result.Success)
             {
                 result = current;

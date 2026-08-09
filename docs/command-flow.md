@@ -629,13 +629,15 @@ Replacement disabled / system area revealed / Gaming Mode / shutdown
   -> ABM_REMOVE for every registered Dock
   -> Windows restores the available monitor work area
 
-Foreground window becomes maximized or covers one monitor
-  -> classify the presentation from IsZoomed and DWM extended-frame bounds
-  -> release only that monitor's AppBar reservation
-  -> collapse its Dock to the bottom-edge reveal target
-  -> let the application occupy the complete monitor without a blank strip
+Visible window becomes maximized or covers one monitor
+  -> enumerate eligible, non-minimized, non-cloaked top-level windows
+  -> classify every presentation from IsZoomed and DWM extended-frame bounds
+  -> release each affected monitor's AppBar reservation independently
+  -> collapse those Docks to their bottom-edge reveal targets
+  -> keep the state stable when focus moves to another display
+  -> let each immersive application occupy its complete monitor without a blank strip
   -> pointer reaches the edge: reveal the Dock as an overlay
-  -> foreground returns to an ordinary window: restore reservation and Dock
+  -> all windows on a display return to ordinary mode: restore its reservation and Dock
 ```
 
 The taskbar controller reissues a pending visibility transition every 50
