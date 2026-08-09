@@ -930,11 +930,10 @@ public sealed partial class DockWindow : Window
                 ShowOpenNewInstancePicker(candidates, anchor, elevated);
                 break;
             case TaskbarMiddleClickAction.None:
-                ToolTipService.SetToolTip(
-                    anchor,
+                dockItem.SetInteractionNotice(
                     elevated
-                        ? $"{dockItem.ToolTipText}\nElevated launch unavailable: no verified local executable."
-                        : $"{dockItem.ToolTipText}\nNew instance unavailable: no matching installed application.");
+                        ? "Elevated launch unavailable • No verified local executable"
+                        : "New instance unavailable • No matching installed application");
                 break;
             default:
                 throw new InvalidOperationException(
