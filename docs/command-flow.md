@@ -349,6 +349,8 @@ User hovers a running application entry
   -> wait 450 ms to reject pointer transit
   -> calculate a bounded one-to-six-window preview grid
   -> create DWM thumbnail relationships into SeanShell's preview HWND
+  -> wait for each preview surface to finish its first arrange pass
+  -> aspect-fit the live thumbnail into the full DPI-scaled preview surface
   -> render live source-window previews without capture or injection
   -> pointer enters preview: cancel pending dismissal
   -> select preview: restore and activate that exact window, then dismiss
