@@ -630,7 +630,8 @@ Replacement disabled / system area revealed / Gaming Mode / shutdown
   -> Windows restores the available monitor work area
 
 Visible window becomes maximized or covers one monitor
-  -> native WinEvent callback reports foreground/minimize/show/hide/location/title change
+  -> native WinEvent callback reports foreground/minimize/desktop-switch
+  -> observe show/hide/location/title change through the same callback
   -> coalesce event bursts through a one-shot 120 ms debounce
   -> invalidate and refresh the Dock window inventory
   -> enumerate eligible, non-minimized, non-cloaked top-level windows
