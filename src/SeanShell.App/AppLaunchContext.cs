@@ -6,6 +6,14 @@ internal static class AppLaunchContext
 {
     public static bool IsAutomaticStartup { get; set; }
 
+    public static bool HasAutomaticStartupArgument() =>
+        Environment.GetCommandLineArgs()
+            .Skip(1)
+            .Contains("--startup", StringComparer.OrdinalIgnoreCase) ||
+        Environment.CommandLine.Contains(
+            "--startup",
+            StringComparison.OrdinalIgnoreCase);
+
     public static bool DetectAutomaticStartup()
     {
         try

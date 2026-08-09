@@ -18,7 +18,8 @@ Windows sign-in
   -> validate explicitly registered built-in plugin manifests
   -> initialize each plugin with an independent timeout
   -> failed plugin: record diagnostics and continue startup
-  -> Dashboard and dock become visible
+  -> Dashboard and monitor-local Docks are constructed
+  -> automatic activation: keep Dashboard hidden and leave Docks available
   -> 30 seconds alive: mark startup healthy and clear failure count
 ```
 
