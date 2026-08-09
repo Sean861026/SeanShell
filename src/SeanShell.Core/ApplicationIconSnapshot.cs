@@ -2,7 +2,7 @@ namespace SeanShell.Core;
 
 public sealed class ApplicationIconSnapshot
 {
-    public const int PreferredDimension = 128;
+    public const int PreferredDimension = 192;
     private const int MaximumDimension = 256;
 
     public ApplicationIconSnapshot(
