@@ -283,6 +283,13 @@
                                                 Source="{Binding Icon}"
                                                 Stretch="Uniform"
                                                 Visibility="{Binding IconVisibility}" />
+                                            <Border
+                                                Margin="1"
+                                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                                                BorderThickness="1.5"
+                                                CornerRadius="10"
+                                                IsHitTestVisible="False"
+                                                Visibility="{Binding ActiveIndicatorVisibility}" />
                                         </Grid>
                                     </Border>
                                     <Border
