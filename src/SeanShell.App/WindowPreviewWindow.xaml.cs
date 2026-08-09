@@ -19,6 +19,7 @@ public sealed partial class WindowPreviewWindow : Window
     private readonly DesktopWindowService _windowService;
     private readonly List<PreviewEntry> _entries = [];
     private bool _allowClose;
+    private bool _thumbnailUpdateQueued;
 
     public WindowPreviewWindow(DesktopWindowService windowService)
     {
@@ -34,6 +35,7 @@ public sealed partial class WindowPreviewWindow : Window
         presenter.SetBorderAndTitleBar(false, false);
         AppWindow.SetPresenter(presenter);
         ConfigureNativeWindow();
+        PreviewRoot.SizeChanged += OnPreviewRootSizeChanged;
         AppWindow.Closing += OnWindowClosing;
     }
 
@@ -89,7 +91,7 @@ public sealed partial class WindowPreviewWindow : Window
         AppWindow.Show(false);
         IsVisible = true;
         PreviewRoot.UpdateLayout();
-        DispatcherQueue.TryEnqueue(UpdateThumbnails);
+        QueueThumbnailUpdate();
     }
 
     public void Dismiss()
@@ -244,6 +246,13 @@ public sealed partial class WindowPreviewWindow : Window
             _ = _windowService.RestoreAndActivate(window.Handle);
             Dismiss();
         };
+        surface.SizeChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                QueueThumbnailUpdate();
+            }
+        };
         Grid.SetRow(surface, 1);
         card.Children.Add(surface);
 
@@ -255,6 +264,7 @@ public sealed partial class WindowPreviewWindow : Window
 
     private void UpdateThumbnails()
     {
+        _thumbnailUpdateQueued = false;
         if (!IsVisible)
         {
             return;
@@ -264,6 +274,15 @@ public sealed partial class WindowPreviewWindow : Window
         var scale = PreviewRoot.XamlRoot?.RasterizationScale ?? GetScale();
         foreach (var entry in _entries)
         {
+            // A newly shown WinUI window can report the button's desired size
+            // before its first arrange pass. Waiting here prevents DWM from
+            // permanently receiving a tiny fallback-sized destination.
+            if (entry.Surface.ActualWidth < WindowPreviewLayout.CardWidth / 2d ||
+                entry.Surface.ActualHeight < WindowPreviewLayout.CardHeight / 3d)
+            {
+                continue;
+            }
+
             entry.Thumbnail?.Dispose();
             entry.Thumbnail = null;
             if (!DwmThumbnail.TryCreate(
@@ -291,6 +310,27 @@ public sealed partial class WindowPreviewWindow : Window
 
             entry.Thumbnail = thumbnail;
             entry.Fallback.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void QueueThumbnailUpdate()
+    {
+        if (_thumbnailUpdateQueued)
+        {
+            return;
+        }
+
+        _thumbnailUpdateQueued = true;
+        DispatcherQueue.TryEnqueue(UpdateThumbnails);
+    }
+
+    private void OnPreviewRootSizeChanged(
+        object sender,
+        SizeChangedEventArgs args)
+    {
+        if (IsVisible)
+        {
+            QueueThumbnailUpdate();
         }
     }
 
