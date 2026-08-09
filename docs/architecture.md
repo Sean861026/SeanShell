@@ -321,7 +321,8 @@ and shutdown all remove the reservation first. Destroying a Dock HWND also makes
 Windows discard its AppBar registration after a forced exit.
 
 While replacement is active, SeanShell observes native foreground, minimize,
-visibility, destruction, location-change, and title-change events. Bursts are
+virtual-desktop switch, visibility, destruction, location-change, and title-change
+events. Bursts are
 debounced for 120 milliseconds before the Dock inventory and eligible visible
 window presentations are captured; two-second fallback scans cover applications
 that omit expected accessibility events. The event-driven inventory invalidates
@@ -351,6 +352,8 @@ virtual desktop. The query is fail-open: unavailable COM activation or a failed
 per-window HRESULT retains the candidate, while the existing DWM cloaking filter
 and fallback reconciliation continue to provide compatibility coverage. SeanShell
 does not use undocumented virtual-desktop switching or notification interfaces.
+The documented `EVENT_SYSTEM_DESKTOPSWITCH` WinEvent feeds the same debounced
+inventory pipeline, so changing desktops does not wait for fallback polling.
 
 Taskbar visibility can settle asynchronously, especially on a secondary display.
 `WindowsTaskbarController` reissues the requested transition for a bounded

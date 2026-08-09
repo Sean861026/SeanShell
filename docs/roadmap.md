@@ -159,6 +159,7 @@
 - [x] Native drag-to-reorder for monitor-local running-app groups
 - [x] Keyboard-accessible running-app Move left / Move right context actions
 - [x] Public-API virtual-desktop filtering with fail-open compatibility behavior
+- [x] Immediate virtual-desktop switch reconciliation through documented WinEvent
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
