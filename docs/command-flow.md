@@ -630,8 +630,9 @@ Replacement disabled / system area revealed / Gaming Mode / shutdown
   -> Windows restores the available monitor work area
 
 Visible window becomes maximized or covers one monitor
-  -> native WinEvent callback reports foreground/minimize/show/hide/location change
+  -> native WinEvent callback reports foreground/minimize/show/hide/location/title change
   -> coalesce event bursts through a one-shot 120 ms debounce
+  -> invalidate and refresh the Dock window inventory
   -> enumerate eligible, non-minimized, non-cloaked top-level windows
   -> classify every presentation from IsZoomed and DWM extended-frame bounds
   -> release each affected monitor's AppBar reservation independently
@@ -642,7 +643,7 @@ Visible window becomes maximized or covers one monitor
   -> all windows on a display return to ordinary mode: restore its reservation and Dock
 
 No relevant WinEvent arrives
-  -> two-second fallback scan reconciles the immersive monitor set
+  -> two-second fallback scans reconcile the Dock and immersive monitor set
 ```
 
 The taskbar controller reissues a pending visibility transition every 50

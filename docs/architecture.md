@@ -321,10 +321,12 @@ and shutdown all remove the reservation first. Destroying a Dock HWND also makes
 Windows discard its AppBar registration after a forced exit.
 
 While replacement is active, SeanShell observes native foreground, minimize,
-visibility, destruction, and location-change events. Bursts are debounced for
-120 milliseconds before eligible visible window presentations are captured; a
-two-second fallback scan covers applications that omit expected accessibility
-events. A maximized window or a borderless window whose extended frame covers
+visibility, destruction, location-change, and title-change events. Bursts are
+debounced for 120 milliseconds before the Dock inventory and eligible visible
+window presentations are captured; two-second fallback scans cover applications
+that omit expected accessibility events. The event-driven inventory invalidates
+its short-lived snapshot cache before capture so taskbar state never reuses the
+pre-event window list. A maximized window or a borderless window whose extended frame covers
 its monitor enters per-display immersive mode. Each
 affected display releases its AppBar reservation and collapses its Dock to the
 bottom-edge reveal target; other displays retain their normal reservations.

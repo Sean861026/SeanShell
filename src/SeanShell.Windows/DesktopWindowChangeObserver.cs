@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace SeanShell.Windows;
 
-public sealed class ImmersiveWindowChangeObserver : IDisposable
+public sealed class DesktopWindowChangeObserver : IDisposable
 {
     private const uint WinEventOutOfContext = 0x0000;
     private const uint WinEventSkipOwnProcess = 0x0002;
@@ -17,13 +17,14 @@ public sealed class ImmersiveWindowChangeObserver : IDisposable
         0x8002, // EVENT_OBJECT_SHOW
         0x8003, // EVENT_OBJECT_HIDE
         0x800B, // EVENT_OBJECT_LOCATIONCHANGE
+        0x800C, // EVENT_OBJECT_NAMECHANGE
     ];
 
     private readonly WinEventProc _callback;
     private readonly List<nint> _hooks = [];
     private int _disposed;
 
-    public ImmersiveWindowChangeObserver()
+    public DesktopWindowChangeObserver()
     {
         _callback = OnWinEvent;
         foreach (var eventType in ObservedEvents)
@@ -41,7 +42,7 @@ public sealed class ImmersiveWindowChangeObserver : IDisposable
                 Dispose();
                 throw new Win32Exception(
                     Marshal.GetLastWin32Error(),
-                    "Unable to observe immersive window changes.");
+                    "Unable to observe desktop window changes.");
             }
 
             _hooks.Add(hook);
