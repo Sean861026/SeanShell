@@ -124,6 +124,7 @@
 - [x] Shared acrylic-card visual language for Dock system flyouts
 - [x] Compact network, audio, power, and battery status cluster on every Dock
 - [x] Layout-stable macOS-inspired primary and nearest-neighbor icon magnification
+- [x] Rich Fluent taskbar tooltips with state and interaction guidance
 
 ## Later: shell modes
 
