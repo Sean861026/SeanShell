@@ -2005,6 +2005,21 @@ public sealed partial class DockWindow : Window
         }
     }
 
+    private void OnRunningApplicationsDragCompleted(
+        ListViewBase sender,
+        DragItemsCompletedEventArgs args)
+    {
+        if (args.DropResult != DataPackageOperation.Move)
+        {
+            return;
+        }
+
+        _windowGroupOrder = Items
+            .Select(static item => item.GroupKey)
+            .ToArray();
+        ResetWindowOverflowControls();
+    }
+
     private void OnPinnedApplicationContextRequested(
         UIElement sender,
         ContextRequestedEventArgs args)

@@ -45,6 +45,27 @@ public sealed class TaskbarWindowOrderTests
     }
 
     [TestMethod]
+    public void ManualOrderIsPreservedByTheNextSnapshot()
+    {
+        var groups = new[]
+        {
+            CreateGroup("Alpha", 1),
+            CreateGroup("Terminal", 2),
+            CreateGroup("Zulu", 3),
+        };
+        var keys = groups
+            .Select(TaskbarWindowGrouper.GetKey)
+            .Reverse()
+            .ToArray();
+
+        var result = TaskbarWindowOrder.Apply(groups, keys);
+
+        CollectionAssert.AreEqual(
+            new[] { "Zulu", "Terminal", "Alpha" },
+            result.Groups.Select(static group => group.ProcessName).ToArray());
+    }
+
+    [TestMethod]
     public void ClosedGroupsAreRemovedFromRememberedOrder()
     {
         var previous = TaskbarWindowOrder.Apply(

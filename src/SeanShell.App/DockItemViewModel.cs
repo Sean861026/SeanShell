@@ -22,6 +22,8 @@ public sealed class DockItemViewModel(
 
     public IReadOnlyList<DesktopWindowSnapshot> Windows { get; } = group.Windows;
 
+    public string GroupKey { get; } = TaskbarWindowGrouper.GetKey(group);
+
     public DesktopWindowSnapshot PrimaryWindow { get; } = group.PrimaryWindow;
 
     public string ProcessName { get; } = group.ProcessName;

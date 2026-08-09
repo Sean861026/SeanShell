@@ -339,8 +339,10 @@ virtual-desktop APIs.
 Each Dock also keeps a monitor-local, session-scoped order for running window
 groups. Surviving groups retain their visual position across event-driven
 snapshots, newly observed groups append at the end, and closed groups are removed.
-The order deliberately resets when a Dock is rebuilt rather than persisting stale
-window identities across sessions.
+Users can drag visible running groups into a preferred order for that display;
+the next event-driven snapshot preserves the manual order. The order deliberately
+resets when a Dock is rebuilt rather than persisting stale window identities
+across sessions.
 
 Taskbar visibility can settle asynchronously, especially on a secondary display.
 `WindowsTaskbarController` reissues the requested transition for a bounded
