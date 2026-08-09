@@ -24,7 +24,7 @@ public sealed partial class MainWindow : Window
     private static readonly TimeSpan GamingDetectionInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ImmersiveFallbackInterval =
         TimeSpan.FromSeconds(2);
-    private static readonly TimeSpan ImmersiveChangeDebounce =
+    private static readonly TimeSpan DesktopWindowChangeDebounce =
         TimeSpan.FromMilliseconds(120);
     private readonly DesktopWindowService _desktopWindows;
     private readonly DisplayMonitorService _displayMonitorService;
@@ -39,7 +39,7 @@ public sealed partial class MainWindow : Window
     private readonly GamingSessionRecorder _gamingSessions;
     private readonly DispatcherQueueTimer _gamingModeTimer;
     private readonly DispatcherQueueTimer _immersiveRefreshTimer;
-    private readonly DispatcherQueueTimer _immersiveChangeTimer;
+    private readonly DispatcherQueueTimer _desktopWindowChangeTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
     private readonly ExternalPluginTrustManager _externalPluginTrust;
@@ -48,7 +48,7 @@ public sealed partial class MainWindow : Window
     private readonly ShowDesktopSession _showDesktop;
     private readonly TaskbarReplacementSession _taskbarReplacement;
     private SystemAccessibilityService? _accessibility;
-    private ImmersiveWindowChangeObserver? _immersiveWindowObserver;
+    private DesktopWindowChangeObserver? _desktopWindowObserver;
     private volatile bool _isClosing;
     private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1, false);
     private DisplayChangeObserver? _displayChangeObserver;
@@ -56,6 +56,8 @@ public sealed partial class MainWindow : Window
     private IReadOnlyList<DockWindow> _dockWindows;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
+    private long _desktopWindowChangeTimestamp;
+    private int _desktopWindowChangeQueued;
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private bool _taskbarAccessRevealed;
@@ -144,10 +146,10 @@ public sealed partial class MainWindow : Window
         _immersiveRefreshTimer.Interval = ImmersiveFallbackInterval;
         _immersiveRefreshTimer.Tick += OnImmersiveRefreshTimerTick;
 
-        _immersiveChangeTimer = DispatcherQueue.CreateTimer();
-        _immersiveChangeTimer.Interval = ImmersiveChangeDebounce;
-        _immersiveChangeTimer.IsRepeating = false;
-        _immersiveChangeTimer.Tick += OnImmersiveChangeTimerTick;
+        _desktopWindowChangeTimer = DispatcherQueue.CreateTimer();
+        _desktopWindowChangeTimer.Interval = DesktopWindowChangeDebounce;
+        _desktopWindowChangeTimer.IsRepeating = false;
+        _desktopWindowChangeTimer.Tick += OnDesktopWindowChangeTimerTick;
 
         _displayChangeTimer = DispatcherQueue.CreateTimer();
         _displayChangeTimer.Interval = TimeSpan.FromMilliseconds(500);
@@ -166,7 +168,7 @@ public sealed partial class MainWindow : Window
     private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
-        TryObserveImmersiveWindowChanges();
+        TryObserveDesktopWindowChanges();
         _accessibility = new SystemAccessibilityService();
         _accessibility.Changed += OnAccessibilityChanged;
         _systemAccessibility = _accessibility.Current;
@@ -629,16 +631,16 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void TryObserveImmersiveWindowChanges()
+    private void TryObserveDesktopWindowChanges()
     {
         try
         {
-            _immersiveWindowObserver = new ImmersiveWindowChangeObserver();
-            _immersiveWindowObserver.Changed += OnImmersiveWindowsChanged;
+            _desktopWindowObserver = new DesktopWindowChangeObserver();
+            _desktopWindowObserver.Changed += OnDesktopWindowsChanged;
         }
         catch
         {
-            // The two-second fallback scan remains active if hooks are unavailable.
+            // The two-second fallback scans remain active if hooks are unavailable.
         }
     }
 
@@ -804,31 +806,61 @@ public sealed partial class MainWindow : Window
         object args) =>
         RefreshImmersiveState();
 
-    private void OnImmersiveWindowsChanged(object? sender, EventArgs args)
+    private void OnDesktopWindowsChanged(object? sender, EventArgs args)
     {
         if (_isClosing)
         {
             return;
         }
 
-        _ = DispatcherQueue.TryEnqueue(() =>
+        Interlocked.Exchange(
+            ref _desktopWindowChangeTimestamp,
+            Environment.TickCount64);
+        if (Interlocked.Exchange(ref _desktopWindowChangeQueued, 1) != 0)
         {
-            if (_isClosing)
+            return;
+        }
+
+        if (!DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_isClosing || _gamingMode.Current.IsGaming)
             {
+                Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
                 return;
             }
 
-            _immersiveChangeTimer.Stop();
-            _immersiveChangeTimer.Start();
-        });
+            _desktopWindowChangeTimer.Stop();
+            _desktopWindowChangeTimer.Interval = DesktopWindowChangeDebounce;
+            _desktopWindowChangeTimer.Start();
+        }))
+        {
+            Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
+        }
     }
 
-    private void OnImmersiveChangeTimerTick(
+    private async void OnDesktopWindowChangeTimerTick(
         DispatcherQueueTimer sender,
         object args)
     {
-        _immersiveChangeTimer.Stop();
+        var elapsedMilliseconds = Environment.TickCount64 -
+            Interlocked.Read(ref _desktopWindowChangeTimestamp);
+        var remainingMilliseconds =
+            DesktopWindowChangeDebounce.TotalMilliseconds - elapsedMilliseconds;
+        if (remainingMilliseconds > 0)
+        {
+            _desktopWindowChangeTimer.Stop();
+            _desktopWindowChangeTimer.Interval = TimeSpan.FromMilliseconds(
+                Math.Max(1, remainingMilliseconds));
+            _desktopWindowChangeTimer.Start();
+            return;
+        }
+
+        Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
+        _desktopWindowChangeTimer.Stop();
+        _desktopWindowChangeTimer.Interval = DesktopWindowChangeDebounce;
         RefreshImmersiveState();
+        _desktopWindows.InvalidateCache();
+        await RefreshDockWindowsAsync().ConfigureAwait(true);
     }
 
     private void RefreshImmersiveState()
@@ -1556,16 +1588,17 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _isClosing = true;
-        if (_immersiveWindowObserver is not null)
+        Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
+        if (_desktopWindowObserver is not null)
         {
-            _immersiveWindowObserver.Changed -= OnImmersiveWindowsChanged;
-            _immersiveWindowObserver.Dispose();
-            _immersiveWindowObserver = null;
+            _desktopWindowObserver.Changed -= OnDesktopWindowsChanged;
+            _desktopWindowObserver.Dispose();
+            _desktopWindowObserver = null;
         }
 
         _taskbarRefreshTimer.Stop();
         _immersiveRefreshTimer.Stop();
-        _immersiveChangeTimer.Stop();
+        _desktopWindowChangeTimer.Stop();
         _ = SetDockWorkAreaReservation(false);
         _ = _taskbarReplacement.Disable();
         _displayChangeTimer.Stop();

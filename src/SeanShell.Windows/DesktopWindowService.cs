@@ -40,6 +40,14 @@ public sealed class DesktopWindowService
         }
     }
 
+    public void InvalidateCache()
+    {
+        lock (_cacheGate)
+        {
+            _cacheExpiresAt = 0;
+        }
+    }
+
     private IReadOnlyList<DesktopWindowSnapshot> CaptureCore()
     {
         var windows = new List<DesktopWindowSnapshot>();
