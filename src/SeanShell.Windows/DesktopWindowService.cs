@@ -173,44 +173,42 @@ public sealed class DesktopWindowService
             : MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
     }
 
-    public ForegroundWindowPresentation CaptureForegroundPresentation()
+    public IReadOnlyList<nint> CaptureImmersiveMonitorHandles()
     {
-        var foregroundWindow = GetForegroundWindow();
-        if (foregroundWindow == 0 ||
-            foregroundWindow == GetShellWindow() ||
-            !IsWindowVisible(foregroundWindow) ||
-            IsIconic(foregroundWindow))
+        var monitorHandles = new HashSet<nint>();
+        var shellWindow = GetShellWindow();
+        EnumWindows((handle, _) =>
         {
-            return ForegroundWindowPresentation.None;
-        }
+            if (handle == shellWindow ||
+                IsIconic(handle) ||
+                !IsTaskbarWindow(handle))
+            {
+                return true;
+            }
 
-        GetWindowThreadProcessId(foregroundWindow, out var processId);
-        if (processId == Environment.ProcessId)
-        {
-            return ForegroundWindowPresentation.Preserve;
-        }
+            GetWindowThreadProcessId(handle, out var processId);
+            if (processId == 0 || processId == Environment.ProcessId)
+            {
+                return true;
+            }
 
-        if (processId == 0)
-        {
-            return ForegroundWindowPresentation.None;
-        }
+            var monitorHandle = MonitorFromWindow(
+                handle,
+                MonitorDefaultToNearest);
+            if (monitorHandle != 0 &&
+                TryGetWindowBounds(handle, out var windowBounds) &&
+                TryGetMonitorBounds(monitorHandle, out var monitorBounds) &&
+                WindowImmersiveStateResolver.IsImmersive(
+                    IsZoomed(handle),
+                    windowBounds,
+                    monitorBounds))
+            {
+                monitorHandles.Add(monitorHandle);
+            }
 
-        var monitorHandle = MonitorFromWindow(
-            foregroundWindow,
-            MonitorDefaultToNearest);
-        if (monitorHandle == 0 ||
-            !TryGetWindowBounds(foregroundWindow, out var windowBounds) ||
-            !TryGetMonitorBounds(monitorHandle, out var monitorBounds))
-        {
-            return new ForegroundWindowPresentation(monitorHandle, false);
-        }
-
-        return new ForegroundWindowPresentation(
-            monitorHandle,
-            WindowImmersiveStateResolver.IsImmersive(
-                IsZoomed(foregroundWindow),
-                windowBounds,
-                monitorBounds));
+            return true;
+        }, 0);
+        return monitorHandles.ToArray();
     }
 
     public bool RestoreAndActivate(nint handle)

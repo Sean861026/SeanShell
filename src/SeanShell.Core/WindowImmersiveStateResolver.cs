@@ -30,14 +30,3 @@ public static class WindowImmersiveStateResolver
                 monitorBounds.Y + monitorBounds.Height - tolerance;
     }
 }
-
-public sealed record ForegroundWindowPresentation(
-    nint MonitorHandle,
-    bool IsImmersive,
-    bool PreserveCurrentState = false)
-{
-    public static ForegroundWindowPresentation None { get; } = new(0, false);
-
-    public static ForegroundWindowPresentation Preserve { get; } =
-        new(0, false, true);
-}
