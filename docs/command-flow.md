@@ -370,6 +370,12 @@ User Shift-clicks a Dock application
   -> one candidate: open a new instance
   -> multiple candidates: require a native selection flyout
 
+User Ctrl-clicks a running Dock application
+  -> one window: activate that window without opening a picker
+  -> inactive multi-window group: activate the first window
+  -> active multi-window group: activate the next window in snapshot order
+  -> last active window: wrap to the first window
+
 User Ctrl+Shift-clicks a Dock application
   -> require a cached application with an existing fully-qualified local .exe
   -> reject network paths, unresolved shortcuts, and non-executable targets

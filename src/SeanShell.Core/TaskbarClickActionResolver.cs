@@ -3,6 +3,7 @@ namespace SeanShell.Core;
 public enum TaskbarClickAction
 {
     Default,
+    CycleWindows,
     OpenNewInstance,
     OpenElevatedInstance,
 }
@@ -16,6 +17,7 @@ public static class TaskbarClickActionResolver
         {
             (true, true) => TaskbarClickAction.OpenElevatedInstance,
             (true, false) => TaskbarClickAction.OpenNewInstance,
+            (false, true) => TaskbarClickAction.CycleWindows,
             _ => TaskbarClickAction.Default,
         };
 }

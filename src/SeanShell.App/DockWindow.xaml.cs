@@ -1139,6 +1139,22 @@ public sealed partial class DockWindow : Window
             KeyboardModifierStateReader.IsControlPressed());
         if (clickAction != TaskbarClickAction.Default)
         {
+            if (clickAction == TaskbarClickAction.CycleWindows)
+            {
+                var targetIndex = TaskbarWindowCycleResolver.ResolveNextIndex(
+                    item.Windows
+                        .Select(static window => window.IsForeground)
+                        .ToArray());
+                if (targetIndex >= 0)
+                {
+                    _ = _windowService.RestoreAndActivate(
+                        item.Windows[targetIndex].Handle);
+                }
+
+                ScheduleAutoHide();
+                return;
+            }
+
             if (WindowList.ContainerFromItem(item) is FrameworkElement shiftAnchor)
             {
                 await OpenNewInstanceForDockItemAsync(
