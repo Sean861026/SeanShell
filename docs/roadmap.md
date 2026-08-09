@@ -165,6 +165,7 @@
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - [x] Native Dock background menu for settings, Task Manager, system-area access, and safe exit
 - [x] Verified local executable actions for file location and elevated launch
+- [x] Verified executable actions on unpinned running-application context menus
 - [x] Standard Shift-click new-instance behavior for pinned and running applications
 - [x] Standard Ctrl+Shift-click elevated launch for verified local executables
 - [x] Standard Ctrl-click cycling across running multi-window groups
