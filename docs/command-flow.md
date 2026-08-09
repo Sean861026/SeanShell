@@ -5,10 +5,11 @@
 ```text
 Windows sign-in
   -> Explorer starts normally
-  -> User or startup task launches SeanShell
+  -> User launch or enabled Windows startup task activates SeanShell
+  -> AppInstance identifies StartupTask activation before WinUI starts
   -> load startup-health.json
   -> previous pending startup: increment consecutive failure count
-  -> --startup and three failures: ensure Explorer is running, then exit
+  -> automatic activation and three failures: ensure Explorer is running, then exit
   -> manual launch: always allow a recovery attempt
   -> write a new pending startup session
   -> App loads validated configuration
@@ -23,8 +24,11 @@ Windows sign-in
 
 A normal main-window close clears the pending session immediately. Unexpected
 termination during the first 30 seconds leaves it pending for the next launch.
-SeanShell does not register an automatic-start entry yet; `--startup` is the
-guarded contract for that later feature.
+The Shell preferences toggle calls the packaged Windows startup-task API. The
+dashboard displays the live Windows state rather than persisting a second copy.
+If the user disables SeanShell in Task Manager, only the user can re-enable it
+from Windows. The `--startup` argument remains available for guarded development
+testing.
 
 ## Launcher query
 

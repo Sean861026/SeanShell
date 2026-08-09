@@ -441,8 +441,11 @@ does not match.
   injects code, hooks rendering, or intercepts game input.
 - The dock lists ordinary visible top-level application windows, excludes
   SeanShell itself, and uses `SetForegroundWindow` only after a user selection.
-- Automatic startup is not registered by SeanShell yet. The reserved `--startup`
-  mode uses a persistent crash-loop guard and exits after three consecutive
+- Automatic startup is an opt-in packaged `windows.startupTask` registration.
+  The dashboard reads the live Windows task state and never shadows it in the
+  settings document. Windows policy and a user's Task Manager choice take
+  precedence. Rich `StartupTask` activation and the development-only `--startup`
+  mode use a persistent crash-loop guard and exit after three consecutive
   incomplete startup windows. Manual launches remain available for recovery.
 
 ## Configuration

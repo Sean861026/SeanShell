@@ -45,6 +45,7 @@ public sealed partial class MainWindow : Window
     private readonly ExternalPluginTrustManager _externalPluginTrust;
     private readonly ShellStateStore _shellState;
     private readonly ShellSettingsStore _settingsStore;
+    private readonly StartupRegistrationService _startupRegistration;
     private readonly ShowDesktopSession _showDesktop;
     private readonly TaskbarReplacementSession _taskbarReplacement;
     private SystemAccessibilityService? _accessibility;
@@ -82,6 +83,7 @@ public sealed partial class MainWindow : Window
 
         var app = (App)Application.Current;
         _settingsStore = app.SettingsStore;
+        _startupRegistration = app.StartupRegistration;
         _settings = app.SettingsLoad.Settings;
         _gamingMode = app.GamingMode;
         _gamingDetectionPerformance = app.GamingDetectionPerformance;
@@ -114,6 +116,7 @@ public sealed partial class MainWindow : Window
             mainPage.LauncherRequested += OnLauncherRequested;
             mainPage.DockAutoHideChanged += OnDockAutoHideChanged;
             mainPage.TaskbarReplacementChanged += OnTaskbarReplacementChanged;
+            mainPage.AutomaticStartupChanged += OnAutomaticStartupChanged;
             mainPage.LauncherShortcutChanged += OnLauncherShortcutChanged;
             mainPage.DockShortcutChanged += OnDockShortcutChanged;
             mainPage.ThemePreferenceChanged += OnThemePreferenceChanged;
@@ -192,9 +195,28 @@ public sealed partial class MainWindow : Window
         _ = RefreshPinnedApplicationsAsync();
         UpdateGamingModeMonitor();
         await _pluginHost.InitializeAsync().ConfigureAwait(true);
+        await RefreshStartupRegistrationAsync().ConfigureAwait(true);
         if (_gamingMode.Current.IsGaming)
         {
             await _pluginHost.SuspendAsync().ConfigureAwait(true);
+        }
+    }
+
+    private async void OnAutomaticStartupChanged(bool enabled)
+    {
+        var status = await _startupRegistration.SetEnabledAsync(enabled).ConfigureAwait(true);
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetStartupRegistrationStatus(status, announce: true);
+        }
+    }
+
+    private async Task RefreshStartupRegistrationAsync()
+    {
+        var status = await _startupRegistration.GetStatusAsync().ConfigureAwait(true);
+        if (RootFrame.Content is MainPage mainPage)
+        {
+            mainPage.SetStartupRegistrationStatus(status);
         }
     }
 

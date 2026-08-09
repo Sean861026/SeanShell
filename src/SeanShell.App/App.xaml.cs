@@ -75,6 +75,8 @@ public partial class App : Application
 
     public SystemMetricsProvider SystemMetrics { get; } = new();
 
+    public StartupRegistrationService StartupRegistration { get; } = new();
+
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -197,7 +199,7 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        var automaticStartup = args.Arguments
+        var automaticStartup = AppLaunchContext.IsAutomaticStartup || args.Arguments
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Contains("--startup", StringComparer.OrdinalIgnoreCase);
         var startup = _startupGuard.BeginSession(automaticStartup);
