@@ -22,6 +22,8 @@ public sealed partial class MainWindow : Window
     private const uint DVirtualKey = 0x44;
     private const uint SpaceVirtualKey = 0x20;
     private static readonly TimeSpan GamingDetectionInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ImmersiveDetectionInterval =
+        TimeSpan.FromMilliseconds(400);
     private readonly DesktopWindowService _desktopWindows;
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
@@ -34,6 +36,7 @@ public sealed partial class MainWindow : Window
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
     private readonly GamingSessionRecorder _gamingSessions;
     private readonly DispatcherQueueTimer _gamingModeTimer;
+    private readonly DispatcherQueueTimer _immersiveRefreshTimer;
     private readonly ProcessCatalog _processCatalog;
     private readonly PluginHost _pluginHost;
     private readonly ExternalPluginTrustManager _externalPluginTrust;
@@ -51,6 +54,7 @@ public sealed partial class MainWindow : Window
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private bool _taskbarAccessRevealed;
+    private nint _immersiveMonitorHandle;
     private GlobalHotKey? _dockHotKey;
     private DockShortcut? _registeredDockShortcut;
     private GlobalHotKey? _launcherHotKey;
@@ -131,6 +135,10 @@ public sealed partial class MainWindow : Window
         _taskbarRefreshTimer.Interval = TimeSpan.FromSeconds(2);
         _taskbarRefreshTimer.Tick += OnTaskbarRefreshTimerTick;
 
+        _immersiveRefreshTimer = DispatcherQueue.CreateTimer();
+        _immersiveRefreshTimer.Interval = ImmersiveDetectionInterval;
+        _immersiveRefreshTimer.Tick += OnImmersiveRefreshTimerTick;
+
         _displayChangeTimer = DispatcherQueue.CreateTimer();
         _displayChangeTimer.Interval = TimeSpan.FromMilliseconds(500);
         _displayChangeTimer.IsRepeating = false;
@@ -165,6 +173,7 @@ public sealed partial class MainWindow : Window
         RefreshClock();
         _clockRefreshTimer.Start();
         _dockRefreshTimer.Start();
+        _immersiveRefreshTimer.Start();
         _ = RefreshDockWindowsAsync();
         _ = RefreshAvailableApplicationsAsync();
         _ = RefreshPinnedApplicationsAsync();
@@ -714,6 +723,8 @@ public sealed partial class MainWindow : Window
                     _taskbarReplacement.IsEnabled,
                     _taskbarAccessRevealed);
                 dockWindow.SetShowDesktopState(_showDesktop.IsDesktopShown);
+                dockWindow.SetImmersiveSuppressed(
+                    dockWindow.MonitorHandle == _immersiveMonitorHandle);
                 windows.Add(dockWindow);
             }
 
@@ -762,6 +773,48 @@ public sealed partial class MainWindow : Window
         FailTaskbarReplacement(
             result.Error ??
             "Windows did not keep the native taskbars hidden.");
+    }
+
+    private void OnImmersiveRefreshTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        var presentation = _settings.ReplaceWindowsTaskbar &&
+            _taskbarReplacement.IsEnabled &&
+            !_taskbarAccessRevealed &&
+            !_gamingMode.Current.IsGaming
+                ? _desktopWindows.CaptureForegroundPresentation()
+                : ForegroundWindowPresentation.None;
+        if (presentation.PreserveCurrentState)
+        {
+            return;
+        }
+
+        var monitorHandle = presentation.IsImmersive
+            ? presentation.MonitorHandle
+            : 0;
+        if (monitorHandle == _immersiveMonitorHandle)
+        {
+            return;
+        }
+
+        _immersiveMonitorHandle = monitorHandle;
+        foreach (var dockWindow in _dockWindows)
+        {
+            dockWindow.SetImmersiveSuppressed(
+                dockWindow.MonitorHandle == monitorHandle);
+        }
+
+        if (ShouldReserveDockWorkArea())
+        {
+            var reservation = SetDockWorkAreaReservation(true);
+            if (!reservation.Success)
+            {
+                FailTaskbarReplacement(
+                    reservation.Error ??
+                    "Windows did not update the Dock work area for full screen.");
+            }
+        }
     }
 
     private void OnSystemAreaRequested(object? sender, EventArgs e)
@@ -902,7 +955,9 @@ public sealed partial class MainWindow : Window
         WorkAreaReservationResult result = WorkAreaReservationResult.Released();
         foreach (var dockWindow in _dockWindows)
         {
-            var current = dockWindow.SetWorkAreaReservation(enabled);
+            var current = dockWindow.SetWorkAreaReservation(
+                enabled &&
+                dockWindow.MonitorHandle != _immersiveMonitorHandle);
             if (!current.Success && result.Success)
             {
                 result = current;
@@ -1454,6 +1509,7 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _taskbarRefreshTimer.Stop();
+        _immersiveRefreshTimer.Stop();
         _ = SetDockWorkAreaReservation(false);
         _ = _taskbarReplacement.Disable();
         _displayChangeTimer.Stop();

@@ -320,6 +320,14 @@ the system area, entering Gaming Mode, disabling replacement, rebuilding Docks,
 and shutdown all remove the reservation first. Destroying a Dock HWND also makes
 Windows discard its AppBar registration after a forced exit.
 
+While replacement is active, SeanShell samples the foreground presentation every
+400 milliseconds. A maximized window or a borderless window whose extended frame
+covers its monitor enters per-display immersive mode. Only that display releases
+its AppBar reservation, and its Dock collapses to the bottom-edge reveal target;
+other displays retain their normal reservations. Returning to an ordinary window
+restores the reservation and expanded Dock without relying on undocumented
+virtual-desktop APIs.
+
 Taskbar visibility can settle asynchronously, especially on a secondary display.
 `WindowsTaskbarController` reissues the requested transition for a bounded
 two-second window and fails safe to the native taskbar if the final state still
