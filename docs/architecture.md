@@ -345,6 +345,13 @@ right context actions. The next event-driven snapshot preserves the manual order
 The order deliberately resets when a Dock is rebuilt rather than persisting stale
 window identities across sessions.
 
+Window capture queries the public `IVirtualDesktopManager` COM interface before
+adding a taskbar candidate, so each Dock reflects only the currently active
+virtual desktop. The query is fail-open: unavailable COM activation or a failed
+per-window HRESULT retains the candidate, while the existing DWM cloaking filter
+and fallback reconciliation continue to provide compatibility coverage. SeanShell
+does not use undocumented virtual-desktop switching or notification interfaces.
+
 Taskbar visibility can settle asynchronously, especially on a secondary display.
 `WindowsTaskbarController` reissues the requested transition for a bounded
 two-second window and fails safe to the native taskbar if the final state still
