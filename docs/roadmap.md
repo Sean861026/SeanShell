@@ -153,6 +153,7 @@
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
 - [x] Per-monitor immersive mode releases AppBar space for maximized/full-screen windows
 - [x] Preserve immersive work areas across cross-monitor foreground changes
+- [x] Event-driven immersive detection with debounced transitions and fallback reconciliation
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
