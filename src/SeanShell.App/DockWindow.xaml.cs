@@ -22,6 +22,16 @@ namespace SeanShell.App;
 
 public sealed partial class DockWindow : Window
 {
+    private static readonly string[] BatteryGlyphs =
+    [
+        "\uE850", "\uE851", "\uE852", "\uE853", "\uE854", "\uE855",
+        "\uE856", "\uE857", "\uE858", "\uE859", "\uE83F",
+    ];
+    private static readonly string[] ChargingBatteryGlyphs =
+    [
+        "\uE85A", "\uE85B", "\uE85C", "\uE85D", "\uE85E", "\uE85F",
+        "\uE860", "\uE861", "\uE862", "\uE863", "\uE83E",
+    ];
     private const int DockHeight = 104;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
@@ -1810,14 +1820,40 @@ public sealed partial class DockWindow : Window
             networkUnavailable ? Visibility.Visible : Visibility.Collapsed;
         DockNetworkStatusIcon.Opacity =
             _lastSystemStatus.NetworkAvailable is null ? 0.45 : 1;
+        var networkBrush = GetThemeBrush(
+            networkUnavailable
+                ? "SystemFillColorCriticalBrush"
+                : "TextFillColorPrimaryBrush");
+        DockNetworkStatusIcon.Foreground = networkBrush;
+        DockNetworkOfflineMark.Foreground = networkBrush;
 
         DockAudioStatusIcon.Glyph =
             _lastAudioStatus.IsMuted ? "\uE74F" : "\uE767";
         DockAudioStatusIcon.Opacity =
             _lastAudioStatus.IsAvailable ? 1 : 0.45;
+        DockAudioStatusIcon.Foreground = GetThemeBrush(
+            _lastAudioStatus.IsAvailable && !_lastAudioStatus.IsMuted
+                ? "TextFillColorPrimaryBrush"
+                : "TextFillColorSecondaryBrush");
 
+        var batteryIndicator = BatteryIndicatorResolver.Resolve(_lastSystemStatus);
+        DockPowerStatusIcon.Glyph = batteryIndicator.Kind == BatteryIndicatorKind.Charging
+            ? ChargingBatteryGlyphs[batteryIndicator.Level]
+            : BatteryGlyphs[batteryIndicator.Level];
         DockPowerStatusIcon.Opacity =
-            _lastSystemStatus.IsPluggedIn is null ? 0.45 : 1;
+            batteryIndicator.Emphasis == BatteryIndicatorEmphasis.Unavailable
+                ? 0.45
+                : 1;
+        var powerBrush = GetThemeBrush(batteryIndicator.Emphasis switch
+        {
+            BatteryIndicatorEmphasis.Critical => "SystemFillColorCriticalBrush",
+            BatteryIndicatorEmphasis.Caution => "SystemFillColorCautionBrush",
+            BatteryIndicatorEmphasis.Charging => "AccentTextFillColorPrimaryBrush",
+            BatteryIndicatorEmphasis.Unavailable => "TextFillColorDisabledBrush",
+            _ => "TextFillColorPrimaryBrush",
+        });
+        DockPowerStatusIcon.Foreground = powerBrush;
+        DockPowerPercentText.Foreground = powerBrush;
         DockPowerPercentText.Text =
             _lastSystemStatus.BatteryPercent?.ToString(
                 CultureInfo.CurrentCulture) ?? string.Empty;
@@ -1834,6 +1870,12 @@ public sealed partial class DockWindow : Window
             QuickSettingsButton,
             $"{systemText.Network}\n{audioText.Summary}\n{systemText.Power}");
     }
+
+    private static Brush? GetThemeBrush(string resourceKey) =>
+        Application.Current.Resources.TryGetValue(resourceKey, out var value) &&
+        value is Brush brush
+            ? brush
+            : null;
 
     private static void LaunchShellTarget(string target) =>
         Process.Start(
