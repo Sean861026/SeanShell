@@ -2,6 +2,12 @@ namespace SeanShell.Core;
 
 public static class TaskbarWindowGrouper
 {
+    public static string GetKey(TaskbarWindowGroup group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        return GetGroupKey(group.PrimaryWindow);
+    }
+
     public static IReadOnlyList<TaskbarWindowGroup> Group(
         IReadOnlyList<DesktopWindowSnapshot> windows)
     {
