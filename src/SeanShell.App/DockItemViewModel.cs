@@ -18,6 +18,7 @@ public sealed class DockItemViewModel(
             group.IsForeground,
             group.IsMinimized);
     private ImageSource? _icon;
+    private string? _interactionNotice;
 
     public IReadOnlyList<DesktopWindowSnapshot> Windows { get; } = group.Windows;
 
@@ -80,9 +81,10 @@ public sealed class DockItemViewModel(
         ? $"{ProcessName} • {WindowCount} windows • {StateText}"
         : $"{ProcessName} • {StateText}";
 
-    public string ToolTipActionText => WindowCount > 1
-        ? "Click to choose • Ctrl-click to cycle"
-        : "Click to switch • Shift-click for a new instance";
+    public string ToolTipActionText => _interactionNotice ??
+        (WindowCount > 1
+            ? "Click to choose • Ctrl-click to cycle"
+            : "Click to switch • Shift-click for a new instance");
 
     public string ToolTipText
     {
@@ -101,6 +103,18 @@ public sealed class DockItemViewModel(
         : $"{ProcessName}, {WindowCount} windows, {StateText}{PinnedText}. Open window picker";
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public void SetInteractionNotice(string notice)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(notice);
+        if (string.Equals(_interactionNotice, notice, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _interactionNotice = notice;
+        OnPropertyChanged(nameof(ToolTipActionText));
+    }
 
     public async Task LoadIconAsync()
     {
