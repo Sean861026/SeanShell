@@ -155,6 +155,7 @@
 - [x] Preserve immersive work areas across cross-monitor foreground changes
 - [x] Event-driven immersive detection with debounced transitions and fallback reconciliation
 - [x] Event-driven Dock inventory updates with cache invalidation and fallback reconciliation
+- [x] Session-stable per-monitor running-app order with append-only new groups
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others

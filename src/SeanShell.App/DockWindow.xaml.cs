@@ -73,6 +73,7 @@ public sealed partial class DockWindow : Window
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
+    private IReadOnlyList<string> _windowGroupOrder = [];
     private DockBounds? _reservedArea;
     private WindowPreviewWindow? _previewWindow;
     private ScrollViewer? _windowListScrollViewer;
@@ -469,7 +470,11 @@ public sealed partial class DockWindow : Window
     private void RefreshWindowItems()
     {
         Items.Clear();
-        foreach (var group in TaskbarWindowGrouper.Group(_monitorWindows))
+        var orderedGroups = TaskbarWindowOrder.Apply(
+            TaskbarWindowGrouper.Group(_monitorWindows),
+            _windowGroupOrder);
+        _windowGroupOrder = orderedGroups.Keys;
+        foreach (var group in orderedGroups.Groups)
         {
             var isPinned = TaskbarDockPinResolver.FindPinnedApplication(
                 _pinnedApplications,

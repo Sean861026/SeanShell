@@ -326,8 +326,8 @@ debounced for 120 milliseconds before the Dock inventory and eligible visible
 window presentations are captured; two-second fallback scans cover applications
 that omit expected accessibility events. The event-driven inventory invalidates
 its short-lived snapshot cache before capture so taskbar state never reuses the
-pre-event window list. A maximized window or a borderless window whose extended frame covers
-its monitor enters per-display immersive mode. Each
+pre-event window list. A maximized window or a borderless window whose extended
+frame covers its monitor enters per-display immersive mode. Each
 affected display releases its AppBar reservation and collapses its Dock to the
 bottom-edge reveal target; other displays retain their normal reservations.
 Because this state is based on all visible, non-cloaked windows rather than only
@@ -335,6 +335,12 @@ the foreground HWND, moving focus to another display does not resize an immersiv
 window left behind. Returning every window on a display to ordinary mode restores
 that display's reservation and expanded Dock without relying on undocumented
 virtual-desktop APIs.
+
+Each Dock also keeps a monitor-local, session-scoped order for running window
+groups. Surviving groups retain their visual position across event-driven
+snapshots, newly observed groups append at the end, and closed groups are removed.
+The order deliberately resets when a Dock is rebuilt rather than persisting stale
+window identities across sessions.
 
 Taskbar visibility can settle asynchronously, especially on a secondary display.
 `WindowsTaskbarController` reissues the requested transition for a bounded
