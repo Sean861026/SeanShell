@@ -151,6 +151,7 @@
 - [x] User-initiated native system-area reveal without input simulation or tray enumeration
 - [x] Automatic replacement resume when Gaming Mode starts
 - [x] Reserve/recalculate each monitor work area with bounded Dock AppBars
+- [x] Per-monitor immersive mode releases AppBar space for maximized/full-screen windows
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others

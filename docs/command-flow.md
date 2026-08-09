@@ -628,6 +628,14 @@ Companion Taskbar replacement succeeds
 Replacement disabled / system area revealed / Gaming Mode / shutdown
   -> ABM_REMOVE for every registered Dock
   -> Windows restores the available monitor work area
+
+Foreground window becomes maximized or covers one monitor
+  -> classify the presentation from IsZoomed and DWM extended-frame bounds
+  -> release only that monitor's AppBar reservation
+  -> collapse its Dock to the bottom-edge reveal target
+  -> let the application occupy the complete monitor without a blank strip
+  -> pointer reaches the edge: reveal the Dock as an overlay
+  -> foreground returns to an ordinary window: restore reservation and Dock
 ```
 
 The taskbar controller reissues a pending visibility transition every 50

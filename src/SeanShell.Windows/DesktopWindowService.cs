@@ -13,6 +13,7 @@ public sealed class DesktopWindowService
     private const long WsExAppWindow = 0x00040000L;
     private const long WsExToolWindow = 0x00000080L;
     private const int DwmwaCloaked = 14;
+    private const int DwmwaExtendedFrameBounds = 9;
     private const int SwMinimize = 6;
     private const int SwRestore = 9;
     private const uint WmClose = 0x0010;
@@ -172,6 +173,46 @@ public sealed class DesktopWindowService
             : MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
     }
 
+    public ForegroundWindowPresentation CaptureForegroundPresentation()
+    {
+        var foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == 0 ||
+            foregroundWindow == GetShellWindow() ||
+            !IsWindowVisible(foregroundWindow) ||
+            IsIconic(foregroundWindow))
+        {
+            return ForegroundWindowPresentation.None;
+        }
+
+        GetWindowThreadProcessId(foregroundWindow, out var processId);
+        if (processId == Environment.ProcessId)
+        {
+            return ForegroundWindowPresentation.Preserve;
+        }
+
+        if (processId == 0)
+        {
+            return ForegroundWindowPresentation.None;
+        }
+
+        var monitorHandle = MonitorFromWindow(
+            foregroundWindow,
+            MonitorDefaultToNearest);
+        if (monitorHandle == 0 ||
+            !TryGetWindowBounds(foregroundWindow, out var windowBounds) ||
+            !TryGetMonitorBounds(monitorHandle, out var monitorBounds))
+        {
+            return new ForegroundWindowPresentation(monitorHandle, false);
+        }
+
+        return new ForegroundWindowPresentation(
+            monitorHandle,
+            WindowImmersiveStateResolver.IsImmersive(
+                IsZoomed(foregroundWindow),
+                windowBounds,
+                monitorBounds));
+    }
+
     public bool RestoreAndActivate(nint handle)
     {
         if (!IsWindow(handle))
@@ -216,6 +257,38 @@ public sealed class DesktopWindowService
             out cloaked,
             Marshal.SizeOf<int>()) == 0 && cloaked != 0;
     }
+
+    private static bool TryGetWindowBounds(nint handle, out DockBounds bounds)
+    {
+        var result = DwmGetWindowAttribute(
+            handle,
+            DwmwaExtendedFrameBounds,
+            out NativeRectangle rectangle,
+            Marshal.SizeOf<NativeRectangle>()) == 0 ||
+            GetWindowRect(handle, out rectangle);
+        bounds = ToBounds(rectangle);
+        return result;
+    }
+
+    private static bool TryGetMonitorBounds(
+        nint monitorHandle,
+        out DockBounds bounds)
+    {
+        var monitor = new MonitorInfo
+        {
+            Size = checked((uint)Marshal.SizeOf<MonitorInfo>()),
+        };
+        var result = GetMonitorInfo(monitorHandle, ref monitor);
+        bounds = ToBounds(monitor.MonitorArea);
+        return result;
+    }
+
+    private static DockBounds ToBounds(NativeRectangle rectangle) =>
+        new(
+            rectangle.Left,
+            rectangle.Top,
+            rectangle.Right - rectangle.Left,
+            rectangle.Bottom - rectangle.Top);
 
     private static string GetTitle(nint handle)
     {
@@ -268,6 +341,10 @@ public sealed class DesktopWindowService
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsZoomed(nint handle);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ShowWindow(nint handle, int command);
 
     [DllImport("user32.dll")]
@@ -303,6 +380,18 @@ public sealed class DesktopWindowService
     [DllImport("user32.dll")]
     private static extern nint MonitorFromWindow(nint handle, uint flags);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(
+        nint handle,
+        out NativeRectangle rectangle);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(
+        nint monitorHandle,
+        ref MonitorInfo monitorInfo);
+
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
     private static extern nint GetWindowLongPtr64(nint handle, int index);
 
@@ -315,4 +404,29 @@ public sealed class DesktopWindowService
         int attribute,
         out int value,
         int valueSize);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(
+        nint handle,
+        int attribute,
+        out NativeRectangle value,
+        int valueSize);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRectangle
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public uint Size;
+        public NativeRectangle MonitorArea;
+        public NativeRectangle WorkArea;
+        public uint Flags;
+    }
 }

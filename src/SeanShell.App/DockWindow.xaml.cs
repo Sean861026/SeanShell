@@ -57,6 +57,7 @@ public sealed partial class DockWindow : Window
     private bool _collapsed;
     private bool _contextMenuOpen;
     private bool _hasKeyboardFocus;
+    private bool _immersiveSuppressed;
     private bool _modalDialogOpen;
     private bool _pointerInside;
     private bool _quickAudioControlsActive;
@@ -138,6 +139,8 @@ public sealed partial class DockWindow : Window
 
     public ObservableCollection<PinnedDockItemViewModel> PinnedItems { get; } = [];
 
+    public nint MonitorHandle => _monitor.Handle;
+
     public event EventHandler? LauncherRequested;
 
     public event EventHandler? DashboardRequested;
@@ -171,11 +174,39 @@ public sealed partial class DockWindow : Window
 
     public void ShowDock()
     {
+        if (_immersiveSuppressed)
+        {
+            return;
+        }
+
         SetCollapsed(false);
         EmptyState.Visibility = Visibility.Visible;
         AppWindow.Show(false);
         ScheduleDisplayScaleRefresh();
         ScheduleAutoHide();
+    }
+
+    public void SetImmersiveSuppressed(bool suppressed)
+    {
+        if (_immersiveSuppressed == suppressed)
+        {
+            return;
+        }
+
+        _immersiveSuppressed = suppressed;
+        if (suppressed)
+        {
+            _autoHideTimer.Stop();
+            DismissWindowPreview();
+            SetCollapsed(true);
+            AppWindow.Show(false);
+            return;
+        }
+
+        if (_shellState.Current.Mode != ShellMode.Gaming)
+        {
+            ShowDock();
+        }
     }
 
     public void FocusDock()
@@ -386,7 +417,7 @@ public sealed partial class DockWindow : Window
 
     private void ScheduleAutoHide()
     {
-        if (!_autoHide ||
+        if ((!_autoHide && !_immersiveSuppressed) ||
             _contextMenuOpen ||
             _modalDialogOpen ||
             _previewWindow?.IsVisible == true ||
@@ -2444,9 +2475,7 @@ public sealed partial class DockWindow : Window
             return;
         }
 
-        SetCollapsed(false);
-        AppWindow.Show(false);
-        ScheduleAutoHide();
+        ShowDock();
     }
 
     private void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
