@@ -1244,6 +1244,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(closeItem);
         AddOpenNewInstanceAction(flyout.Items, item);
+        AddRunningExecutableActions(flyout.Items, item);
         AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
@@ -1356,6 +1357,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(closeAllItem);
 
         AddOpenNewInstanceAction(flyout.Items, item);
+        AddRunningExecutableActions(flyout.Items, item);
         AddPinAction(flyout.Items, item);
         flyout.Closed += (_, _) =>
         {
@@ -2042,6 +2044,60 @@ public sealed partial class DockWindow : Window
         items.Add(openMenu);
     }
 
+    private void AddRunningExecutableActions(
+        IList<MenuFlyoutItemBase> items,
+        DockItemViewModel dockItem)
+    {
+        if (TaskbarDockPinResolver.FindPinnedApplication(
+                _pinnedApplications,
+                dockItem.Windows) is not null)
+        {
+            return;
+        }
+
+        var candidates = TaskbarDockPinResolver.FindApplicationCandidates(
+                _availableApplications,
+                dockItem.Windows)
+            .Where(candidate =>
+                IsVerifiedLocalExecutable(
+                    candidate.ApplicationExecutablePath))
+            .ToArray();
+        if (candidates.Length == 0)
+        {
+            return;
+        }
+
+        items.Add(new MenuFlyoutSeparator());
+        if (candidates.Length == 1)
+        {
+            AddExecutableActions(
+                items,
+                candidates[0],
+                includeTrailingSeparator: false);
+            return;
+        }
+
+        var toolsMenu = new MenuFlyoutSubItem
+        {
+            Text = "Application tools",
+            Icon = CreateMenuIcon("\uE90F"),
+        };
+        foreach (var candidate in candidates)
+        {
+            var candidateMenu = new MenuFlyoutSubItem
+            {
+                Text = candidate.Title,
+            };
+            AddExecutableActions(
+                candidateMenu.Items,
+                candidate,
+                includeTrailingSeparator: false);
+            toolsMenu.Items.Add(candidateMenu);
+        }
+
+        items.Add(toolsMenu);
+    }
+
     private void ShowOpenNewInstancePicker(
         IReadOnlyList<ShellCommand> candidates,
         FrameworkElement anchor,
@@ -2155,7 +2211,8 @@ public sealed partial class DockWindow : Window
 
     private void AddExecutableActions(
         IList<MenuFlyoutItemBase> items,
-        ShellCommand application)
+        ShellCommand application,
+        bool includeTrailingSeparator = true)
     {
         var executablePath = application.ApplicationExecutablePath;
         if (!IsVerifiedLocalExecutable(executablePath))
@@ -2180,7 +2237,10 @@ public sealed partial class DockWindow : Window
         runElevatedItem.Click += (_, _) =>
             RunApplicationElevated(application, executablePath!);
         items.Add(runElevatedItem);
-        items.Add(new MenuFlyoutSeparator());
+        if (includeTrailingSeparator)
+        {
+            items.Add(new MenuFlyoutSeparator());
+        }
     }
 
     private static bool IsVerifiedLocalExecutable(string? path) =>

@@ -505,6 +505,9 @@ User searches for an installed application and selects Pin
 
 User opens a running application's Dock context menu
   -> compare its process name only with explicit cached shortcut identities
+  -> one verified local executable: expose Open file location and Run as administrator
+  -> multiple verified executable candidates: require selection under Application tools
+  -> unresolved, network, or missing executable: expose no executable action
   -> no match: do not offer a pin action
   -> one match: offer Pin to Dock
   -> multiple matches: offer a native candidate submenu
