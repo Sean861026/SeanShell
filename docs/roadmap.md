@@ -125,6 +125,7 @@
 - [x] Compact network, audio, power, and battery status cluster on every Dock
 - [x] Layout-stable macOS-inspired primary and nearest-neighbor icon magnification
 - [x] Rich Fluent taskbar tooltips with state and interaction guidance
+- [x] Overlay accent halo that remains visible above opaque active-app icons
 
 ## Later: shell modes
 
