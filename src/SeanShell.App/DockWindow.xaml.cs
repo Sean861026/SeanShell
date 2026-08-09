@@ -1288,6 +1288,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(toggleItem);
         flyout.Items.Add(new MenuFlyoutSeparator());
         flyout.Items.Add(closeItem);
+        AddRunningOrderActions(flyout.Items, item);
         AddOpenNewInstanceAction(flyout.Items, item);
         AddRunningExecutableActions(flyout.Items, item);
         AddPinAction(flyout.Items, item);
@@ -1401,6 +1402,7 @@ public sealed partial class DockWindow : Window
         flyout.Items.Add(toggleGroupItem);
         flyout.Items.Add(closeAllItem);
 
+        AddRunningOrderActions(flyout.Items, item);
         AddOpenNewInstanceAction(flyout.Items, item);
         AddRunningExecutableActions(flyout.Items, item);
         AddPinAction(flyout.Items, item);
@@ -2134,6 +2136,44 @@ public sealed partial class DockWindow : Window
         }
 
         items.Add(openMenu);
+    }
+
+    private void AddRunningOrderActions(
+        IList<MenuFlyoutItemBase> items,
+        DockItemViewModel dockItem)
+    {
+        items.Add(new MenuFlyoutSeparator());
+        items.Add(CreateRunningMoveMenuItem(
+            dockItem,
+            TaskbarWindowMoveDirection.Left));
+        items.Add(CreateRunningMoveMenuItem(
+            dockItem,
+            TaskbarWindowMoveDirection.Right));
+    }
+
+    private MenuFlyoutItem CreateRunningMoveMenuItem(
+        DockItemViewModel dockItem,
+        TaskbarWindowMoveDirection direction)
+    {
+        var isLeft = direction == TaskbarWindowMoveDirection.Left;
+        var item = new MenuFlyoutItem
+        {
+            Text = isLeft ? "Move left" : "Move right",
+            Icon = CreateMenuIcon(isLeft ? "\uE76B" : "\uE76C"),
+            IsEnabled = TaskbarWindowOrder.CanMove(
+                _windowGroupOrder,
+                dockItem.GroupKey,
+                direction),
+        };
+        item.Click += (_, _) =>
+        {
+            _windowGroupOrder = TaskbarWindowOrder.Move(
+                _windowGroupOrder,
+                dockItem.GroupKey,
+                direction);
+            RefreshWindowItems();
+        };
+        return item;
     }
 
     private void AddRunningExecutableActions(

@@ -93,6 +93,36 @@ public sealed class TaskbarWindowOrderTests
             TaskbarWindowGrouper.GetKey(second));
     }
 
+    [TestMethod]
+    public void MoveSwapsTheRequestedRunningGroup()
+    {
+        string[] keys = ["process:Alpha", "process:Terminal", "process:Zulu"];
+
+        var result = TaskbarWindowOrder.Move(
+            keys,
+            "PROCESS:TERMINAL",
+            TaskbarWindowMoveDirection.Left);
+
+        CollectionAssert.AreEqual(
+            new[] { "process:Terminal", "process:Alpha", "process:Zulu" },
+            result.ToArray());
+    }
+
+    [DataRow("process:Alpha", TaskbarWindowMoveDirection.Left, false)]
+    [DataRow("process:Alpha", TaskbarWindowMoveDirection.Right, true)]
+    [DataRow("process:Terminal", TaskbarWindowMoveDirection.Left, true)]
+    [DataRow("process:Zulu", TaskbarWindowMoveDirection.Right, false)]
+    [TestMethod]
+    public void CanMoveReportsValidRunningGroupMoves(
+        string key,
+        TaskbarWindowMoveDirection direction,
+        bool expected)
+    {
+        string[] keys = ["process:Alpha", "process:Terminal", "process:Zulu"];
+
+        Assert.AreEqual(expected, TaskbarWindowOrder.CanMove(keys, key, direction));
+    }
+
     private static TaskbarWindowGroup CreateGroup(
         string processName,
         nint handle) =>
