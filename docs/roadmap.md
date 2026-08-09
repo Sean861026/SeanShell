@@ -157,6 +157,7 @@
 - [x] Event-driven Dock inventory updates with cache invalidation and fallback reconciliation
 - [x] Session-stable per-monitor running-app order with append-only new groups
 - [x] Native drag-to-reorder for monitor-local running-app groups
+- [x] Keyboard-accessible running-app Move left / Move right context actions
 - [x] Scale Dock geometry correctly across mixed-DPI monitors
 - [x] Accessible previous/next and mouse-wheel navigation for bounded Dock overflow
 - [x] Standard taskbar click toggle: minimize active, restore and activate others
