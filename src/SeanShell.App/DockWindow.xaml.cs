@@ -1300,6 +1300,29 @@ public sealed partial class DockWindow : Window
             .Select(static window => window.Handle)
             .Distinct()
             .ToArray();
+        var groupAction = TaskbarWindowGroupActionResolver.Resolve(
+            item.Windows
+                .Select(static window => window.IsMinimized)
+                .ToArray());
+        var toggleGroupItem = new MenuFlyoutItem
+        {
+            Text = groupAction == TaskbarWindowGroupAction.RestoreAll
+                ? "Restore all windows"
+                : "Minimize all windows",
+            Icon = CreateMenuIcon(
+                groupAction == TaskbarWindowGroupAction.RestoreAll
+                    ? "\uE923"
+                    : "\uE921"),
+        };
+        toggleGroupItem.Click += (_, _) =>
+        {
+            foreach (var handle in windowHandles)
+            {
+                _ = groupAction == TaskbarWindowGroupAction.RestoreAll
+                    ? _windowService.Restore(handle)
+                    : _windowService.Minimize(handle);
+            }
+        };
         var closeAllItem = new MenuFlyoutItem
         {
             Text = $"Close all windows ({windowHandles.Length})",
@@ -1313,6 +1336,7 @@ public sealed partial class DockWindow : Window
             }
         };
         flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(toggleGroupItem);
         flyout.Items.Add(closeAllItem);
 
         AddOpenNewInstanceAction(flyout.Items, item);

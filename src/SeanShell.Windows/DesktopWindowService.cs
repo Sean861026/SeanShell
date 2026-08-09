@@ -151,6 +151,17 @@ public sealed class DesktopWindowService
         return true;
     }
 
+    public bool Restore(nint handle)
+    {
+        if (!IsWindow(handle))
+        {
+            return false;
+        }
+
+        _ = ShowWindow(handle, SwRestore);
+        return true;
+    }
+
     public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
 
     public nint CaptureForegroundMonitorHandle()
