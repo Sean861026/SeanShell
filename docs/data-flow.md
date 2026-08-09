@@ -231,9 +231,9 @@ WM_GETICON / class icon / process executable Shell icon
   -> ExtraLarge Shell image list for file and shortcut sources
   -> SHGetFileInfo fallback
   -> bounded process-ID icon cache
-  -> validated 48x48 BGRA ApplicationIconSnapshot
+  -> validated 192x192 BGRA ApplicationIconSnapshot
   -> UI-thread shared SoftwareBitmapSource
-  -> fixed 26px Dock icon slot or Fluent fallback
+  -> fixed 40px Dock icon slot or Fluent fallback
 
 Foreground + minimized flags
   -> TaskbarItemVisualStateResolver

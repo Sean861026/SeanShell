@@ -228,8 +228,9 @@ bounded pin list is loaded, not during every Launcher query.
 
 The reader asks the Windows ExtraLarge system image list for file and shortcut
 icons, then falls back to `SHGetFileInfo` when that interface is unavailable.
-Window/class icons remain the first source for live windows. Every resulting
-`HICON` is rendered into a validated 48-by-48 BGRA snapshot and each owned
+The process executable icon is preferred for live windows, with window/class
+icons as a fallback. Every resulting `HICON` is rendered into a validated
+192-by-192 BGRA snapshot and each owned
 Shell/GDI handle is released. On the UI thread,
 `ApplicationIconSourceCache` converts that immutable snapshot once into a shared
 WinUI `SoftwareBitmapSource`. The UI first renders the Segoe Fluent fallback in
@@ -238,9 +239,10 @@ into a `SoftwareBitmap` and swaps the native image into the same geometry after
 `SetBitmapAsync` completes. Conversion failure is isolated to that image and
 leaves the fallback visible; it cannot abort the monitor's window snapshot or
 clear taskbar items. Process paths and pixel data remain session-local and are
-not written to SeanShell settings or telemetry. At 9,216 bytes per icon, the
-existing 128-process and 32-shortcut cache caps bound raw pixel storage to
-roughly 1.4 MB.
+not written to SeanShell settings or telemetry. At 147,456 bytes per icon, the
+existing 128-process and 32-shortcut cache caps bound worst-case raw pixel
+storage to roughly 22.5 MiB; normal use retains only active processes and the
+user's bounded pin set.
 
 `LauncherPerformanceMonitor` is a Core-owned, thread-safe session diagnostic. It
 records the first successful show-to-usable duration once and keeps a bounded

@@ -52,7 +52,7 @@ Raw colors must not be embedded in individual views.
   surfaces transparent. The icon, badge, running indicator, and keyboard focus
   visual carry interaction state without exposing the container's tall safety
   lane during magnification.
-- Dock icons use 128 px BGRA snapshots sourced from the executable's 256 px
+- Dock icons use 192 px BGRA snapshots sourced from the executable's 256 px
   Shell jumbo image before falling back to the window-provided icon. The 104 px
   normal Dock height and centered 88 px item lane preserve the full 1.35
   magnification without clipping; a future transparent overlay window will
