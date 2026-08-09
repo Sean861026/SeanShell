@@ -504,3 +504,19 @@ consecutive failure count, and automatic-start disabled flag. It contains no
 command line, user identifier, path history, or crash contents. Writes use a
 sibling temporary file with write-through semantics. An unavailable health store
 blocks automatic launch but does not block manual recovery.
+
+## Automatic startup registration
+
+```text
+Shell preferences toggle
+  -> StartupRegistrationService
+  -> packaged Windows StartupTask registration
+  -> live StartupTaskState
+  -> dashboard status and toggle availability
+```
+
+The setting is owned by Windows and is intentionally absent from
+`settings.json`. Policy-controlled and user-disabled states are read-only in
+SeanShell. Startup activation is identified through Windows App SDK app-lifecycle
+arguments before WinUI creates the dashboard, then enters the existing startup
+health flow as an automatic launch.

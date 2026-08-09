@@ -69,10 +69,13 @@ become unavailable, run `tools/restore-explorer.ps1` from PowerShell.
 Gaming mode pauses optional background work; it does not change process priority,
 disable Windows security, or inject an overlay into games.
 
-Automatic startup is not enabled yet. The reserved `--startup` launch mode is
-protected by a persistent crash-loop guard: three consecutive launches that do
-not survive the 30-second startup window disable only automatic launch. A normal
-manual launch remains available and clears the guard after it becomes healthy.
+Automatic startup is opt-in from **Shell preferences** and uses the packaged
+Windows startup-task registration. Windows remains the source of truth, so a
+choice made in Settings or Task Manager is respected. Startup-task activation
+and the development-only `--startup` launch mode are protected by a persistent
+crash-loop guard: three consecutive launches that do not survive the 30-second
+startup window disable only automatic launch. A normal manual launch remains
+available and clears the guard after it becomes healthy.
 The recovery script also starts Explorer when needed and resets this health
 history. It first requests a normal SeanShell close, then stops only the
 `SeanShell.App` process if WinUI does not close within two seconds.

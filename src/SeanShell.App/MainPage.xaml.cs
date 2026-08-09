@@ -76,6 +76,8 @@ public sealed partial class MainPage : Page
 
     public event Action<bool>? TaskbarReplacementChanged;
 
+    public event Action<bool>? AutomaticStartupChanged;
+
     public event Action<LauncherShortcut>? LauncherShortcutChanged;
 
     public event Action<DockShortcut>? DockShortcutChanged;
@@ -222,6 +224,31 @@ public sealed partial class MainPage : Page
                 ? $"SeanShell Dock is replacing {taskbarCount} Windows taskbar window(s). Explorer remains active."
                 : $"Restored {taskbarCount} Windows taskbar window(s).",
             InfoBarSeverity.Success);
+    }
+
+    public void SetStartupRegistrationStatus(
+        StartupRegistrationStatus status,
+        bool announce = false)
+    {
+        var wasApplyingSettings = _applyingSettings;
+        _applyingSettings = true;
+        AutomaticStartupToggle.IsOn = status.IsEnabled;
+        AutomaticStartupToggle.IsEnabled = status.CanChange;
+        AutomaticStartupToggle.OffContent = status.CanChange
+            ? "Start only when opened"
+            : "Managed by Windows";
+        AutomaticStartupStatus.Text = status.Error is null
+            ? status.Message
+            : $"{status.Message} {status.Error}";
+        _applyingSettings = wasApplyingSettings;
+
+        if (announce)
+        {
+            SetSettingsStatus(
+                status.IsEnabled ? "Automatic startup enabled" : "Automatic startup disabled",
+                AutomaticStartupStatus.Text,
+                status.Error is null ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+        }
     }
 
     public void SetSystemAreaAccessApplied(bool revealed, int taskbarCount)
@@ -583,6 +610,18 @@ public sealed partial class MainPage : Page
         }
 
         TaskbarReplacementChanged?.Invoke(TaskbarReplacementToggle.IsOn);
+    }
+
+    private void OnAutomaticStartupToggled(object sender, RoutedEventArgs e)
+    {
+        if (_applyingSettings)
+        {
+            return;
+        }
+
+        AutomaticStartupToggle.IsEnabled = false;
+        AutomaticStartupStatus.Text = "Updating Windows startup status.";
+        AutomaticStartupChanged?.Invoke(AutomaticStartupToggle.IsOn);
     }
 
     private void OnLauncherShortcutSelectionChanged(object sender, SelectionChangedEventArgs e)

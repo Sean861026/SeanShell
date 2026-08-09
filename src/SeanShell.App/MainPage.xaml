@@ -380,6 +380,21 @@
                                     Text="Compatibility mode: Explorer, notifications, system tray services, and input methods remain running. A recovery guard restores every Windows taskbar after a crash or forced exit."
                                     TextWrapping="Wrap" />
 
+                                <ToggleSwitch
+                                    x:Name="AutomaticStartupToggle"
+                                    AutomationProperties.HelpText="Register SeanShell with Windows so it starts after you sign in. Windows remains the source of truth for this setting."
+                                    Header="Start SeanShell when I sign in"
+                                    IsEnabled="False"
+                                    OffContent="Checking Windows startup status"
+                                    OnContent="SeanShell starts after sign-in"
+                                    Toggled="OnAutomaticStartupToggled" />
+
+                                <TextBlock
+                                    x:Name="AutomaticStartupStatus"
+                                    Style="{StaticResource SeanSecondaryTextStyle}"
+                                    Text="Checking Windows startup status."
+                                    TextWrapping="Wrap" />
+
                                 <ComboBox
                                     x:Name="LauncherShortcutComboBox"
                                     MinWidth="260"

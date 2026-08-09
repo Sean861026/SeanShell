@@ -6,6 +6,7 @@
 - Core state, Windows boundary, gaming policy, and plugin contracts
 - Architecture, flow, safety, and contribution documents
 - Automated build and unit tests
+- [x] Opt-in Windows sign-in startup with live OS state and crash-loop protection
 
 ## M1: Launcher
 
