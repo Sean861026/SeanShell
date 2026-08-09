@@ -27,7 +27,9 @@ public static class Program
         }
 
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        AppLaunchContext.IsAutomaticStartup = AppLaunchContext.DetectAutomaticStartup();
+        AppLaunchContext.IsAutomaticStartup =
+            AppLaunchContext.DetectAutomaticStartup() ||
+            AppLaunchContext.HasAutomaticStartupArgument();
         Application.Start(initialization =>
         {
             _ = initialization;

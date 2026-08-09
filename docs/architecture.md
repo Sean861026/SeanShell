@@ -446,7 +446,9 @@ does not match.
   settings document. Windows policy and a user's Task Manager choice take
   precedence. Rich `StartupTask` activation and the development-only `--startup`
   mode use a persistent crash-loop guard and exit after three consecutive
-  incomplete startup windows. Manual launches remain available for recovery.
+  incomplete startup windows. Automatic activation leaves the Dashboard hidden
+  after constructing the monitor-local Docks; the Dock's Dashboard action restores
+  it normally. Manual launches remain available for recovery.
 
 ## Configuration
 

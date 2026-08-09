@@ -199,9 +199,13 @@ public partial class App : Application
     /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
-        var automaticStartup = AppLaunchContext.IsAutomaticStartup || args.Arguments
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Contains("--startup", StringComparer.OrdinalIgnoreCase);
+        var automaticStartup =
+            AppLaunchContext.IsAutomaticStartup ||
+            AppLaunchContext.HasAutomaticStartupArgument() ||
+            args.Arguments
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Contains("--startup", StringComparer.OrdinalIgnoreCase);
+        AppLaunchContext.IsAutomaticStartup = automaticStartup;
         var startup = _startupGuard.BeginSession(automaticStartup);
         StartupSession = startup;
         if (!startup.CanStart)
@@ -226,9 +230,18 @@ public partial class App : Application
         }
 
         _startupSessionId = startupSessionId;
-        _window = new MainWindow();
+        var mainWindow = new MainWindow();
+        _window = mainWindow;
         _window.Closed += OnMainWindowClosed;
-        _window.Activate();
+        if (automaticStartup)
+        {
+            mainWindow.StartAutomaticStartup();
+        }
+        else
+        {
+            _window.Activate();
+        }
+
         _ = WarmInstalledApplicationsAsync();
         _ = MarkStartupHealthyAsync(startupSessionId);
     }

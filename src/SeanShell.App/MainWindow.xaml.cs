@@ -61,6 +61,7 @@ public sealed partial class MainWindow : Window
     private int _desktopWindowChangeQueued;
     private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
+    private bool _shellStarted;
     private bool _taskbarAccessRevealed;
     private HashSet<nint> _immersiveMonitorHandles = [];
     private GlobalHotKey? _dockHotKey;
@@ -168,9 +169,22 @@ public sealed partial class MainWindow : Window
         Closed += OnClosed;
     }
 
+    public void StartAutomaticStartup() => _ = StartShellAsync(showDashboard: false);
+
     private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
+        await StartShellAsync(showDashboard: true).ConfigureAwait(true);
+    }
+
+    private async Task StartShellAsync(bool showDashboard)
+    {
+        if (_shellStarted)
+        {
+            return;
+        }
+
+        _shellStarted = true;
         TryObserveDesktopWindowChanges();
         _accessibility = new SystemAccessibilityService();
         _accessibility.Changed += OnAccessibilityChanged;
@@ -182,9 +196,12 @@ public sealed partial class MainWindow : Window
             dockWindow.SetAutoHide(_settings.DockAutoHide);
         }
 
-        Activate();
-        var dashboardHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        _ = _desktopWindows.RestoreAndActivate(dashboardHandle);
+        if (showDashboard)
+        {
+            var dashboardHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            _ = _desktopWindows.RestoreAndActivate(dashboardHandle);
+        }
+
         ApplyTaskbarReplacementOnStartup();
         RefreshClock();
         _clockRefreshTimer.Start();
