@@ -28,6 +28,10 @@ public sealed class PinnedDockItemViewModel(ShellCommand command) : INotifyPrope
 
     public string ToolTipText => $"{Title}\nPinned · Drag to reorder";
 
+    public string ToolTipMetaText => "Pinned application";
+
+    public string ToolTipActionText => "Click to open • Drag to reorder";
+
     public string AccessibleName => $"Open pinned application {Title}";
 
     public event PropertyChangedEventHandler? PropertyChanged;

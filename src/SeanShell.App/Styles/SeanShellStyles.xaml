@@ -251,6 +251,27 @@
         <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
     </Style>
 
+    <Style x:Key="SeanDockToolTipTitleStyle" TargetType="TextBlock">
+        <Setter Property="MaxWidth" Value="300" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="SeanDockToolTipMetaStyle" TargetType="TextBlock">
+        <Setter Property="MaxWidth" Value="300" />
+        <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="SeanDockToolTipActionStyle" TargetType="TextBlock">
+        <Setter Property="MaxWidth" Value="300" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
     <Style x:Key="SeanDockFlyoutPresenterStyle" TargetType="FlyoutPresenter">
         <Setter Property="Padding" Value="0" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />

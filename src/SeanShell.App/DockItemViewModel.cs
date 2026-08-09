@@ -76,6 +76,14 @@ public sealed class DockItemViewModel(
             ? "Minimized"
             : "Running";
 
+    public string ToolTipMetaText => WindowCount > 1
+        ? $"{ProcessName} • {WindowCount} windows • {StateText}"
+        : $"{ProcessName} • {StateText}";
+
+    public string ToolTipActionText => WindowCount > 1
+        ? "Click to choose • Ctrl-click to cycle"
+        : "Click to switch • Shift-click for a new instance";
+
     public string ToolTipText
     {
         get

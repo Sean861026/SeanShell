@@ -118,8 +118,23 @@
                                 PointerExited="OnDockItemPointerExited"
                                 PointerPressed="OnDockItemPointerPressed"
                                 PointerReleased="OnDockItemPointerReleased"
-                                ToolTipService.ToolTip="{Binding ToolTipText}"
                                 Unloaded="OnDockMotionItemUnloaded">
+                                <ToolTipService.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel MinWidth="180" Padding="4" Spacing="3">
+                                            <TextBlock
+                                                Style="{StaticResource SeanDockToolTipTitleStyle}"
+                                                Text="{Binding Title}" />
+                                            <TextBlock
+                                                Style="{StaticResource SeanDockToolTipMetaStyle}"
+                                                Text="{Binding ToolTipMetaText}" />
+                                            <TextBlock
+                                                Margin="0,3,0,0"
+                                                Style="{StaticResource SeanDockToolTipActionStyle}"
+                                                Text="{Binding ToolTipActionText}" />
+                                        </StackPanel>
+                                    </ToolTip>
+                                </ToolTipService.ToolTip>
                                 <Border
                                     Width="40"
                                     Height="40"
@@ -228,8 +243,23 @@
                                     PointerExited="OnDockItemPointerExited"
                                     PointerPressed="OnDockItemPointerPressed"
                                     PointerReleased="OnDockItemPointerReleased"
-                                    ToolTipService.ToolTip="{Binding ToolTipText}"
                                     Unloaded="OnDockMotionItemUnloaded">
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip>
+                                            <StackPanel MinWidth="200" Padding="4" Spacing="3">
+                                                <TextBlock
+                                                    Style="{StaticResource SeanDockToolTipTitleStyle}"
+                                                    Text="{Binding Title}" />
+                                                <TextBlock
+                                                    Style="{StaticResource SeanDockToolTipMetaStyle}"
+                                                    Text="{Binding ToolTipMetaText}" />
+                                                <TextBlock
+                                                    Margin="0,3,0,0"
+                                                    Style="{StaticResource SeanDockToolTipActionStyle}"
+                                                    Text="{Binding ToolTipActionText}" />
+                                            </StackPanel>
+                                        </ToolTip>
+                                    </ToolTipService.ToolTip>
                                     <Border
                                         Width="40"
                                         Height="40"
