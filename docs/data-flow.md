@@ -209,6 +209,7 @@ enters the authenticated protocol frame or reaches `PluginHost`.
 
 ```text
 EnumWindows + DWM visibility
+  -> public IVirtualDesktopManager current-desktop membership
   -> DesktopWindowSnapshot[]
   -> one MainWindow-owned shared snapshot
   -> monitor filter per Dock

@@ -21,6 +21,7 @@ public sealed class DesktopWindowService
     private readonly object _cacheGate = new();
     private readonly Dictionary<int, ApplicationIconSnapshot?> _iconCache = [];
     private readonly NativeApplicationIconReader _iconReader = new();
+    private readonly VirtualDesktopWindowService _virtualDesktops = new();
     private IReadOnlyList<DesktopWindowSnapshot> _cachedWindows = [];
     private long _cacheExpiresAt;
 
@@ -63,6 +64,11 @@ public sealed class DesktopWindowService
 
             GetWindowThreadProcessId(handle, out var processId);
             if (processId == 0 || processId == Environment.ProcessId)
+            {
+                return true;
+            }
+
+            if (!_virtualDesktops.IsOnCurrentDesktop(handle))
             {
                 return true;
             }
