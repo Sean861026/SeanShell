@@ -275,6 +275,7 @@
                                                 Margin="2"
                                                 Background="{ThemeResource AccentFillColorSecondaryBrush}"
                                                 CornerRadius="{StaticResource SeanCompactCornerRadius}"
+                                                Tag="DockIconOverlayVisual"
                                                 Visibility="{Binding ActiveIndicatorVisibility}" />
                                             <FontIcon
                                                 FontFamily="Segoe Fluent Icons"
@@ -293,6 +294,7 @@
                                                 BorderThickness="1.5"
                                                 CornerRadius="10"
                                                 IsHitTestVisible="False"
+                                                Tag="DockIconOverlayVisual"
                                                 Visibility="{Binding ActiveIndicatorVisibility}" />
                                         </Grid>
                                     </Border>
@@ -335,6 +337,7 @@
                                         Height="4"
                                         Background="{ThemeResource AccentFillColorDefaultBrush}"
                                         CornerRadius="2"
+                                        Tag="DockIconOverlayVisual"
                                         VerticalAlignment="Bottom"
                                         Visibility="{Binding ActiveIndicatorVisibility}" />
                                     <Border
@@ -342,6 +345,7 @@
                                         Height="3"
                                         Background="{ThemeResource TextFillColorSecondaryBrush}"
                                         CornerRadius="2"
+                                        Tag="DockIconOverlayVisual"
                                         VerticalAlignment="Bottom"
                                         Visibility="{Binding RunningIndicatorVisibility}" />
                                     <Border
@@ -349,6 +353,7 @@
                                         Height="3"
                                         Background="{ThemeResource TextFillColorDisabledBrush}"
                                         CornerRadius="2"
+                                        Tag="DockIconOverlayVisual"
                                         VerticalAlignment="Bottom"
                                         Visibility="{Binding MinimizedIndicatorVisibility}" />
                                 </Grid>

@@ -132,6 +132,7 @@
 - [x] Semantic offline, mute, charging, and low-battery glyph/color states
 - [x] Layout-stable macOS-inspired primary and nearest-neighbor icon magnification
 - [x] Per-pixel-alpha native icon magnifier that extends beyond the Dock shell
+- [x] Floating active, running, and minimized state parity during magnification
 - [x] Rich Fluent taskbar tooltips with state and interaction guidance
 - [x] Overlay accent halo that remains visible above opaque active-app icons
 

@@ -257,11 +257,14 @@ Pointer entered / pressed / released
   -> WinUI Scale / Translation transitions
 
 Cached 192px ApplicationIconSnapshot + hovered physical anchor + monitor DPI
+  + active / running / minimized state
   -> DockMagnifierPlacement
   -> monitor-bounded layered-window rectangle
   -> bilinear premultiplied-BGRA downsample
+  -> accent halo and floating state rail
   -> UpdateLayeredWindow per-pixel-alpha surface
-  -> successful update hides only the original icon; failure keeps it visible
+  -> successful update hides the original icon and in-lane state visuals;
+     failure keeps every original visual visible
 
 Monitor-local DesktopWindowSnapshot[]
   -> TaskbarWindowGrouper by process name

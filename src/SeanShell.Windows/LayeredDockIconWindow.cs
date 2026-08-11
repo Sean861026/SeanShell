@@ -29,6 +29,9 @@ public sealed class LayeredDockIconWindow : IDisposable
     private nint _window;
     private ApplicationIconSnapshot? _snapshot;
     private DockMagnifierBounds? _bounds;
+    private bool _isRunning;
+    private bool _isActive;
+    private bool _isMinimized;
 
     public LayeredDockIconWindow()
     {
@@ -61,6 +64,9 @@ public sealed class LayeredDockIconWindow : IDisposable
 
     public bool Show(
         ApplicationIconSnapshot snapshot,
+        bool isRunning,
+        bool isActive,
+        bool isMinimized,
         int anchorCenterX,
         int anchorBottomY,
         DisplayMonitorSnapshot monitor,
@@ -68,6 +74,9 @@ public sealed class LayeredDockIconWindow : IDisposable
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         _snapshot = snapshot;
+        _isRunning = isRunning;
+        _isActive = isActive;
+        _isMinimized = isMinimized;
         _bounds = DockMagnifierPlacement.Calculate(
             anchorCenterX,
             anchorBottomY,
@@ -138,7 +147,32 @@ public sealed class LayeredDockIconWindow : IDisposable
             Math.Min(bounds.Width, bounds.Height));
         var iconX = (bounds.Width - iconSize) / 2;
         var iconY = Math.Max(0, DisplayScaleLayout.ToPhysicalPixels(5, scaleFactor));
+        var accent = GetAccentColor();
+        if (_isActive)
+        {
+            DrawRadialHalo(
+                pixels,
+                bounds.Width,
+                bounds.Height,
+                iconX + (iconSize / 2),
+                iconY + (iconSize / 2),
+                (iconSize / 2) + DisplayScaleLayout.ToPhysicalPixels(5, scaleFactor),
+                accent);
+        }
+
         CompositeScaledIcon(snapshot, pixels, bounds.Width, iconX, iconY, iconSize);
+        if (_isRunning)
+        {
+            DrawRunningIndicator(
+                pixels,
+                bounds.Width,
+                bounds.Height,
+                iconY + iconSize + DisplayScaleLayout.ToPhysicalPixels(7, scaleFactor),
+                scaleFactor,
+                accent,
+                _isActive,
+                _isMinimized);
+        }
 
         var screen = GetDC(0);
         if (screen == 0)
@@ -242,21 +276,195 @@ public sealed class LayeredDockIconWindow : IDisposable
                 var x1 = Math.Min(x0 + 1, snapshot.Width - 1);
                 var xWeight = sourceX - Math.Floor(sourceX);
                 var destinationIndex = (((offsetY + targetY) * destinationWidth) + offsetX + targetX) * 4;
-                for (var channel = 0; channel < 4; channel++)
-                {
-                    var top = Lerp(
-                        source[((y0 * snapshot.Width) + x0) * 4 + channel],
-                        source[((y0 * snapshot.Width) + x1) * 4 + channel],
-                        xWeight);
-                    var bottom = Lerp(
-                        source[((y1 * snapshot.Width) + x0) * 4 + channel],
-                        source[((y1 * snapshot.Width) + x1) * 4 + channel],
-                        xWeight);
-                    destination[destinationIndex + channel] =
-                        (byte)Math.Clamp((int)Math.Round(Lerp(top, bottom, yWeight)), 0, 255);
-                }
+                var sourceBlue = SampleChannel(
+                    source,
+                    snapshot.Width,
+                    x0,
+                    x1,
+                    y0,
+                    y1,
+                    xWeight,
+                    yWeight,
+                    0);
+                var sourceGreen = SampleChannel(
+                    source,
+                    snapshot.Width,
+                    x0,
+                    x1,
+                    y0,
+                    y1,
+                    xWeight,
+                    yWeight,
+                    1);
+                var sourceRed = SampleChannel(
+                    source,
+                    snapshot.Width,
+                    x0,
+                    x1,
+                    y0,
+                    y1,
+                    xWeight,
+                    yWeight,
+                    2);
+                var sourceAlpha = SampleChannel(
+                    source,
+                    snapshot.Width,
+                    x0,
+                    x1,
+                    y0,
+                    y1,
+                    xWeight,
+                    yWeight,
+                    3);
+                var inverseAlpha = 255 - sourceAlpha;
+                destination[destinationIndex] = (byte)Math.Min(
+                    255,
+                    sourceBlue + ((destination[destinationIndex] * inverseAlpha + 127) / 255));
+                destination[destinationIndex + 1] = (byte)Math.Min(
+                    255,
+                    sourceGreen + ((destination[destinationIndex + 1] * inverseAlpha + 127) / 255));
+                destination[destinationIndex + 2] = (byte)Math.Min(
+                    255,
+                    sourceRed + ((destination[destinationIndex + 2] * inverseAlpha + 127) / 255));
+                destination[destinationIndex + 3] = (byte)Math.Min(
+                    255,
+                    sourceAlpha + ((destination[destinationIndex + 3] * inverseAlpha + 127) / 255));
             }
         }
+    }
+
+    private static byte SampleChannel(
+        ReadOnlySpan<byte> source,
+        int sourceWidth,
+        int x0,
+        int x1,
+        int y0,
+        int y1,
+        double xWeight,
+        double yWeight,
+        int channel)
+    {
+        var top = Lerp(
+            source[((y0 * sourceWidth) + x0) * 4 + channel],
+            source[((y0 * sourceWidth) + x1) * 4 + channel],
+            xWeight);
+        var bottom = Lerp(
+            source[((y1 * sourceWidth) + x0) * 4 + channel],
+            source[((y1 * sourceWidth) + x1) * 4 + channel],
+            xWeight);
+        return (byte)Math.Clamp(
+            (int)Math.Round(Lerp(top, bottom, yWeight)),
+            0,
+            255);
+    }
+
+    private static void DrawRadialHalo(
+        byte[] pixels,
+        int width,
+        int height,
+        int centerX,
+        int centerY,
+        int radius,
+        NativeColor accent)
+    {
+        var minimumX = Math.Max(0, centerX - radius);
+        var maximumX = Math.Min(width - 1, centerX + radius);
+        var minimumY = Math.Max(0, centerY - radius);
+        var maximumY = Math.Min(height - 1, centerY + radius);
+        for (var y = minimumY; y <= maximumY; y++)
+        {
+            for (var x = minimumX; x <= maximumX; x++)
+            {
+                var distance = Math.Sqrt(
+                    ((x - centerX) * (x - centerX)) +
+                    ((y - centerY) * (y - centerY)));
+                if (distance > radius)
+                {
+                    continue;
+                }
+
+                var alpha = (byte)Math.Round(58 * (1 - (distance / radius)));
+                BlendSolidPixel(pixels, width, x, y, accent, alpha);
+            }
+        }
+    }
+
+    private static void DrawRunningIndicator(
+        byte[] pixels,
+        int width,
+        int height,
+        int preferredY,
+        double scaleFactor,
+        NativeColor accent,
+        bool isActive,
+        bool isMinimized)
+    {
+        var indicatorWidth = DisplayScaleLayout.ToPhysicalPixels(
+            isActive ? 38 : isMinimized ? 12 : 25,
+            scaleFactor);
+        var indicatorHeight = DisplayScaleLayout.ToPhysicalPixels(
+            isActive ? 5 : 4,
+            scaleFactor);
+        var startX = (width - indicatorWidth) / 2;
+        var startY = Math.Clamp(preferredY, 0, height - indicatorHeight);
+        var color = isActive ? accent : new NativeColor(235, 235, 235);
+        var alpha = (byte)(isActive ? 230 : isMinimized ? 115 : 195);
+        var radius = Math.Max(1, indicatorHeight / 2);
+        for (var y = 0; y < indicatorHeight; y++)
+        {
+            for (var x = 0; x < indicatorWidth; x++)
+            {
+                var distanceToLeft = Math.Max(0, radius - x);
+                var distanceToRight = Math.Max(0, x - (indicatorWidth - radius - 1));
+                var horizontalDistance = Math.Max(distanceToLeft, distanceToRight);
+                var verticalDistance = Math.Abs(y - ((indicatorHeight - 1) / 2d));
+                if ((horizontalDistance * horizontalDistance) +
+                    (verticalDistance * verticalDistance) > radius * radius)
+                {
+                    continue;
+                }
+
+                BlendSolidPixel(
+                    pixels,
+                    width,
+                    startX + x,
+                    startY + y,
+                    color,
+                    alpha);
+            }
+        }
+    }
+
+    private static void BlendSolidPixel(
+        byte[] pixels,
+        int width,
+        int x,
+        int y,
+        NativeColor color,
+        byte alpha)
+    {
+        var index = ((y * width) + x) * 4;
+        var inverseAlpha = 255 - alpha;
+        var blue = (color.Blue * alpha + 127) / 255;
+        var green = (color.Green * alpha + 127) / 255;
+        var red = (color.Red * alpha + 127) / 255;
+        pixels[index] = (byte)Math.Min(255, blue + ((pixels[index] * inverseAlpha + 127) / 255));
+        pixels[index + 1] = (byte)Math.Min(255, green + ((pixels[index + 1] * inverseAlpha + 127) / 255));
+        pixels[index + 2] = (byte)Math.Min(255, red + ((pixels[index + 2] * inverseAlpha + 127) / 255));
+        pixels[index + 3] = (byte)Math.Min(255, alpha + ((pixels[index + 3] * inverseAlpha + 127) / 255));
+    }
+
+    private static NativeColor GetAccentColor()
+    {
+        if (DwmGetColorizationColor(out var color, out _) != 0)
+        {
+            return new NativeColor(102, 196, 208);
+        }
+
+        return new NativeColor(
+            (byte)((color >> 16) & 0xFF),
+            (byte)((color >> 8) & 0xFF),
+            (byte)(color & 0xFF));
     }
 
     private static double Lerp(double first, double second, double amount) =>
@@ -355,6 +563,8 @@ public sealed class LayeredDockIconWindow : IDisposable
         public byte AlphaFormat;
     }
 
+    private readonly record struct NativeColor(byte Red, byte Green, byte Blue);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern ushort RegisterClassEx(ref WindowClass windowClass);
 
@@ -430,4 +640,9 @@ public sealed class LayeredDockIconWindow : IDisposable
         uint colorKey,
         ref BlendFunction blend,
         uint flags);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetColorizationColor(
+        out uint colorizationColor,
+        [MarshalAs(UnmanagedType.Bool)] out bool opaqueBlend);
 }

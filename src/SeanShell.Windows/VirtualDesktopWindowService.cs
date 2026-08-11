@@ -21,7 +21,7 @@ public sealed class VirtualDesktopWindowService
             return result < 0 || isOnCurrentDesktop;
         }
         catch (Exception exception) when (
-            exception is COMException or InvalidCastException)
+            exception is COMException or InvalidCastException or BadImageFormatException)
         {
             return true;
         }
@@ -34,7 +34,7 @@ public sealed class VirtualDesktopWindowService
             return (IVirtualDesktopManager)new VirtualDesktopManager();
         }
         catch (Exception exception) when (
-            exception is COMException or InvalidCastException)
+            exception is COMException or InvalidCastException or BadImageFormatException)
         {
             return null;
         }

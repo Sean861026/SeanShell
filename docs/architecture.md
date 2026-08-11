@@ -102,6 +102,9 @@ foreground/minimized snapshot to one of three stable presentations: a wide
 accent active underline, a compact running marker, or a compact minimized marker
 with reduced icon emphasis. Tooltips and automation names preserve the window
 title, process, and state that are intentionally omitted from the visual surface.
+During hover magnification, the click-through layered icon window renders the
+same state as a floating accent halo and rail; the Dock hides its in-lane state
+visuals only after the native per-pixel-alpha update succeeds.
 `DockForegroundContinuity` retains the captured previous window as active only
 while no live application snapshot owns foreground and that exact HWND still
 exists. This prevents the active rail from disappearing when keyboard navigation
@@ -378,9 +381,10 @@ window identities across sessions.
 
 Window capture queries the public `IVirtualDesktopManager` COM interface before
 adding a taskbar candidate, so each Dock reflects only the currently active
-virtual desktop. The query is fail-open: unavailable COM activation or a failed
-per-window HRESULT retains the candidate, while the existing DWM cloaking filter
-and fallback reconciliation continue to provide compatibility coverage. SeanShell
+virtual desktop. The query is fail-open: unavailable COM activation, an ABI-format
+mismatch, or a failed per-window HRESULT retains the candidate, while the existing
+DWM cloaking filter and fallback reconciliation continue to provide compatibility
+coverage. SeanShell
 does not use undocumented virtual-desktop switching or notification interfaces.
 The documented `EVENT_SYSTEM_DESKTOPSWITCH` WinEvent feeds the same debounced
 inventory pipeline, so changing desktops does not wait for fallback polling.
