@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
 
 namespace SeanShell.App;
@@ -9,6 +10,7 @@ public sealed class LauncherResultViewModel(
     ShellCommand command,
     bool isPinned = false) : INotifyPropertyChanged
 {
+    private ImageSource? _icon;
     private bool _isPinned = isPinned;
 
     public ShellCommand Command { get; } = command;
@@ -18,6 +20,14 @@ public sealed class LauncherResultViewModel(
     public string Subtitle => Command.Subtitle ?? string.Empty;
 
     public string Glyph => Command.Glyph;
+
+    public ImageSource? Icon => _icon;
+
+    public Visibility IconVisibility =>
+        Icon is null ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility FallbackIconVisibility =>
+        Icon is null ? Visibility.Visible : Visibility.Collapsed;
 
     public bool CanPin => Command.Kind == ShellCommandKind.Application;
 
@@ -39,6 +49,20 @@ public sealed class LauncherResultViewModel(
     };
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public async Task LoadIconAsync(ApplicationIconSnapshot? iconSnapshot = null)
+    {
+        var icon = await ApplicationIconSourceCache.GetAsync(iconSnapshot ?? Command.Icon);
+        if (icon is null || ReferenceEquals(_icon, icon))
+        {
+            return;
+        }
+
+        _icon = icon;
+        OnPropertyChanged(nameof(Icon));
+        OnPropertyChanged(nameof(IconVisibility));
+        OnPropertyChanged(nameof(FallbackIconVisibility));
+    }
 
     public void SetPinned(bool isPinned)
     {

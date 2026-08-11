@@ -142,12 +142,23 @@
                                             Height="40"
                                             Background="{ThemeResource AccentFillColorSecondaryBrush}"
                                             CornerRadius="{StaticResource SeanCompactCornerRadius}">
-                                            <FontIcon
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                FontFamily="Segoe Fluent Icons"
-                                                FontSize="18"
-                                                Glyph="{Binding Glyph}" />
+                                            <Grid>
+                                                <FontIcon
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    FontFamily="Segoe Fluent Icons"
+                                                    FontSize="18"
+                                                    Glyph="{Binding Glyph}"
+                                                    Visibility="{Binding FallbackIconVisibility}" />
+                                                <Image
+                                                    Width="36"
+                                                    Height="36"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Source="{Binding Icon}"
+                                                    Stretch="Uniform"
+                                                    Visibility="{Binding IconVisibility}" />
+                                            </Grid>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock

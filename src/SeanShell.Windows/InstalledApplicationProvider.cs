@@ -23,6 +23,14 @@ public sealed class InstalledApplicationProvider : ILauncherCommandProvider
     public Task<IReadOnlyList<ShellCommand>> WarmAsync(CancellationToken cancellationToken = default) =>
         GetOrCreateIndexTask().WaitAsync(cancellationToken);
 
+    public Task<ApplicationIconSnapshot?> GetIconAsync(
+        ShellCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        return Task.Run(() => AddIcon(command).Icon, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ShellCommand>> GetByIdsAsync(
         IEnumerable<string> applicationIds,
         CancellationToken cancellationToken = default)

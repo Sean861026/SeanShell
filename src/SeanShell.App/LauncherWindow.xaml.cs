@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
+using SeanShell.Windows;
 using Windows.Graphics;
 using Windows.System;
 
@@ -16,6 +17,7 @@ public sealed partial class LauncherWindow : Window
 {
     private const int WindowWidth = 760;
     private const int WindowHeight = 620;
+    private readonly InstalledApplicationProvider _installedApplications;
     private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
     private readonly HashSet<string> _pinnedApplicationIds =
@@ -25,9 +27,11 @@ public sealed partial class LauncherWindow : Window
 
     public LauncherWindow(
         LauncherSearchService searchService,
+        InstalledApplicationProvider installedApplications,
         LauncherPerformanceMonitor performanceMonitor)
     {
         _searchService = searchService;
+        _installedApplications = installedApplications;
         _performanceMonitor = performanceMonitor;
         InitializeComponent();
 
@@ -158,9 +162,11 @@ public sealed partial class LauncherWindow : Window
             Results.Clear();
             foreach (var command in commands)
             {
-                Results.Add(new LauncherResultViewModel(
+                var result = new LauncherResultViewModel(
                     command,
-                    _pinnedApplicationIds.Contains(command.Id)));
+                    _pinnedApplicationIds.Contains(command.Id));
+                Results.Add(result);
+                _ = LoadResultIconAsync(result, cancellationToken);
             }
 
             ResultsList.SelectedIndex = Results.Count > 0 ? 0 : -1;
@@ -170,6 +176,23 @@ public sealed partial class LauncherWindow : Window
         finally
         {
             SearchProgress.IsActive = false;
+        }
+    }
+
+    private async Task LoadResultIconAsync(
+        LauncherResultViewModel result,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var icon = await _installedApplications
+                .GetIconAsync(result.Command, cancellationToken)
+                .ConfigureAwait(true);
+            cancellationToken.ThrowIfCancellationRequested();
+            await result.LoadIconAsync(icon).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
