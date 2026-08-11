@@ -108,6 +108,9 @@ The command palette converts its 760-by-620 effective-pixel design size into
 physical AppWindow coordinates for the current monitor. At 125% scaling this is
 950-by-775 physical pixels; small work areas constrain the window with a 24-DIP
 edge margin instead of clipping the result list or footer.
+Opening from a Dock targets that Dock's display. The global shortcut and
+Dashboard button target the foreground window's display, then fall back to the
+primary display, so mixed-DPI movement does not reuse the palette's stale location.
 
 The shortcut uses the supported `RegisterHotKey` API. It does not install a
 keyboard hook or intercept input sent to games. The dashboard can switch between

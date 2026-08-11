@@ -1595,7 +1595,17 @@ public sealed partial class MainWindow : Window
 
     private void OnLauncherRequested(object? sender, EventArgs e)
     {
-        _ = _launcherWindow.ShowLauncherAsync();
+        var requestedMonitorHandle = sender is DockWindow dock
+            ? dock.MonitorHandle
+            : 0;
+        var targetIndex = LauncherTargetMonitorResolver.Resolve(
+            _monitors,
+            requestedMonitorHandle,
+            _desktopWindows.CaptureForegroundMonitorHandle());
+        var targetMonitor = targetIndex >= 0 && targetIndex < _monitors.Count
+            ? _monitors[targetIndex]
+            : null;
+        _ = _launcherWindow.ShowLauncherAsync(targetMonitor);
     }
 
     private void OnDashboardRequested(object? sender, EventArgs e)

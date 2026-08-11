@@ -88,6 +88,10 @@ the UI thread without delaying query ranking or first usable presentation.
 size through `DisplayScaleLayout` before calling physical-pixel `AppWindow`
 placement APIs. It centers horizontally, uses an upper-third vertical bias, and
 constrains both axes to the monitor work area with a scale-aware 24-DIP margin.
+`LauncherTargetMonitorResolver` gives an invoking Dock's monitor precedence,
+then uses the foreground window's monitor for global shortcut and Dashboard
+requests, before bounded primary/first-display fallbacks. Placement reads the
+selected monitor's work area and DPI rather than the Launcher's previous HWND DPI.
 `PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
 Boundary commands are disabled before dispatch, and a successful move atomically
 persists the ordered ID list before refreshing every Dock.

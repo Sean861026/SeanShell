@@ -208,7 +208,11 @@ enters the authenticated protocol frame or reaches `PluginHost`.
 ## Dock and dashboard
 
 ```text
-Launcher XAML design size + current HWND DPI + monitor work area
+Dock monitor handle or foreground monitor handle + current topology
+  -> LauncherTargetMonitorResolver
+  -> selected monitor snapshot
+
+Launcher XAML design size + selected monitor DPI + monitor work area
   -> LauncherWindowPlacement
   -> bounded physical-pixel rectangle
   -> AppWindow.MoveAndResize
