@@ -184,6 +184,7 @@
 - [x] Standard Shift-click new-instance behavior for pinned and running applications
 - [x] Standard Ctrl+Shift-click elevated launch for verified local executables
 - [x] Standard Ctrl-click cycling across running multi-window groups
+- [x] Read-only Full shell edition preflight with fail-closed Dashboard status
 - Full shell experiment only on supported Windows editions
 - Full shell remains opt-in and is not a 1.0 requirement
 
