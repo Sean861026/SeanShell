@@ -1030,6 +1030,9 @@ public sealed partial class DockWindow : Window
 
         ApplicationIconSnapshot? snapshot;
         IReadOnlyList<FrameworkElement> iconVisuals;
+        var isRunning = false;
+        var isActive = false;
+        var isMinimized = false;
         if (ReferenceEquals(element, LauncherItem))
         {
             snapshot = LauncherMagnifierIcon.Value;
@@ -1044,6 +1047,9 @@ public sealed partial class DockWindow : Window
         {
             snapshot = dockItem.Icon is null ? null : dockItem.IconSnapshot;
             iconVisuals = FindIconVisuals(element);
+            isRunning = true;
+            isActive = dockItem.IsForeground;
+            isMinimized = dockItem.IsMinimized;
         }
         else
         {
@@ -1067,6 +1073,9 @@ public sealed partial class DockWindow : Window
         _iconMagnifierWindow ??= new LayeredDockIconWindow();
         if (!_iconMagnifierWindow.Show(
             snapshot,
+            isRunning,
+            isActive,
+            isMinimized,
             anchorCenterX,
             anchorBottomY,
             _monitor,
@@ -1115,6 +1124,14 @@ public sealed partial class DockWindow : Window
             if (child is Image image)
             {
                 icons.Add(image);
+            }
+            else if (child is FrameworkElement element &&
+                string.Equals(
+                    element.Tag as string,
+                    "DockIconOverlayVisual",
+                    StringComparison.Ordinal))
+            {
+                icons.Add(element);
             }
 
             CollectIconVisuals(child, icons);

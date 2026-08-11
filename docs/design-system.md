@@ -56,8 +56,11 @@ Raw colors must not be embedded in individual views.
   Shell jumbo image before falling back to the window-provided icon. The 104 px
   normal Dock height and centered 88 px item lane retain stable hit targets.
   A click-through native layered window bilinear-scales cached icons to 76 px
-  and supplies true per-pixel alpha above the glass base. Missing/fallback icons,
-  reduced effects, and any native update failure remain in the safe Dock lane.
+  and supplies true per-pixel alpha above the glass base. Running icons carry
+  their active accent halo and active/running/minimized rail into that floating
+  surface, so state never appears detached below the magnified icon.
+  Missing/fallback icons, reduced effects, and any native update failure remain
+  in the safe Dock lane.
 - The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
   Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
   colors are not embedded in the Dock.
