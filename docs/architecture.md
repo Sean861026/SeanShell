@@ -340,6 +340,12 @@ system flyouts opt out of the compact Dock XAML root bounds so their primary
 controls and calendar can render at their natural size above the Dock instead
 of being compressed into an internal scrolling viewport.
 
+Auto-hide preserves the native window's stable expanded bounds while the glass
+surface runs a short opacity and vertical-translation transition. Entry uses a
+180 millisecond ease-out; exit uses a faster 120 millisecond ease-in and only
+then resizes to the edge indicator. `DockVisibilityMotion` centralizes these
+values, and Windows reduced-effects state bypasses the Storyboard entirely.
+
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented
 `ABM_NEW`, `ABM_QUERYPOS`, and `ABM_SETPOS` sequence for that Dock window and

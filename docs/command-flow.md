@@ -359,7 +359,7 @@ User presses Ctrl+Alt+D (or the selected Dock preset)
 User presses Escape while the Dock owns keyboard focus
   -> consume the routed Dock key event
   -> restore and activate the captured foreground window if it remains valid
-  -> immediately collapse the Dock when auto-hide is enabled
+  -> run the short exit transition and collapse the Dock when auto-hide is enabled
 ```
 
 Changing the Dock shortcut follows the same register-first, persist-on-success,
@@ -478,9 +478,9 @@ SeanShell startup
   -> position dock above that monitor's taskbar
   -> pointer/focus leaves dock
   -> wait 900 ms
-  -> collapse to visible edge indicator
+  -> fade and translate out over 120 ms, then collapse to visible edge indicator
   -> pointer enters indicator or keyboard focus returns
-  -> restore full dock immediately
+  -> restore full bounds, then fade and translate in over 180 ms
 
 Windows sends WM_DISPLAYCHANGE
   -> restart a one-shot 500 ms debounce timer

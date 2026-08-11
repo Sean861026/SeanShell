@@ -37,7 +37,11 @@
         <Border
             x:Name="ExpandedDock"
             ContextRequested="OnDockContextRequested"
+            RenderTransformOrigin="0.5,1"
             Style="{StaticResource SeanDockGlassShellStyle}">
+            <Border.RenderTransform>
+                <TranslateTransform />
+            </Border.RenderTransform>
             <Grid ColumnSpacing="{StaticResource SeanSpace8}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
