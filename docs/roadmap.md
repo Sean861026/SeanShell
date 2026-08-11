@@ -184,6 +184,7 @@
 - [x] Keyboard-only Dock entry point with active-display targeting and auto-hide expansion
 - [x] Reduced-motion-aware auto-hide entry and exit transitions
 - [x] Reduced-motion-aware Launcher and pinned-application activation feedback
+- [x] New-instance feedback on running applications without animating window switches
 - [x] Escape dismissal returns to the previous foreground window and collapses the Dock
 - [x] Explorer recovery script and automatic-start crash-loop protection
 - [x] Native Dock background menu for settings, Task Manager, system-area access, and safe exit

@@ -328,7 +328,8 @@ indicator; pointer entry or routed keyboard focus expands it. `DockVisibilityMot
 maps the direction and reduced-effects state to bounded opacity/translation timing;
 the native window resizes only before entry or after exit completes.
 
-Launcher or pinned-application activation + reduced-effects state
+Launcher, pinned activation, or running-item new-instance action
+  + reduced-effects state
   -> DockLaunchMotion
   -> bounded decaying translation keyframes
   -> independent RenderTransform Storyboard on the activated icon

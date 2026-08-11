@@ -1056,6 +1056,7 @@ public sealed partial class DockWindow : Window
     {
         if (anchor.DataContext is PinnedDockItemViewModel pinnedItem)
         {
+            PlayLaunchFeedback(pinnedItem);
             await OpenNewInstanceAsync(pinnedItem.Command).ConfigureAwait(true);
             return;
         }
@@ -1093,10 +1094,12 @@ public sealed partial class DockWindow : Window
         switch (TaskbarMiddleClickResolver.Resolve(candidates.Count))
         {
             case TaskbarMiddleClickAction.Open:
+                PlayLaunchFeedback(dockItem);
                 await OpenApplicationInstanceAsync(candidates[0], elevated)
                     .ConfigureAwait(true);
                 break;
             case TaskbarMiddleClickAction.Choose:
+                PlayLaunchFeedback(dockItem);
                 ShowOpenNewInstancePicker(candidates, anchor, elevated);
                 break;
             case TaskbarMiddleClickAction.None:

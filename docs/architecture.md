@@ -345,10 +345,12 @@ surface runs a short opacity and vertical-translation transition. Entry uses a
 180 millisecond ease-out; exit uses a faster 120 millisecond ease-in and only
 then resizes to the edge indicator. `DockVisibilityMotion` centralizes these
 values, and Windows reduced-effects state bypasses the Storyboard entirely.
-Launcher and pinned-application activation uses the same motion policy boundary:
+Launcher and new-application activation uses the same motion policy boundary:
 `DockLaunchMotion` supplies a bounded two-step decay, while a separate
 `RenderTransform` Storyboard avoids competing with hover translation or changing
-the item layout. Repeated activation replaces the previous Storyboard safely.
+the item layout. Pinned clicks and running-item new-instance actions opt in;
+window switching and minimizing do not. Repeated activation replaces the previous
+Storyboard safely.
 
 Each Dock owns one `AppBarWorkAreaReservation`. After the recovery guard has
 started and native taskbars are hidden, the reservation follows the documented

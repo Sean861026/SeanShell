@@ -52,9 +52,10 @@ Raw colors must not be embedded in individual views.
   collapse uses a faster 120 ms ease-in exit before resizing to the edge
   indicator. The transition animates only opacity and translation, remains
   interruptible, and resolves immediately when reduced effects are active.
-- Launcher and pinned-application activation uses one 420 ms two-step decaying
+- Launcher and new-application activation uses one 420 ms two-step decaying
   bounce on an independent render-transform track. It confirms the click without
-  reflowing neighbors and is omitted entirely for reduced effects.
+  reflowing neighbors and is omitted entirely for reduced effects. Ordinary
+  running-window switch and minimize actions deliberately remain still.
 - Dock ListView containers keep native pointer-over, pressed, and selection
   surfaces transparent. The icon, badge, running indicator, and keyboard focus
   visual carry interaction state without exposing the container's tall safety
