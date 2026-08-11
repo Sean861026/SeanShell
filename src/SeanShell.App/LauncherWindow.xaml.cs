@@ -118,16 +118,33 @@ public sealed partial class LauncherWindow : Window
         presenter.IsMinimizable = false;
         presenter.IsResizable = false;
         AppWindow.SetPresenter(presenter);
-        AppWindow.Resize(new SizeInt32(WindowWidth, WindowHeight));
+        ResizeAndCenterOnCurrentDisplay();
     }
 
     private void CenterOnCurrentDisplay()
     {
+        ResizeAndCenterOnCurrentDisplay();
+    }
+
+    private void ResizeAndCenterOnCurrentDisplay()
+    {
         var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
         var workArea = displayArea.WorkArea;
-        var x = workArea.X + Math.Max(0, (workArea.Width - WindowWidth) / 2);
-        var y = workArea.Y + Math.Max(0, (workArea.Height - WindowHeight) / 3);
-        AppWindow.Move(new PointInt32(x, y));
+        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var scaleFactor = DisplayDpiService.GetWindowScaleFactor(windowHandle);
+        var placement = LauncherWindowPlacement.Calculate(
+            workArea.X,
+            workArea.Y,
+            workArea.Width,
+            workArea.Height,
+            WindowWidth,
+            WindowHeight,
+            scaleFactor);
+        AppWindow.MoveAndResize(new RectInt32(
+            placement.X,
+            placement.Y,
+            placement.Width,
+            placement.Height));
     }
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)

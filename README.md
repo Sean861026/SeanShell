@@ -104,6 +104,10 @@ After ranking completes, visible application results load their Windows-provided
 icons, and individual extraction failures retain crisp Fluent glyph fallbacks;
 icon work never delays the ranked text results. Brand icons remain unplated on
 the result surface, while fallback glyphs retain the semantic accent tile.
+The command palette converts its 760-by-620 effective-pixel design size into
+physical AppWindow coordinates for the current monitor. At 125% scaling this is
+950-by-775 physical pixels; small work areas constrain the window with a 24-DIP
+edge margin instead of clipping the result list or footer.
 
 The shortcut uses the supported `RegisterHotKey` API. It does not install a
 keyboard hook or intercept input sent to games. The dashboard can switch between
