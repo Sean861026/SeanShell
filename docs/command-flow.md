@@ -416,10 +416,10 @@ User hovers a running application entry
   -> Dock snapshot changes or shutdown begins: unregister and dismiss immediately
 
 User middle-clicks a Dock application
-  -> standalone pin: execute its exact cached application command
+  -> standalone pin: start activation feedback and execute its exact cached application command
   -> running item with no reliable application candidate: do not launch
-  -> running item with one candidate: open a new instance
-  -> running item with multiple candidates: show a native selection flyout
+  -> running item with one candidate: start activation feedback and open a new instance
+  -> running item with multiple candidates: start activation feedback and show a native selection flyout
   -> selected candidate: execute its exact cached application command
 
 User Shift-clicks a Dock application
