@@ -380,6 +380,50 @@
                                     Text="Compatibility mode: Explorer, notifications, system tray services, and input methods remain running. A recovery guard restores every Windows taskbar after a crash or forced exit."
                                     TextWrapping="Wrap" />
 
+                                <Border
+                                    Padding="16"
+                                    AutomationProperties.Name="Full shell readiness"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource SeanCompactCornerRadius}">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Style="{StaticResource SeanIconTileStyle}">
+                                            <FontIcon
+                                                x:Name="FullShellReadinessGlyph"
+                                                FontFamily="Segoe Fluent Icons"
+                                                FontSize="18"
+                                                Glyph="&#xE711;" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock
+                                                    x:Name="FullShellReadinessTitle"
+                                                    VerticalAlignment="Center"
+                                                    FontWeight="SemiBold"
+                                                    Text="Checking Full shell support"
+                                                    TextWrapping="Wrap" />
+                                                <Border Style="{StaticResource SeanStatusPillStyle}">
+                                                    <TextBlock FontSize="12" Text="Preview" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock
+                                                x:Name="FullShellEditionText"
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="Reading Windows edition" />
+                                            <TextBlock
+                                                x:Name="FullShellReadinessMessage"
+                                                Style="{StaticResource SeanSecondaryTextStyle}"
+                                                Text="Full shell remains disabled until compatibility and recovery checks pass."
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
                                 <ToggleSwitch
                                     x:Name="AutomaticStartupToggle"
                                     AutomationProperties.HelpText="Register SeanShell with Windows so it starts after you sign in. Windows remains the source of truth for this setting."

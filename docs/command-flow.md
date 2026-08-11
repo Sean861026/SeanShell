@@ -49,6 +49,23 @@ The primary process owns the only set of monitor-local Docks. Redirected
 activation never injects into another process and does not create another shell
 composition root.
 
+## Full shell readiness preview
+
+```text
+Dashboard construction
+  -> FullShellReadinessService reads local Windows ProductName and EditionID
+  -> FullShellReadinessResolver normalizes and classifies the edition
+  -> unknown edition: show verification unavailable and fail closed
+  -> unsupported edition: show the requirement and retain Companion Taskbar
+  -> supported edition: show safety work pending
+  -> stop without enabling features, writing configuration, or replacing Explorer
+```
+
+There is intentionally no command from the readiness card to Shell Launcher,
+DISM, Winlogon, sign-out, or restart. A future administrator-only configuration
+flow must ship with a separately verified recovery package before that boundary
+can be connected.
+
 ## Launcher query
 
 ```text

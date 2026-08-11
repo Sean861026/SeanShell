@@ -536,3 +536,17 @@ Windows App SDK activation arguments
 Activation routing carries Windows-owned activation data only. It does not add a
 second settings source, persist command arguments, or construct UI in the
 secondary process.
+
+## Full shell readiness
+
+```text
+HKLM Windows CurrentVersion (ProductName + EditionID)
+  -> FullShellReadinessService
+  -> FullShellReadinessResolver
+  -> immutable FullShellReadinessSnapshot
+  -> Dashboard status card
+```
+
+The snapshot contains only product display text, edition ID, readiness state,
+and explanatory copy. It is neither persisted nor sent to a plugin. The flow is
+read-only and has no reverse edge from the Dashboard to Windows configuration.

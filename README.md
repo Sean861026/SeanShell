@@ -86,6 +86,13 @@ The recovery script also starts Explorer when needed and resets this health
 history. It first requests a normal SeanShell close, then stops only the
 `SeanShell.App` process if WinUI does not close within two seconds.
 
+The Dashboard includes a read-only **Full shell experiment** readiness card.
+It reads the installed Windows product and edition from the local operating
+system and fails closed when the edition cannot be verified. Microsoft Shell
+Launcher is reported as supported only for Enterprise, Education, and IoT
+Enterprise families. No WMI configuration, optional-feature change, registry
+write, sign-out, or Explorer replacement is performed by this preview.
+
 ## Launcher preview
 
 Press `Alt+Space` or use **Open Launcher** on the dashboard. The M1 launcher

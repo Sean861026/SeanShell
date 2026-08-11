@@ -52,6 +52,7 @@ public sealed partial class MainPage : Page
         _refreshTimer.Interval = TimeSpan.FromSeconds(2);
         _refreshTimer.Tick += OnRefreshTimerTick;
         ApplySettings(app.SettingsLoad.Settings);
+        ApplyFullShellReadiness(app.FullShellReadiness);
         if (app.SettingsLoad.Warning is not null)
         {
             SetSettingsStatus(
@@ -97,6 +98,16 @@ public sealed partial class MainPage : Page
     public event Action<ExternalPluginCandidate, bool>? ExternalPluginConsentChanged;
 
     public event Action? ExternalPluginTrustClearRequested;
+
+    private void ApplyFullShellReadiness(FullShellReadinessSnapshot snapshot)
+    {
+        FullShellReadinessTitle.Text = snapshot.Title;
+        FullShellReadinessMessage.Text = snapshot.Message;
+        FullShellEditionText.Text = $"{snapshot.ProductName} · {snapshot.EditionId}";
+        FullShellReadinessGlyph.Glyph = snapshot.State == FullShellReadinessState.SafetyWorkPending
+            ? "\uE73E"
+            : "\uE711";
+    }
 
     public void SetExternalPluginConsentApplied(
         ExternalPluginCandidate candidate,

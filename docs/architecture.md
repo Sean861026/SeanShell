@@ -18,6 +18,15 @@ deployment mode.
 3. **Full shell mode:** SeanShell becomes the configured shell only on supported
    Windows editions and only after recovery and compatibility gates pass.
 
+`FullShellReadinessService` is the first boundary for Full shell mode. It reads
+`ProductName` and `EditionID` from the Windows current-version registry key and
+delegates policy to the platform-neutral `FullShellReadinessResolver`. The
+resolver recognizes the Enterprise, Enterprise LTSC, Education, and IoT
+Enterprise edition families documented for Microsoft Shell Launcher. Unknown or
+unsupported editions fail closed. This stage is deliberately diagnostic only:
+it exposes no mutation API and does not query or change Shell Launcher WMI,
+optional Windows features, Winlogon, the current user SID, or Explorer startup.
+
 ## Components
 
 - `SeanShell.App` is the WinUI 3 composition root. It contains views and binds
