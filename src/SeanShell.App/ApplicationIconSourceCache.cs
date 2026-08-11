@@ -54,7 +54,7 @@ internal static class ApplicationIconSourceCache
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             System.Diagnostics.Debug.WriteLine(
-                $"Unable to create a Dock icon bitmap. {exception}");
+                $"Unable to create an application icon bitmap. {exception}");
             return null;
         }
     }

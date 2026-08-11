@@ -99,6 +99,10 @@ Press `Alt+Space` or use **Open Launcher** on the dashboard. The M1 launcher
 indexes Start Menu shortcuts once, combines them with safe built-in Windows
 commands, and ranks up to eight results as you type. Use Up/Down to navigate,
 Enter to open, and Escape to close.
+After ranking completes, visible application results load their Windows-provided
+192px shortcut icons asynchronously. System and plugin commands, unavailable
+icons, and individual extraction failures retain crisp Fluent glyph fallbacks;
+icon work never delays the ranked text results.
 
 The shortcut uses the supported `RegisterHotKey` API. It does not install a
 keyboard hook or intercept input sent to games. The dashboard can switch between

@@ -79,6 +79,11 @@ The same resolved application candidates power Open new instance from running
 window context menus. SeanShell executes the original cached `ShellCommand`; it
 does not construct an executable path or force applications that enforce a
 single-instance policy to create another process.
+Launcher application results use the same `InstalledApplicationProvider` icon
+cache only after the search service returns its bounded ranked list. At most the
+eight visible results request native extraction. Each `LauncherResultViewModel`
+starts with a Fluent fallback, then swaps to the shared `SoftwareBitmapSource` on
+the UI thread without delaying query ranking or first usable presentation.
 `PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
 Boundary commands are disabled before dispatch, and a successful move atomically
 persists the ordered ID list before refreshing every Dock.

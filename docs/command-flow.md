@@ -77,6 +77,9 @@ User opens launcher
   -> built-in providers run in parallel
   -> enabled plugins return ShellCommand records
   -> results are merged, ranked, and de-duplicated
+  -> publish up to eight text results immediately with Fluent fallback glyphs
+  -> application results request cached Windows icons asynchronously
+  -> each successful icon load replaces only its result glyph
   -> successful provider/ranking duration enters the bounded in-memory sample
   -> first successful show records the one-time show-to-usable duration
   -> user selects a command
@@ -90,6 +93,9 @@ system commands are provided independently.
 
 The 60 ms input debounce is intentionally excluded from search duration. Cancelled
 and failed searches do not enter the sample, and no query text is retained.
+Icon extraction starts only after ranking and follows the same query cancellation
+token. A missing or invalid icon leaves the fallback visible instead of removing
+or shifting the result row.
 
 Commands carry behavior rather than raw shell strings. Providers that intentionally
 invoke a terminal must show the exact command and working directory before any

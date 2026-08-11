@@ -235,6 +235,7 @@ WM_GETICON / class icon / process executable Shell icon
   -> validated 192x192 BGRA ApplicationIconSnapshot
   -> UI-thread shared SoftwareBitmapSource
   -> fixed 40px Dock icon slot or Fluent fallback
+  -> ranked Launcher application result or Fluent fallback
 
 Foreground + minimized flags
   -> TaskbarItemVisualStateResolver

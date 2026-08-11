@@ -96,7 +96,10 @@ public sealed partial class MainWindow : Window
         _displayMonitorService = app.Displays;
         _installedApplications = app.InstalledApplications;
         _shellState = app.ShellState;
-        _launcherWindow = new LauncherWindow(app.LauncherSearch, app.LauncherPerformance);
+        _launcherWindow = new LauncherWindow(
+            app.LauncherSearch,
+            app.InstalledApplications,
+            app.LauncherPerformance);
         _launcherWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
         _launcherWindow.SetPinnedApplicationIds(
             PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds));
