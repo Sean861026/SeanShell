@@ -7,6 +7,7 @@
 - Architecture, flow, safety, and contribution documents
 - Automated build and unit tests
 - [x] Opt-in Windows sign-in startup with live OS state and crash-loop protection
+- [x] Single-instance activation routing with duplicate-Dock prevention
 
 ## M1: Launcher
 

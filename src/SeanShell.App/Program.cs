@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
 using SeanShell.PluginBroker;
 using SeanShell.Windows;
 
@@ -27,8 +28,26 @@ public static class Program
         }
 
         WinRT.ComWrappersSupport.InitializeComWrappers();
+        var currentInstance = AppInstance.GetCurrent();
+        var activation = currentInstance.GetActivatedEventArgs();
+        var mainInstance = AppInstance.FindOrRegisterForKey(
+            AppLaunchContext.MainInstanceKey);
+        if (!mainInstance.IsCurrent)
+        {
+            if (activation is not null)
+            {
+                mainInstance.RedirectActivationToAsync(activation)
+                    .AsTask()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+
+            return 0;
+        }
+
+        AppLaunchContext.MainInstance = mainInstance;
         AppLaunchContext.IsAutomaticStartup =
-            AppLaunchContext.DetectAutomaticStartup() ||
+            AppLaunchContext.DetectAutomaticStartup(activation) ||
             AppLaunchContext.HasAutomaticStartupArgument();
         Application.Start(initialization =>
         {

@@ -171,6 +171,17 @@ public sealed partial class MainWindow : Window
 
     public void StartAutomaticStartup() => _ = StartShellAsync(showDashboard: false);
 
+    public void ShowDashboard()
+    {
+        _ = DispatcherQueue.TryEnqueue(() =>
+        {
+            AppWindow.Show();
+            Activate();
+            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            _ = _desktopWindows.RestoreAndActivate(windowHandle);
+        });
+    }
+
     private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         Activated -= OnActivated;
@@ -1586,10 +1597,7 @@ public sealed partial class MainWindow : Window
 
     private void OnDashboardRequested(object? sender, EventArgs e)
     {
-        AppWindow.Show();
-        Activate();
-        var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        _ = _desktopWindows.RestoreAndActivate(windowHandle);
+        ShowDashboard();
     }
 
     private void OnExitRequested(object? sender, EventArgs e) => Close();

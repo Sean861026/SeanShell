@@ -7,6 +7,9 @@ Windows sign-in
   -> Explorer starts normally
   -> User launch or enabled Windows startup task activates SeanShell
   -> AppInstance identifies StartupTask activation before WinUI starts
+  -> FindOrRegisterForKey("SeanShell.Main")
+  -> existing primary: redirect activation and exit before WinUI creates any window
+  -> new primary: retain the instance registration and continue startup
   -> load startup-health.json
   -> previous pending startup: increment consecutive failure count
   -> automatic activation and three failures: ensure Explorer is running, then exit
@@ -30,6 +33,21 @@ dashboard displays the live Windows state rather than persisting a second copy.
 If the user disables SeanShell in Task Manager, only the user can re-enable it
 from Windows. The `--startup` argument remains available for guarded development
 testing.
+
+## Redirected activation
+
+```text
+SeanShell is already running
+  -> a later manual or startup-task launch resolves the SeanShell.Main instance
+  -> redirect the Windows App SDK activation arguments to the primary process
+  -> secondary process exits without constructing a Dashboard or Dock
+  -> redirected manual launch: restore and foreground the existing Dashboard
+  -> redirected StartupTask activation: preserve the current foreground window
+```
+
+The primary process owns the only set of monitor-local Docks. Redirected
+activation never injects into another process and does not create another shell
+composition root.
 
 ## Launcher query
 

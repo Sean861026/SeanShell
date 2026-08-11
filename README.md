@@ -78,6 +78,10 @@ development-only `--startup` launch mode are protected by a persistent
 crash-loop guard: three consecutive launches that do not survive the 30-second
 startup window disable only automatic launch. A normal manual launch remains
 available and clears the guard after it becomes healthy.
+SeanShell also registers one stable Windows App SDK instance key before WinUI
+starts. Later launches redirect their activation to that process and exit, so
+they restore the existing Dashboard instead of creating duplicate Docks.
+Redirected startup-task activations remain quiet and do not steal foreground.
 The recovery script also starts Explorer when needed and resets this health
 history. It first requests a normal SeanShell close, then stops only the
 `SeanShell.App` process if WinUI does not close within two seconds.

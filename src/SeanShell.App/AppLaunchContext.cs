@@ -4,6 +4,10 @@ namespace SeanShell.App;
 
 internal static class AppLaunchContext
 {
+    public const string MainInstanceKey = "SeanShell.Main";
+
+    public static AppInstance? MainInstance { get; set; }
+
     public static bool IsAutomaticStartup { get; set; }
 
     public static bool HasAutomaticStartupArgument() =>
@@ -14,17 +18,6 @@ internal static class AppLaunchContext
             "--startup",
             StringComparison.OrdinalIgnoreCase);
 
-    public static bool DetectAutomaticStartup()
-    {
-        try
-        {
-            return AppInstance.GetCurrent().GetActivatedEventArgs()?.Kind ==
-                ExtendedActivationKind.StartupTask;
-        }
-        catch
-        {
-            // Identity-free broker and development launches remain ordinary manual launches.
-            return false;
-        }
-    }
+    public static bool DetectAutomaticStartup(AppActivationArguments? activation) =>
+        activation?.Kind == ExtendedActivationKind.StartupTask;
 }

@@ -520,3 +520,19 @@ The setting is owned by Windows and is intentionally absent from
 SeanShell. Startup activation is identified through Windows App SDK app-lifecycle
 arguments before WinUI creates the dashboard, then enters the existing startup
 health flow as an automatic launch.
+
+## Single-instance activation routing
+
+```text
+Windows App SDK activation arguments
+  -> AppInstance.FindOrRegisterForKey("SeanShell.Main")
+  -> current primary: classify startup mode and construct the shell once
+  -> secondary launch: RedirectActivationToAsync
+  -> primary AppInstance.Activated event
+  -> manual activation: existing MainWindow.ShowDashboard
+  -> StartupTask activation: no foreground change
+```
+
+Activation routing carries Windows-owned activation data only. It does not add a
+second settings source, persist command arguments, or construct UI in the
+secondary process.

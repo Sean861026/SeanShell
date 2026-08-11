@@ -449,6 +449,12 @@ does not match.
   incomplete startup windows. Automatic activation leaves the Dashboard hidden
   after constructing the monitor-local Docks; the Dock's Dashboard action restores
   it normally. Manual launches remain available for recovery.
+- Before WinUI starts, the process uses Windows App SDK app lifecycle to register
+  the stable `SeanShell.Main` instance key. A later process redirects its activation
+  arguments to the registered process and exits before creating UI. The primary
+  process restores its existing Dashboard for redirected manual launches and
+  ignores redirected startup-task foreground requests, preventing duplicate Docks
+  without making sign-in startup intrusive.
 
 ## Configuration
 

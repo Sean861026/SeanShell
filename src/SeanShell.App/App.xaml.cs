@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using Microsoft.Windows.AppLifecycle;
 using SeanShell.Core;
 using SeanShell.Gaming;
 using SeanShell.Plugin.DeveloperTools;
@@ -20,6 +21,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using LifecycleAppInstance = Microsoft.Windows.AppLifecycle.AppInstance;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -233,6 +235,11 @@ public partial class App : Application
         var mainWindow = new MainWindow();
         _window = mainWindow;
         _window.Closed += OnMainWindowClosed;
+        if (AppLaunchContext.MainInstance is LifecycleAppInstance mainInstance)
+        {
+            mainInstance.Activated += OnRedirectedActivation;
+        }
+
         if (automaticStartup)
         {
             mainWindow.StartAutomaticStartup();
@@ -244,6 +251,17 @@ public partial class App : Application
 
         _ = WarmInstalledApplicationsAsync();
         _ = MarkStartupHealthyAsync(startupSessionId);
+    }
+
+    private void OnRedirectedActivation(object? sender, AppActivationArguments args)
+    {
+        if (args.Kind == ExtendedActivationKind.StartupTask ||
+            _window is not MainWindow mainWindow)
+        {
+            return;
+        }
+
+        mainWindow.ShowDashboard();
     }
 
     private async Task MarkStartupHealthyAsync(Guid sessionId)
@@ -262,6 +280,11 @@ public partial class App : Application
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
     {
+        if (AppLaunchContext.MainInstance is LifecycleAppInstance mainInstance)
+        {
+            mainInstance.Activated -= OnRedirectedActivation;
+        }
+
         _startupHealthCancellation.Cancel();
         if (_startupSessionId is Guid sessionId)
         {
