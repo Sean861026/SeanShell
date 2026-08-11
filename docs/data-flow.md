@@ -324,7 +324,9 @@ MonitorFromWindow
 ```
 
 Auto-hide is a persistent UI preference. A collapsed dock retains a visible edge
-indicator; pointer entry or routed keyboard focus expands it.
+indicator; pointer entry or routed keyboard focus expands it. `DockVisibilityMotion`
+maps the direction and reduced-effects state to bounded opacity/translation timing;
+the native window resizes only before entry or after exit completes.
 
 ## Companion Taskbar visibility
 

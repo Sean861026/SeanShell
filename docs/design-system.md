@@ -48,6 +48,10 @@ Raw colors must not be embedded in individual views.
   reflow while the hovered item rises above its siblings. Both resolve to an
   identity transform with no transition when Windows requests reduced effects
   or Gaming Mode is active.
+- Auto-hide expands with a 180 ms ease-out fade and 12 px upward translation;
+  collapse uses a faster 120 ms ease-in exit before resizing to the edge
+  indicator. The transition animates only opacity and translation, remains
+  interruptible, and resolves immediately when reduced effects are active.
 - Dock ListView containers keep native pointer-over, pressed, and selection
   surfaces transparent. The icon, badge, running indicator, and keyboard focus
   visual carry interaction state without exposing the container's tall safety

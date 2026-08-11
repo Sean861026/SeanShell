@@ -80,6 +80,7 @@ public sealed partial class DockWindow : Window
     private DockBounds? _reservedArea;
     private WindowPreviewWindow? _previewWindow;
     private LayeredDockIconWindow? _iconMagnifierWindow;
+    private Storyboard? _visibilityTransition;
     private ScrollViewer? _windowListScrollViewer;
     private DockItemViewModel? _pendingPreviewItem;
     private FrameworkElement? _pendingPreviewAnchor;
@@ -260,6 +261,8 @@ public sealed partial class DockWindow : Window
         if (enabled)
         {
             DismissDockMagnifier();
+            StopVisibilityTransition();
+            ApplyDockLayout(_collapsed);
         }
 
         SystemBackdrop = enabled
@@ -361,6 +364,7 @@ public sealed partial class DockWindow : Window
         _displayScaleRefreshTimer.Stop();
         _previewDelayTimer.Stop();
         _previewDismissTimer.Stop();
+        StopVisibilityTransition();
         _previewWindow?.Shutdown();
         _previewWindow = null;
         DismissDockMagnifier();
@@ -390,6 +394,7 @@ public sealed partial class DockWindow : Window
 
     private void SetCollapsed(bool collapsed)
     {
+        var stateChanged = _collapsed != collapsed;
         if (collapsed)
         {
             DismissWindowPreview();
@@ -397,6 +402,27 @@ public sealed partial class DockWindow : Window
         }
 
         _collapsed = collapsed;
+        if (!stateChanged ||
+            _reducedEffects ||
+            !AppWindow.IsVisible)
+        {
+            StopVisibilityTransition();
+            ApplyDockLayout(collapsed);
+            return;
+        }
+
+        if (collapsed)
+        {
+            BeginVisibilityTransition(collapsed: true);
+            return;
+        }
+
+        ApplyDockLayout(collapsed: false);
+        BeginVisibilityTransition(collapsed: false);
+    }
+
+    private void ApplyDockLayout(bool collapsed)
+    {
         ExpandedDock.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         PeekIndicator.Visibility = collapsed ? Visibility.Visible : Visibility.Collapsed;
 
@@ -429,6 +455,79 @@ public sealed partial class DockWindow : Window
             bounds.Height,
             ToPhysicalPixels(collapsed ? 5 : 24),
             ToPhysicalPixels(2));
+    }
+
+    private void BeginVisibilityTransition(bool collapsed)
+    {
+        StopVisibilityTransition();
+        var motion = DockVisibilityMotion.Resolve(
+            collapsed,
+            reducedEffects: false);
+        var translate = (TranslateTransform)ExpandedDock.RenderTransform;
+        ExpandedDock.Visibility = Visibility.Visible;
+        PeekIndicator.Visibility = Visibility.Collapsed;
+        ExpandedDock.Opacity = motion.StartOpacity;
+        translate.Y = motion.StartTranslationY;
+
+        var easing = new CubicEase
+        {
+            EasingMode = collapsed
+                ? EasingMode.EaseIn
+                : EasingMode.EaseOut,
+        };
+        var duration = new Duration(
+            TimeSpan.FromMilliseconds(motion.DurationMilliseconds));
+        var opacity = new DoubleAnimation
+        {
+            From = motion.StartOpacity,
+            To = motion.EndOpacity,
+            Duration = duration,
+            EasingFunction = easing,
+        };
+        Storyboard.SetTarget(opacity, ExpandedDock);
+        Storyboard.SetTargetProperty(opacity, nameof(UIElement.Opacity));
+        var translation = new DoubleAnimation
+        {
+            From = motion.StartTranslationY,
+            To = motion.EndTranslationY,
+            Duration = duration,
+            EasingFunction = easing,
+        };
+        Storyboard.SetTarget(translation, translate);
+        Storyboard.SetTargetProperty(translation, nameof(TranslateTransform.Y));
+
+        var transition = new Storyboard();
+        transition.Children.Add(opacity);
+        transition.Children.Add(translation);
+        transition.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(_visibilityTransition, transition))
+            {
+                return;
+            }
+
+            ExpandedDock.Opacity = motion.EndOpacity;
+            translate.Y = motion.EndTranslationY;
+            _visibilityTransition = null;
+            transition.Stop();
+            if (collapsed && _collapsed)
+            {
+                ApplyDockLayout(collapsed: true);
+            }
+        };
+        _visibilityTransition = transition;
+        transition.Begin();
+    }
+
+    private void StopVisibilityTransition()
+    {
+        _visibilityTransition?.Stop();
+        _visibilityTransition = null;
+        ExpandedDock.Opacity = 1;
+        if (ExpandedDock.RenderTransform is TranslateTransform translate)
+        {
+            translate.Y = 0;
+        }
     }
 
     private void ScheduleAutoHide()
