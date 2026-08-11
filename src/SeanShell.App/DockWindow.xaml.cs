@@ -52,6 +52,7 @@ public sealed partial class DockWindow : Window
     private readonly DispatcherQueueTimer _previewDismissTimer;
     private readonly HashSet<FrameworkElement> _dockMotionItems = [];
     private readonly HashSet<FrameworkElement> _activeDockNeighborItems = [];
+    private readonly Dictionary<FrameworkElement, Storyboard> _launchFeedbackTransitions = [];
     private readonly bool _compactDensity;
     private double _displayScaleFactor;
     private double _textScaleFactor = 1;
@@ -365,6 +366,12 @@ public sealed partial class DockWindow : Window
         _previewDelayTimer.Stop();
         _previewDismissTimer.Stop();
         StopVisibilityTransition();
+        foreach (var transition in _launchFeedbackTransitions.Values)
+        {
+            transition.Stop();
+        }
+
+        _launchFeedbackTransitions.Clear();
         _previewWindow?.Shutdown();
         _previewWindow = null;
         DismissDockMagnifier();
@@ -1278,6 +1285,10 @@ public sealed partial class DockWindow : Window
 
             _dockMotionItems.Remove(element);
             _activeDockNeighborItems.Remove(element);
+            if (_launchFeedbackTransitions.Remove(element, out var transition))
+            {
+                transition.Stop();
+            }
         }
     }
 
@@ -1761,6 +1772,7 @@ public sealed partial class DockWindow : Window
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)
     {
+        PlayLaunchFeedback(LauncherIcon);
         LauncherRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
     }
@@ -2199,6 +2211,8 @@ public sealed partial class DockWindow : Window
             return;
         }
 
+        PlayLaunchFeedback(item);
+
         try
         {
             var clickAction = TaskbarClickActionResolver.Resolve(
@@ -2232,6 +2246,78 @@ public sealed partial class DockWindow : Window
         {
             ScheduleAutoHide();
         }
+    }
+
+    private void PlayLaunchFeedback(object dataContext)
+    {
+        var target = _dockMotionItems.FirstOrDefault(
+            element => ReferenceEquals(element.DataContext, dataContext));
+        if (target is not null)
+        {
+            PlayLaunchFeedback(target);
+        }
+    }
+
+    private void PlayLaunchFeedback(FrameworkElement target)
+    {
+        var motion = DockLaunchMotion.Resolve(_reducedEffects);
+        if (motion.DurationMilliseconds == 0 || !target.IsLoaded)
+        {
+            return;
+        }
+
+        DismissDockMagnifier();
+        if (_launchFeedbackTransitions.Remove(target, out var previous))
+        {
+            previous.Stop();
+        }
+
+        var translate = target.RenderTransform as TranslateTransform;
+        if (translate is null)
+        {
+            translate = new TranslateTransform();
+            target.RenderTransform = translate;
+        }
+
+        translate.Y = 0;
+        var animation = new DoubleAnimationUsingKeyFrames
+        {
+            Duration = new Duration(TimeSpan.FromMilliseconds(
+                motion.DurationMilliseconds)),
+        };
+        foreach (var frame in motion.Frames)
+        {
+            animation.KeyFrames.Add(new EasingDoubleKeyFrame
+            {
+                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(
+                    motion.DurationMilliseconds * frame.Progress)),
+                Value = frame.TranslationY,
+                EasingFunction = new CubicEase
+                {
+                    EasingMode = frame.TranslationY == 0
+                        ? EasingMode.EaseIn
+                        : EasingMode.EaseOut,
+                },
+            });
+        }
+
+        Storyboard.SetTarget(animation, translate);
+        Storyboard.SetTargetProperty(animation, nameof(TranslateTransform.Y));
+        var transition = new Storyboard();
+        transition.Children.Add(animation);
+        transition.Completed += (_, _) =>
+        {
+            if (!_launchFeedbackTransitions.Remove(target, out var current) ||
+                !ReferenceEquals(current, transition))
+            {
+                return;
+            }
+
+            translate.Y = 0;
+            transition.Stop();
+        };
+        _launchFeedbackTransitions[target] = transition;
+        transition.Begin();
     }
 
     private async void OnPinnedApplicationsDragCompleted(

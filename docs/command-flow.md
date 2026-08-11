@@ -527,6 +527,7 @@ safe by showing all taskbars and clearing the persisted replacement preference.
 
 ```text
 User selects the Launcher/Start button on any Dock
+  -> dismiss hover magnification and start bounded activation feedback
   -> MainWindow requests the existing Launcher window
   -> Launcher opens on that Dock's display
 
@@ -573,6 +574,7 @@ User opens a running application's Dock context menu
   -> selected candidate follows the same verified persistence flow
 
 User selects a pinned Dock application
+  -> dismiss hover magnification and start bounded activation feedback
   -> execute the original installed-application ShellCommand
   -> Windows Shell opens the exact indexed shortcut
 
