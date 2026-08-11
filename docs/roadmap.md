@@ -110,6 +110,7 @@
 - [x] Semantic application and system-area surface hierarchy with stable tabular clock figures
 - [x] Windows-provided icons for running and pinned applications with Fluent fallback
 - [x] Post-ranking Windows icons for visible Launcher application results
+- [x] Unplated Launcher brand icons with accent-tile Fluent fallbacks
 - [x] Flushed WinUI icon buffers before compositor invalidation
 - [x] Per-icon failure isolation with accessible Fluent fallback
 - [x] Native icon extraction failure isolation from desktop-window snapshots

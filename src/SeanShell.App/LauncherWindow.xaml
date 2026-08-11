@@ -140,9 +140,13 @@
                                         <Border
                                             Width="40"
                                             Height="40"
-                                            Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                            Background="Transparent"
                                             CornerRadius="{StaticResource SeanCompactCornerRadius}">
                                             <Grid>
+                                                <Border
+                                                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                                    CornerRadius="{StaticResource SeanCompactCornerRadius}"
+                                                    Visibility="{Binding FallbackIconVisibility}" />
                                                 <FontIcon
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
