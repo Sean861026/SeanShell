@@ -71,7 +71,9 @@ can be connected.
 ```text
 User opens launcher
   -> Alt+Space is delivered by RegisterHotKey (or dashboard button)
-  -> read the current monitor work area and effective DPI
+  -> Dock request selects that Dock's monitor; other requests select the foreground monitor
+  -> fall back to the primary, then first available monitor
+  -> read the selected monitor work area and effective DPI
   -> convert the 760x620 effective design size to physical AppWindow pixels
   -> constrain with a 24-DIP margin and center in the upper third
   -> search input receives keyboard focus
@@ -519,7 +521,7 @@ safe by showing all taskbars and clearing the persisted replacement preference.
 ```text
 User selects the Launcher/Start button on any Dock
   -> MainWindow requests the existing Launcher window
-  -> Launcher opens on the current display
+  -> Launcher opens on that Dock's display
 
 User opens the Launcher/Start context menu and selects Open Dashboard
   -> show the existing MainWindow without creating another instance

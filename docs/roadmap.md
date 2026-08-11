@@ -104,6 +104,7 @@
 - [x] Dashboard visual hierarchy with a branded Hero, icon-led cards, and persistent status summaries
 - [x] Launcher search hierarchy, result surfaces, and stable feedback states
 - [x] DPI-aware Launcher geometry with bounded mixed-display placement
+- [x] Dock- and foreground-aware Launcher targeting across mixed-DPI displays
 - [x] Dock active, minimized, hover, and keyboard-focus states
 - [x] Active-application visual continuity while the Dock owns keyboard foreground
 - [x] Desktop Acrylic Dock surface with reduced-effects-aware hover and press motion

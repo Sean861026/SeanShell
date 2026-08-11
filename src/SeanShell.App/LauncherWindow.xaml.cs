@@ -73,10 +73,10 @@ public sealed partial class LauncherWindow : Window
             (Style)Application.Current.Resources["SeanCompactLauncherResultItemStyle"];
     }
 
-    public async Task ShowLauncherAsync()
+    public async Task ShowLauncherAsync(DisplayMonitorSnapshot? targetMonitor = null)
     {
         var firstUsableStopwatch = Stopwatch.StartNew();
-        CenterOnCurrentDisplay();
+        ResizeAndCenterOnDisplay(targetMonitor);
         AppWindow.Show();
         Activate();
 
@@ -121,22 +121,43 @@ public sealed partial class LauncherWindow : Window
         ResizeAndCenterOnCurrentDisplay();
     }
 
-    private void CenterOnCurrentDisplay()
-    {
-        ResizeAndCenterOnCurrentDisplay();
-    }
-
     private void ResizeAndCenterOnCurrentDisplay()
     {
         var displayArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
         var workArea = displayArea.WorkArea;
         var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var scaleFactor = DisplayDpiService.GetWindowScaleFactor(windowHandle);
+        MoveAndResize(workArea.X, workArea.Y, workArea.Width, workArea.Height, scaleFactor);
+    }
+
+    private void ResizeAndCenterOnDisplay(DisplayMonitorSnapshot? targetMonitor)
+    {
+        if (targetMonitor is null)
+        {
+            ResizeAndCenterOnCurrentDisplay();
+            return;
+        }
+
+        MoveAndResize(
+            targetMonitor.WorkAreaX,
+            targetMonitor.WorkAreaY,
+            targetMonitor.WorkAreaWidth,
+            targetMonitor.WorkAreaHeight,
+            DisplayDpiService.GetScaleFactor(targetMonitor.Handle));
+    }
+
+    private void MoveAndResize(
+        int workAreaX,
+        int workAreaY,
+        int workAreaWidth,
+        int workAreaHeight,
+        double scaleFactor)
+    {
         var placement = LauncherWindowPlacement.Calculate(
-            workArea.X,
-            workArea.Y,
-            workArea.Width,
-            workArea.Height,
+            workAreaX,
+            workAreaY,
+            workAreaWidth,
+            workAreaHeight,
             WindowWidth,
             WindowHeight,
             scaleFactor);
