@@ -163,6 +163,10 @@ The floating surface uses the active Windows BaseAlt Mica and semantic Layer
 brushes. Pointer hover lifts and scales an icon slightly, while press feedback
 contracts it; both transitions are removed when Windows requests reduced effects
 or Gaming Mode is active.
+Application hover also promotes a bilinear-scaled copy of the cached 192px icon
+into a click-through, non-activating per-pixel-alpha window. The icon can rise
+past the Acrylic shell without enlarging its hit target or drawing an outer box;
+the in-Dock icon remains visible if native overlay creation or rendering fails.
 The floating surface grows with its bounded item count and contracts to a compact
 minimum rather than retaining unused horizontal space. In Overlay mode it sits
 above the Windows taskbar. In the

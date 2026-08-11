@@ -54,9 +54,10 @@ Raw colors must not be embedded in individual views.
   lane during magnification.
 - Dock icons use 192 px BGRA snapshots sourced from the executable's 256 px
   Shell jumbo image before falling back to the window-provided icon. The 104 px
-  normal Dock height and centered 88 px item lane preserve the full 1.35
-  magnification without clipping; a future transparent overlay window will
-  allow icons to extend beyond the glass base itself.
+  normal Dock height and centered 88 px item lane retain stable hit targets.
+  A click-through native layered window bilinear-scales cached icons to 76 px
+  and supplies true per-pixel alpha above the glass base. Missing/fallback icons,
+  reduced effects, and any native update failure remain in the safe Dock lane.
 - The transient Dock uses desktop Acrylic; the dashboard and Launcher use Mica.
   Every backdrop retains semantic Layer/Card fallback brushes, and raw tint
   colors are not embedded in the Dock.

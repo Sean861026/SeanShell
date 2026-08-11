@@ -131,6 +131,7 @@
 - [x] Compact network, audio, power, and battery status cluster on every Dock
 - [x] Semantic offline, mute, charging, and low-battery glyph/color states
 - [x] Layout-stable macOS-inspired primary and nearest-neighbor icon magnification
+- [x] Per-pixel-alpha native icon magnifier that extends beyond the Dock shell
 - [x] Rich Fluent taskbar tooltips with state and interaction guidance
 - [x] Overlay accent halo that remains visible above opaque active-app icons
 

@@ -256,6 +256,13 @@ Pointer entered / pressed / released
   -> bounded scale, vertical translation, and transition duration
   -> WinUI Scale / Translation transitions
 
+Cached 192px ApplicationIconSnapshot + hovered physical anchor + monitor DPI
+  -> DockMagnifierPlacement
+  -> monitor-bounded layered-window rectangle
+  -> bilinear premultiplied-BGRA downsample
+  -> UpdateLayeredWindow per-pixel-alpha surface
+  -> successful update hides only the original icon; failure keeps it visible
+
 Monitor-local DesktopWindowSnapshot[]
   -> TaskbarWindowGrouper by process name
   -> one Dock icon + numeric window-count badge per group

@@ -41,6 +41,8 @@ public sealed class DockItemViewModel(
 
     public ImageSource? Icon => _icon;
 
+    public ApplicationIconSnapshot? IconSnapshot => _iconSnapshot;
+
     public Visibility IconVisibility =>
         Icon is null ? Visibility.Collapsed : Visibility.Visible;
 
