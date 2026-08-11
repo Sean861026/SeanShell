@@ -102,7 +102,8 @@ Enter to open, and Escape to close.
 After ranking completes, visible application results load their Windows-provided
 192px shortcut icons asynchronously. System and plugin commands, unavailable
 icons, and individual extraction failures retain crisp Fluent glyph fallbacks;
-icon work never delays the ranked text results.
+icon work never delays the ranked text results. Brand icons remain unplated on
+the result surface, while fallback glyphs retain the semantic accent tile.
 
 The shortcut uses the supported `RegisterHotKey` API. It does not install a
 keyboard hook or intercept input sent to games. The dashboard can switch between
