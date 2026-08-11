@@ -4,7 +4,7 @@ using SeanShell.Core;
 
 namespace SeanShell.Windows;
 
-internal sealed class NativeApplicationIconReader
+public sealed class NativeApplicationIconReader
 {
     private const int TargetIconSize = ApplicationIconSnapshot.PreferredDimension;
     private const int GclpHicon = -14;

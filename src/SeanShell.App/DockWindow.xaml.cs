@@ -32,6 +32,9 @@ public sealed partial class DockWindow : Window
         "\uE85A", "\uE85B", "\uE85C", "\uE85D", "\uE85E", "\uE85F",
         "\uE860", "\uE861", "\uE862", "\uE863", "\uE83E",
     ];
+    private static readonly Lazy<ApplicationIconSnapshot?> LauncherMagnifierIcon =
+        new(() => new NativeApplicationIconReader().ReadFileIcon(
+            Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico")));
     private const int DockHeight = 104;
     private const int PeekWidth = 180;
     private const int PeekHeight = 12;
@@ -76,9 +79,12 @@ public sealed partial class DockWindow : Window
     private IReadOnlyList<string> _windowGroupOrder = [];
     private DockBounds? _reservedArea;
     private WindowPreviewWindow? _previewWindow;
+    private LayeredDockIconWindow? _iconMagnifierWindow;
     private ScrollViewer? _windowListScrollViewer;
     private DockItemViewModel? _pendingPreviewItem;
     private FrameworkElement? _pendingPreviewAnchor;
+    private FrameworkElement? _magnifiedElement;
+    private IReadOnlyList<FrameworkElement> _magnifiedIconVisuals = [];
 
     public DockWindow(
         DesktopWindowService windowService,
@@ -251,6 +257,11 @@ public sealed partial class DockWindow : Window
     public void SetReducedEffects(bool enabled)
     {
         _reducedEffects = enabled;
+        if (enabled)
+        {
+            DismissDockMagnifier();
+        }
+
         SystemBackdrop = enabled
             ? null
             : new DesktopAcrylicBackdrop();
@@ -352,6 +363,9 @@ public sealed partial class DockWindow : Window
         _previewDismissTimer.Stop();
         _previewWindow?.Shutdown();
         _previewWindow = null;
+        DismissDockMagnifier();
+        _iconMagnifierWindow?.Dispose();
+        _iconMagnifierWindow = null;
         if (_windowListScrollViewer is not null)
         {
             _windowListScrollViewer.ViewChanged -= OnWindowListViewChanged;
@@ -379,6 +393,7 @@ public sealed partial class DockWindow : Window
         if (collapsed)
         {
             DismissWindowPreview();
+            DismissDockMagnifier();
         }
 
         _collapsed = collapsed;
@@ -460,6 +475,7 @@ public sealed partial class DockWindow : Window
 
         _monitorWindows = windows;
         DismissWindowPreview();
+        DismissDockMagnifier();
         RefreshWindowItems();
         DockCountText.Text = windows.Count == 1 ? "1 window" : $"{windows.Count} windows";
         EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
@@ -786,6 +802,7 @@ public sealed partial class DockWindow : Window
             ResetDockNeighborMotion();
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
             ApplyDockNeighborMotion(element);
+            ShowDockMagnifier(element);
             if (element.DataContext is DockItemViewModel item)
             {
                 ScheduleWindowPreview(item, element);
@@ -799,6 +816,11 @@ public sealed partial class DockWindow : Window
     {
         if (sender is FrameworkElement element)
         {
+            if (ReferenceEquals(element, _magnifiedElement))
+            {
+                DismissDockMagnifier();
+            }
+
             ResetDockNeighborMotion();
             ApplyDockItemMotion(element, isPointerOver: false, isPressed: false);
             if (element.DataContext is DockItemViewModel)
@@ -915,6 +937,12 @@ public sealed partial class DockWindow : Window
         if (properties.IsLeftButtonPressed)
         {
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: true);
+            if (ReferenceEquals(element, _magnifiedElement))
+            {
+                _iconMagnifierWindow?.SetPressed(
+                    pressed: true,
+                    DockRoot.XamlRoot?.RasterizationScale ?? 1);
+            }
         }
     }
 
@@ -984,6 +1012,112 @@ public sealed partial class DockWindow : Window
         if (sender is FrameworkElement element)
         {
             ApplyDockItemMotion(element, isPointerOver: true, isPressed: false);
+            if (ReferenceEquals(element, _magnifiedElement))
+            {
+                _iconMagnifierWindow?.SetPressed(
+                    pressed: false,
+                    DockRoot.XamlRoot?.RasterizationScale ?? 1);
+            }
+        }
+    }
+
+    private void ShowDockMagnifier(FrameworkElement element)
+    {
+        if (_reducedEffects || _collapsed)
+        {
+            return;
+        }
+
+        ApplicationIconSnapshot? snapshot;
+        IReadOnlyList<FrameworkElement> iconVisuals;
+        if (ReferenceEquals(element, LauncherItem))
+        {
+            snapshot = LauncherMagnifierIcon.Value;
+            iconVisuals = [LauncherButton, LauncherIcon];
+        }
+        else if (element.DataContext is PinnedDockItemViewModel pinnedItem)
+        {
+            snapshot = pinnedItem.Icon is null ? null : pinnedItem.Command.Icon;
+            iconVisuals = FindIconVisuals(element);
+        }
+        else if (element.DataContext is DockItemViewModel dockItem)
+        {
+            snapshot = dockItem.Icon is null ? null : dockItem.IconSnapshot;
+            iconVisuals = FindIconVisuals(element);
+        }
+        else
+        {
+            return;
+        }
+
+        if (snapshot is null || iconVisuals.Count == 0)
+        {
+            return;
+        }
+
+        DismissDockMagnifier();
+        var point = element
+            .TransformToVisual(DockRoot)
+            .TransformPoint(new Point(0, 0));
+        var scale = DockRoot.XamlRoot?.RasterizationScale ?? 1;
+        var anchorCenterX = AppWindow.Position.X + (int)Math.Round(
+            (point.X + (element.ActualWidth / 2)) * scale);
+        var anchorBottomY = AppWindow.Position.Y + (int)Math.Round(
+            (point.Y + element.ActualHeight) * scale);
+        _iconMagnifierWindow ??= new LayeredDockIconWindow();
+        if (!_iconMagnifierWindow.Show(
+            snapshot,
+            anchorCenterX,
+            anchorBottomY,
+            _monitor,
+            scale))
+        {
+            return;
+        }
+
+        foreach (var iconVisual in iconVisuals)
+        {
+            iconVisual.Opacity = 0;
+        }
+
+        _magnifiedElement = element;
+        _magnifiedIconVisuals = iconVisuals;
+    }
+
+    private void DismissDockMagnifier()
+    {
+        foreach (var iconVisual in _magnifiedIconVisuals)
+        {
+            iconVisual.Opacity = 1;
+        }
+
+        _magnifiedElement = null;
+        _magnifiedIconVisuals = [];
+        _iconMagnifierWindow?.Dismiss();
+    }
+
+    private static IReadOnlyList<FrameworkElement> FindIconVisuals(
+        DependencyObject root)
+    {
+        var icons = new List<FrameworkElement>();
+        CollectIconVisuals(root, icons);
+        return icons;
+    }
+
+    private static void CollectIconVisuals(
+        DependencyObject parent,
+        ICollection<FrameworkElement> icons)
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(parent);
+        for (var index = 0; index < childCount; index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is Image image)
+            {
+                icons.Add(image);
+            }
+
+            CollectIconVisuals(child, icons);
         }
     }
 
@@ -1021,6 +1155,11 @@ public sealed partial class DockWindow : Window
     {
         if (sender is FrameworkElement element)
         {
+            if (ReferenceEquals(element, _magnifiedElement))
+            {
+                DismissDockMagnifier();
+            }
+
             _dockMotionItems.Remove(element);
             _activeDockNeighborItems.Remove(element);
         }
@@ -2531,6 +2670,7 @@ public sealed partial class DockWindow : Window
         {
             _autoHideTimer.Stop();
             DismissWindowPreview();
+            DismissDockMagnifier();
             AppWindow.Hide();
             return;
         }
@@ -2547,6 +2687,7 @@ public sealed partial class DockWindow : Window
 
         args.Cancel = true;
         DismissWindowPreview();
+        DismissDockMagnifier();
         AppWindow.Hide();
     }
 }

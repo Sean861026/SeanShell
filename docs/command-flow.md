@@ -396,6 +396,13 @@ User opens an entry context menu
   -> execute the original cached shortcut command
 
 User hovers a running application entry
+  -> cached 192px BGRA icon: calculate a monitor-bounded overlay rectangle
+  -> bilinear-scale into a premultiplied per-pixel-alpha DIB
+  -> UpdateLayeredWindow on a click-through, non-activating top-level HWND
+  -> successful native update: hide only the original in-Dock icon visual
+  -> pointer press/release: redraw a bounded 0.92/1.0 icon scale
+  -> pointer exit, collapse, Gaming Mode, or shutdown: restore original and hide overlay
+  -> missing icon or native update failure: keep the in-Dock magnification path
   -> wait 450 ms to reject pointer transit
   -> calculate a bounded one-to-six-window preview grid
   -> create DWM thumbnail relationships into SeanShell's preview HWND

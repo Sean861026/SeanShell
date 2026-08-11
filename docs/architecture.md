@@ -135,6 +135,14 @@ propagates the existing reduced-effects policy to every Dock; Windows reduced
 motion, high contrast, and Gaming Mode remove Acrylic, transitions, scale, and
 translation while retaining native focus and pointer states.
 
+Application icons with a cached `ApplicationIconSnapshot` use a separate native
+`LayeredDockIconWindow` during hover. It bilinear-downsamples the premultiplied
+192px BGRA buffer into a `WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE`
+popup and updates it through `UpdateLayeredWindow`, allowing true per-pixel alpha
+above the Acrylic HWND. The original icon is hidden only after the native update
+succeeds and is restored on exit, collapse, display rebuild, Gaming Mode, or
+shutdown. Fluent fallback glyphs retain the bounded in-Dock animation.
+
 Normal Dock creation and display-topology rebuilds use non-activating
 `AppWindow.Show(false)` calls, so an auto-hiding Dock cannot replace the
 Dashboard or the user's current application as foreground merely by appearing.
