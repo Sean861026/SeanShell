@@ -208,6 +208,11 @@ enters the authenticated protocol frame or reaches `PluginHost`.
 ## Dock and dashboard
 
 ```text
+Launcher XAML design size + current HWND DPI + monitor work area
+  -> LauncherWindowPlacement
+  -> bounded physical-pixel rectangle
+  -> AppWindow.MoveAndResize
+
 EnumWindows + DWM visibility
   -> public IVirtualDesktopManager current-desktop membership
   -> DesktopWindowSnapshot[]

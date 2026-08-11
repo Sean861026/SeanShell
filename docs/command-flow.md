@@ -71,7 +71,9 @@ can be connected.
 ```text
 User opens launcher
   -> Alt+Space is delivered by RegisterHotKey (or dashboard button)
-  -> launcher window centers on the active display
+  -> read the current monitor work area and effective DPI
+  -> convert the 760x620 effective design size to physical AppWindow pixels
+  -> constrain with a 24-DIP margin and center in the upper third
   -> search input receives keyboard focus
   -> query is normalized
   -> built-in providers run in parallel

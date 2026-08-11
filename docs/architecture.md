@@ -84,6 +84,10 @@ cache only after the search service returns its bounded ranked list. At most the
 eight visible results request native extraction. Each `LauncherResultViewModel`
 starts with a Fluent fallback, then swaps to the shared `SoftwareBitmapSource` on
 the UI thread without delaying query ranking or first usable presentation.
+`LauncherWindowPlacement` converts the command palette's effective-pixel design
+size through `DisplayScaleLayout` before calling physical-pixel `AppWindow`
+placement APIs. It centers horizontally, uses an upper-third vertical bias, and
+constrains both axes to the monitor work area with a scale-aware 24-DIP margin.
 `PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
 Boundary commands are disabled before dispatch, and a successful move atomically
 persists the ordered ID list before refreshing every Dock.
