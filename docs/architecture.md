@@ -198,6 +198,13 @@ preview uses the same validated restore-and-activate boundary as the Dock, while
 the existing native window picker and context menu remain the keyboard
 alternatives to hover-only discovery.
 
+Preview headers use the cached native application icon when available and a
+theme-aware Fluent window glyph otherwise. Title, process identity, and explicit
+Running or Minimized text remain outside the DWM destination rectangle, so the
+visual hierarchy does not cover live pixels or rely on color alone. Card strokes,
+surfaces, and accent tiles use WinUI theme resources for dark, light, and high-
+contrast compatibility.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses

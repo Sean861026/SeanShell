@@ -152,11 +152,14 @@ public sealed partial class WindowPreviewWindow : Window
         {
             Background = Application.Current.Resources[
                 "CardBackgroundFillColorDefaultBrush"] as Brush,
+            BorderBrush = Application.Current.Resources[
+                "CardStrokeColorDefaultBrush"] as Brush,
+            BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
         };
         card.RowDefinitions.Add(new RowDefinition
         {
-            Height = new GridLength(48),
+            Height = new GridLength(56),
         });
         card.RowDefinitions.Add(new RowDefinition
         {
@@ -165,9 +168,13 @@ public sealed partial class WindowPreviewWindow : Window
 
         var header = new Grid
         {
-            Padding = new Thickness(12, 2, 2, 2),
-            ColumnSpacing = 8,
+            Padding = new Thickness(10, 4, 4, 4),
+            ColumnSpacing = 10,
         };
+        header.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = GridLength.Auto,
+        });
         header.ColumnDefinitions.Add(new ColumnDefinition
         {
             Width = new GridLength(1, GridUnitType.Star),
@@ -176,14 +183,69 @@ public sealed partial class WindowPreviewWindow : Window
         {
             Width = GridLength.Auto,
         });
+        var iconImage = new Image
+        {
+            Width = 24,
+            Height = 24,
+            Stretch = Stretch.Uniform,
+            Visibility = Visibility.Collapsed,
+        };
+        var iconFallback = new FontIcon
+        {
+            FontFamily = new FontFamily("Segoe Fluent Icons"),
+            FontSize = 16,
+            Glyph = "\uE737",
+        };
+        var iconTile = new Border
+        {
+            Width = 36,
+            Height = 36,
+            Background = Application.Current.Resources[
+                "AccentFillColorSecondaryBrush"] as Brush,
+            CornerRadius = new CornerRadius(10),
+            Child = new Grid
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    iconFallback,
+                    iconImage,
+                },
+            },
+        };
+        Grid.SetColumn(iconTile, 0);
+        header.Children.Add(iconTile);
+        _ = LoadPreviewIconAsync(iconImage, iconFallback, window.Icon);
+
         var title = new TextBlock
         {
             Text = window.Title,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         };
-        Grid.SetColumn(title, 0);
-        header.Children.Add(title);
+        var status = new TextBlock
+        {
+            Text = window.IsMinimized
+                ? $"{window.ProcessName} · Minimized"
+                : $"{window.ProcessName} · Running",
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            FontSize = 12,
+            Foreground = Application.Current.Resources[
+                "TextFillColorSecondaryBrush"] as Brush,
+        };
+        var identity = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            Spacing = 1,
+            Children =
+            {
+                title,
+                status,
+            },
+        };
+        Grid.SetColumn(identity, 1);
+        header.Children.Add(identity);
 
         var closeButton = new Button
         {
@@ -204,7 +266,7 @@ public sealed partial class WindowPreviewWindow : Window
             _ = _windowService.RequestClose(window.Handle);
             Dismiss();
         };
-        Grid.SetColumn(closeButton, 1);
+        Grid.SetColumn(closeButton, 2);
         header.Children.Add(closeButton);
         Grid.SetRow(header, 0);
         card.Children.Add(header);
@@ -292,6 +354,22 @@ public sealed partial class WindowPreviewWindow : Window
             loadingIndicator,
             unavailableIndicator,
             helpText));
+    }
+
+    private static async Task LoadPreviewIconAsync(
+        Image image,
+        FontIcon fallback,
+        ApplicationIconSnapshot? snapshot)
+    {
+        var source = await ApplicationIconSourceCache.GetAsync(snapshot);
+        if (source is null)
+        {
+            return;
+        }
+
+        image.Source = source;
+        image.Visibility = Visibility.Visible;
+        fallback.Visibility = Visibility.Collapsed;
     }
 
     private void UpdateThumbnails()
