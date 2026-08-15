@@ -186,6 +186,7 @@
 - [x] Live DWM hover previews with per-window switch and graceful-close actions
 - [x] Theme-aware preview cards with application identity and explicit window state
 - [x] Unplated native preview icons with accent-tile Fluent fallbacks
+- [x] Layer-on-Acrylic preview shell with layout-stable accent hover feedback
 - [x] Layout-aware DWM previews that fill each available aspect-fit surface
 - [x] Bounded post-layout recovery for transient DWM preview registration failures
 - [x] Layout-stable loading and final-failure states for live window previews

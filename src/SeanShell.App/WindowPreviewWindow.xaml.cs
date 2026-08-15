@@ -148,15 +148,20 @@ public sealed partial class WindowPreviewWindow : Window
         int index,
         int columns)
     {
+        var defaultCardStroke = Application.Current.Resources[
+            "CardStrokeColorDefaultBrush"] as Brush;
+        var hoverCardStroke = Application.Current.Resources[
+            "AccentFillColorDefaultBrush"] as Brush;
         var card = new Grid
         {
             Background = Application.Current.Resources[
                 "CardBackgroundFillColorDefaultBrush"] as Brush,
-            BorderBrush = Application.Current.Resources[
-                "CardStrokeColorDefaultBrush"] as Brush,
+            BorderBrush = defaultCardStroke,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
         };
+        card.PointerEntered += (_, _) => card.BorderBrush = hoverCardStroke;
+        card.PointerExited += (_, _) => card.BorderBrush = defaultCardStroke;
         card.RowDefinitions.Add(new RowDefinition
         {
             Height = new GridLength(56),
@@ -258,6 +263,10 @@ public sealed partial class WindowPreviewWindow : Window
             Width = 44,
             Height = 44,
             Padding = new Thickness(0),
+            Background = new SolidColorBrush(
+                Microsoft.UI.Colors.Transparent),
+            BorderThickness = new Thickness(0),
+            CornerRadius = new CornerRadius(8),
             Content = new FontIcon
             {
                 FontFamily = new FontFamily("Segoe Fluent Icons"),
