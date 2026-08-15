@@ -602,3 +602,16 @@ transient desired size before its first arrange pass, unresolved thumbnails use
 a 32 ms bounded retry policy and stop after eight attempts. Successful previews
 stop immediately, and unsupported source windows never create a background
 polling loop.
+
+Preview geometry uses the target monitor's native DPI scale retained by its Dock,
+not the Dock `XamlRoot` scale. A packaged non-activating Dock can transiently
+report an identity XAML scale on a high-DPI monitor; using that value would size
+the native preview window in unscaled physical pixels and leave every thumbnail
+surface below its safe layout threshold. The XAML value remains only a fallback
+when the monitor scale is invalid.
+
+The preview host is shown without activation before its atomic move-and-resize.
+This lets WinUI publish the native size through `XamlRoot` without a synchronous
+layout re-entry. Each thumbnail surface explicitly stretches across its card;
+content alignment alone would otherwise collapse the surface to the loading or
+failure indicator and prevent DWM from receiving a usable destination.
