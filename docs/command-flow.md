@@ -71,6 +71,8 @@ can be connected.
 ```text
 User opens launcher
   -> Alt+Space is delivered by RegisterHotKey (or dashboard button)
+  -> first request only: create the Launcher XAML window and apply current pin/effects state
+  -> later requests reuse the hidden Launcher window
   -> Dock request selects that Dock's monitor; other requests select the foreground monitor
   -> fall back to the primary, then first available monitor
   -> read the selected monitor work area and effective DPI

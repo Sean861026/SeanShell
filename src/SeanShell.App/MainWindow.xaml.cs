@@ -33,7 +33,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueueTimer _clockRefreshTimer;
     private readonly DispatcherQueueTimer _taskbarRefreshTimer;
     private readonly InstalledApplicationProvider _installedApplications;
-    private readonly LauncherWindow _launcherWindow;
+    private LauncherWindow? _launcherWindow;
     private readonly GamingModeManager _gamingMode;
     private readonly GamingDetectionPerformanceMonitor _gamingDetectionPerformance;
     private readonly GamingSessionRecorder _gamingSessions;
@@ -96,13 +96,6 @@ public sealed partial class MainWindow : Window
         _displayMonitorService = app.Displays;
         _installedApplications = app.InstalledApplications;
         _shellState = app.ShellState;
-        _launcherWindow = new LauncherWindow(
-            app.LauncherSearch,
-            app.InstalledApplications,
-            app.LauncherPerformance);
-        _launcherWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
-        _launcherWindow.SetPinnedApplicationIds(
-            PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds));
         _showDesktop = new ShowDesktopSession(
             new WindowsShellDesktopController());
         _taskbarReplacement = new TaskbarReplacementSession(
@@ -660,7 +653,7 @@ public sealed partial class MainWindow : Window
         WindowRoot.Background = enabled
             ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
             : null;
-        _launcherWindow.SetReducedEffects(enabled);
+        _launcherWindow?.SetReducedEffects(enabled);
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.SetReducedEffects(enabled);
@@ -1204,7 +1197,7 @@ public sealed partial class MainWindow : Window
                 "The pinned application preference could not be saved.");
         }
 
-        _launcherWindow.SetPinnedApplicationIds(applicationIds);
+        _launcherWindow?.SetPinnedApplicationIds(applicationIds);
         await RefreshPinnedApplicationsAsync().ConfigureAwait(true);
         if (RootFrame.Content is MainPage mainPage)
         {
@@ -1271,7 +1264,7 @@ public sealed partial class MainWindow : Window
                 "The pinned application order could not be saved.");
         }
 
-        _launcherWindow.SetPinnedApplicationIds(reordered);
+        _launcherWindow?.SetPinnedApplicationIds(reordered);
         await RefreshPinnedApplicationsAsync().ConfigureAwait(true);
         return true;
     }
@@ -1304,7 +1297,7 @@ public sealed partial class MainWindow : Window
                 "The dragged pinned application order could not be saved.");
         }
 
-        _launcherWindow.SetPinnedApplicationIds(reordered);
+        _launcherWindow?.SetPinnedApplicationIds(reordered);
         await RefreshPinnedApplicationsAsync().ConfigureAwait(true);
         return true;
     }
@@ -1605,7 +1598,29 @@ public sealed partial class MainWindow : Window
         var targetMonitor = targetIndex >= 0 && targetIndex < _monitors.Count
             ? _monitors[targetIndex]
             : null;
-        _ = _launcherWindow.ShowLauncherAsync(targetMonitor);
+        _ = GetOrCreateLauncherWindow().ShowLauncherAsync(targetMonitor);
+    }
+
+    private LauncherWindow GetOrCreateLauncherWindow()
+    {
+        if (_launcherWindow is not null)
+        {
+            return _launcherWindow;
+        }
+
+        var app = (App)Application.Current;
+        var launcher = new LauncherWindow(
+            app.LauncherSearch,
+            app.InstalledApplications,
+            app.LauncherPerformance);
+        launcher.PinChangedRequested += OnPinnedApplicationChangedAsync;
+        launcher.SetPinnedApplicationIds(
+            PinnedApplicationIdList.Parse(_settings.PinnedApplicationIds));
+        launcher.SetReducedEffects(
+            _shellState.Current.Mode == ShellMode.Gaming ||
+            _systemAccessibility.ReducedEffects);
+        _launcherWindow = launcher;
+        return launcher;
     }
 
     private void OnDashboardRequested(object? sender, EventArgs e)
@@ -1690,8 +1705,12 @@ public sealed partial class MainWindow : Window
             dockWindow.Shutdown();
         }
 
-        _launcherWindow.Shutdown();
-        _launcherWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
+        if (_launcherWindow is not null)
+        {
+            _launcherWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
+            _launcherWindow.Shutdown();
+            _launcherWindow = null;
+        }
         await _pluginHost.DisposeAsync().ConfigureAwait(true);
         _taskbarReplacement.Dispose();
     }
