@@ -32,6 +32,7 @@
 - [x] Cached recent repositories and Git status Launcher provider
 - [x] Cached WSL distribution Launcher provider
 - [x] Cached Docker container provider with offline-Engine handling
+- [x] Defer the hidden Launcher XAML window until its first user request
 - Target: idle CPU below 0.5% and working set below 200 MB
 - Current local Release sample: 0.31% average CPU and 155 MB working set over
   15 seconds with the dashboard and dock visible; longer hardware coverage remains.
@@ -43,6 +44,11 @@
   built-in plugins: 0.261% average CPU, 212.2 MB average working set, and
   166.5 MB average private memory over 15 seconds. Per-monitor enumeration tasks
   are removed, but the WinUI surface working-set target remains open.
+- Lazy-Launcher Release sample on the primary development machine: before the
+  first Launcher request, 254.9 MB average working set and 194.0 MB private
+  memory over ten half-second samples, down from 277.4 MB and 208.2 MB in the
+  immediately preceding eager-window build. After first use, the reusable
+  Launcher settles at 273.4 MB working set and 202.8 MB private memory.
 
 ## M3: Gaming compatibility
 
