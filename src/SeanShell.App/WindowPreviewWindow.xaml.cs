@@ -221,11 +221,27 @@ public sealed partial class WindowPreviewWindow : Window
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
-        var fallback = new StackPanel
+        var fallback = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            IsHitTestVisible = false,
+        };
+        var loadingIndicator = new FontIcon
+        {
+            FontFamily = new FontFamily("Segoe Fluent Icons"),
+            FontSize = 22,
+            Foreground = Application.Current.Resources[
+                "TextFillColorSecondaryBrush"] as Brush,
+            Glyph = "\uE895",
+        };
+        fallback.Children.Add(loadingIndicator);
+        var unavailableIndicator = new StackPanel
         {
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Spacing = 6,
+            Visibility = Visibility.Collapsed,
             Children =
             {
                 new FontIcon
@@ -242,13 +258,15 @@ public sealed partial class WindowPreviewWindow : Window
                 },
             },
         };
+        fallback.Children.Add(unavailableIndicator);
         surface.Content = fallback;
         AutomationProperties.SetName(
             surface,
             $"Switch to {window.Title}, {window.ProcessName}");
-        AutomationProperties.SetHelpText(
-            surface,
-            window.IsMinimized ? "Window is minimized." : "Window is running.");
+        var helpText = window.IsMinimized
+            ? "Window is minimized."
+            : "Window is running.";
+        AutomationProperties.SetHelpText(surface, helpText);
         surface.Click += (_, _) =>
         {
             _ = _windowService.RestoreAndActivate(window.Handle);
@@ -267,7 +285,13 @@ public sealed partial class WindowPreviewWindow : Window
         Grid.SetColumn(card, index % columns);
         Grid.SetRow(card, index / columns);
         PreviewGrid.Children.Add(card);
-        _entries.Add(new PreviewEntry(window.Handle, surface, fallback));
+        _entries.Add(new PreviewEntry(
+            window.Handle,
+            surface,
+            fallback,
+            loadingIndicator,
+            unavailableIndicator,
+            helpText));
     }
 
     private void UpdateThumbnails()
@@ -284,7 +308,6 @@ public sealed partial class WindowPreviewWindow : Window
         _thumbnailAttempts++;
         foreach (var entry in _entries)
         {
-            entry.Fallback.Visibility = Visibility.Visible;
             // A newly shown WinUI window can report the button's desired size
             // before its first arrange pass. Waiting here prevents DWM from
             // permanently receiving a tiny fallback-sized destination.
@@ -323,12 +346,19 @@ public sealed partial class WindowPreviewWindow : Window
             }
 
             entry.Thumbnail = thumbnail;
-            entry.Fallback.Visibility = Visibility.Collapsed;
         }
 
-        if (WindowPreviewRetryPolicy.ShouldRetry(
-                hasUnresolvedThumbnail,
-                _thumbnailAttempts))
+        var retryScheduled = WindowPreviewRetryPolicy.ShouldRetry(
+            hasUnresolvedThumbnail,
+            _thumbnailAttempts);
+        foreach (var entry in _entries)
+        {
+            entry.ApplyFallback(WindowPreviewFallbackPresentation.Resolve(
+                thumbnailAvailable: entry.Thumbnail is not null,
+                retryScheduled));
+        }
+
+        if (retryScheduled)
         {
             _thumbnailRetryTimer.Stop();
             _thumbnailRetryTimer.Start();
@@ -428,7 +458,10 @@ public sealed partial class WindowPreviewWindow : Window
     private sealed class PreviewEntry(
         nint sourceWindow,
         FrameworkElement surface,
-        FrameworkElement fallback)
+        FrameworkElement fallback,
+        FrameworkElement loadingIndicator,
+        FrameworkElement unavailableIndicator,
+        string helpText)
     {
         public nint SourceWindow { get; } = sourceWindow;
 
@@ -436,6 +469,34 @@ public sealed partial class WindowPreviewWindow : Window
 
         public FrameworkElement Fallback { get; } = fallback;
 
+        public FrameworkElement LoadingIndicator { get; } = loadingIndicator;
+
+        public FrameworkElement UnavailableIndicator { get; } = unavailableIndicator;
+
+        public string HelpText { get; } = helpText;
+
         public DwmThumbnail? Thumbnail { get; set; }
+
+        public void ApplyFallback(WindowPreviewFallbackState state)
+        {
+            Fallback.Visibility = state == WindowPreviewFallbackState.Hidden
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            LoadingIndicator.Visibility = state == WindowPreviewFallbackState.Loading
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            UnavailableIndicator.Visibility = state == WindowPreviewFallbackState.Unavailable
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            var stateDescription = state switch
+            {
+                WindowPreviewFallbackState.Loading => " Live preview is loading.",
+                WindowPreviewFallbackState.Unavailable =>
+                    " Live preview is unavailable; select to switch to this window.",
+                _ => string.Empty,
+            };
+            AutomationProperties.SetHelpText(Surface, HelpText + stateDescription);
+        }
     }
 }
