@@ -214,6 +214,13 @@ system accent brush; it does not resize, scale, or cover the thumbnail
 destination. Close actions use transparent native button chrome and preserve the
 44-by-44 effective target and system focus visuals.
 
+`WindowPreviewCardPresentation` maps every snapshot to one explicit visual state.
+Minimized takes precedence over stale foreground metadata, the foreground window
+uses an Active label and persistent accent stroke, and remaining windows use the
+neutral Running state. Hover temporarily promotes any neutral stroke to accent
+and restores the resolved state on exit, so the active indication never depends
+on hover and never uses color without text.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses
