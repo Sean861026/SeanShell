@@ -96,6 +96,10 @@ selected monitor's work area and DPI rather than the Launcher's previous HWND DP
 provider caches without constructing the hidden Launcher XAML tree. The first
 Dock, Dashboard, or global-hotkey request creates the window, applies current
 pin and reduced-effects state, and then reuses it for the rest of the session.
+When a reused Launcher clears its previous query, it suppresses the TextBox
+change callback and performs exactly one explicit empty-query refresh. This
+avoids duplicate provider and plugin calls without clearing or recreating the
+hidden WinUI visual tree.
 `PinnedApplicationOrder` performs only an adjacent, case-insensitive ID swap.
 Boundary commands are disabled before dispatch, and a successful move atomically
 persists the ordered ID list before refreshing every Dock.
