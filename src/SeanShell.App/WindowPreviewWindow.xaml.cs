@@ -148,10 +148,16 @@ public sealed partial class WindowPreviewWindow : Window
         int index,
         int columns)
     {
-        var defaultCardStroke = Application.Current.Resources[
+        var neutralCardStroke = Application.Current.Resources[
             "CardStrokeColorDefaultBrush"] as Brush;
-        var hoverCardStroke = Application.Current.Resources[
+        var accentCardStroke = Application.Current.Resources[
             "AccentFillColorDefaultBrush"] as Brush;
+        var presentation = WindowPreviewCardPresentation.Resolve(
+            window.IsMinimized,
+            window.IsForeground);
+        var defaultCardStroke = presentation.UsesAccentStroke
+            ? accentCardStroke
+            : neutralCardStroke;
         var card = new Grid
         {
             Background = Application.Current.Resources[
@@ -160,7 +166,7 @@ public sealed partial class WindowPreviewWindow : Window
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
         };
-        card.PointerEntered += (_, _) => card.BorderBrush = hoverCardStroke;
+        card.PointerEntered += (_, _) => card.BorderBrush = accentCardStroke;
         card.PointerExited += (_, _) => card.BorderBrush = defaultCardStroke;
         card.RowDefinitions.Add(new RowDefinition
         {
@@ -237,9 +243,7 @@ public sealed partial class WindowPreviewWindow : Window
         };
         var status = new TextBlock
         {
-            Text = window.IsMinimized
-                ? $"{window.ProcessName} · Minimized"
-                : $"{window.ProcessName} · Running",
+            Text = $"{window.ProcessName} · {presentation.StatusLabel}",
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontSize = 12,
             Foreground = Application.Current.Resources[
