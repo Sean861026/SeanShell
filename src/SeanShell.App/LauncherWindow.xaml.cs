@@ -24,6 +24,7 @@ public sealed partial class LauncherWindow : Window
         new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _searchCancellation;
     private bool _allowClose;
+    private bool _suppressSearchRefresh;
 
     public LauncherWindow(
         LauncherSearchService searchService,
@@ -80,7 +81,16 @@ public sealed partial class LauncherWindow : Window
         AppWindow.Show();
         Activate();
 
-        SearchBox.Text = string.Empty;
+        _suppressSearchRefresh = true;
+        try
+        {
+            SearchBox.Text = string.Empty;
+        }
+        finally
+        {
+            _suppressSearchRefresh = false;
+        }
+
         SearchBox.Focus(FocusState.Programmatic);
         SearchBox.SelectAll();
         await RefreshResultsAsync(string.Empty).ConfigureAwait(true);
@@ -170,6 +180,11 @@ public sealed partial class LauncherWindow : Window
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
     {
+        if (_suppressSearchRefresh)
+        {
+            return;
+        }
+
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
         _searchCancellation = new CancellationTokenSource();

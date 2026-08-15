@@ -33,6 +33,7 @@
 - [x] Cached WSL distribution Launcher provider
 - [x] Cached Docker container provider with offline-Engine handling
 - [x] Defer the hidden Launcher XAML window until its first user request
+- [x] Coalesce reused-Launcher reset into one provider refresh
 - Target: idle CPU below 0.5% and working set below 200 MB
 - Current local Release sample: 0.31% average CPU and 155 MB working set over
   15 seconds with the dashboard and dock visible; longer hardware coverage remains.
