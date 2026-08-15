@@ -16,7 +16,7 @@
         x:Name="PreviewRoot"
         Padding="10"
         AutomationProperties.Name="Open window previews"
-        Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+        Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
         BorderThickness="1"
         CornerRadius="18"

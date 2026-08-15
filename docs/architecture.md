@@ -207,6 +207,13 @@ visual hierarchy does not cover live pixels or rely on color alone. Card strokes
 surfaces, and fallback accent tiles use WinUI theme resources for dark, light, and high-
 contrast compatibility.
 
+The preview root uses the same Layer-on-Acrylic semantic material as Dock
+flyouts, while each content card retains an opaque-enough themed surface for DWM
+pixel legibility. Pointer hover changes only the one-pixel card stroke to the
+system accent brush; it does not resize, scale, or cover the thumbnail
+destination. Close actions use transparent native button chrome and preserve the
+44-by-44 effective target and system focus visuals.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses
