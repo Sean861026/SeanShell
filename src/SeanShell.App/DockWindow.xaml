@@ -379,17 +379,30 @@
                             Glyph="&#xE76C;" />
                     </Button>
 
-                    <StackPanel
+                    <Grid
                         x:Name="EmptyState"
                         Grid.ColumnSpan="3"
+                        Width="44"
+                        Height="44"
+                        AutomationProperties.Name="Loading open windows"
                         HorizontalAlignment="Center"
-                        Orientation="Horizontal"
-                        Spacing="{StaticResource SeanSpace8}"
                         VerticalAlignment="Center"
                         Visibility="Collapsed">
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
-                        <TextBlock x:Name="EmptyStateText" Text="Loading open windows…" />
-                    </StackPanel>
+                        <FontIcon
+                            x:Name="EmptyStateIcon"
+                            FontFamily="Segoe Fluent Icons"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="&#xE895;"
+                            IsHitTestVisible="False" />
+                        <ToolTipService.ToolTip>
+                            <ToolTip MaxWidth="360">
+                                <TextBlock
+                                    x:Name="EmptyStateToolTipText"
+                                    Text="Loading open windows"
+                                    TextWrapping="WrapWholeWords" />
+                            </ToolTip>
+                        </ToolTipService.ToolTip>
+                    </Grid>
                 </Grid>
 
                 <Border
