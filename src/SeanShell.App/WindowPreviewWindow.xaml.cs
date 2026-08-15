@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -18,7 +19,9 @@ public sealed partial class WindowPreviewWindow : Window
     private const long NoActivateStyle = 0x08000000L;
     private readonly DesktopWindowService _windowService;
     private readonly List<PreviewEntry> _entries = [];
+    private readonly DispatcherQueueTimer _thumbnailRetryTimer;
     private bool _allowClose;
+    private int _thumbnailAttempts;
     private bool _thumbnailUpdateQueued;
 
     public WindowPreviewWindow(DesktopWindowService windowService)
@@ -35,6 +38,10 @@ public sealed partial class WindowPreviewWindow : Window
         presenter.SetBorderAndTitleBar(false, false);
         AppWindow.SetPresenter(presenter);
         ConfigureNativeWindow();
+        _thumbnailRetryTimer = DispatcherQueue.CreateTimer();
+        _thumbnailRetryTimer.Interval = WindowPreviewRetryPolicy.Delay;
+        _thumbnailRetryTimer.IsRepeating = false;
+        _thumbnailRetryTimer.Tick += OnThumbnailRetryTimerTick;
         PreviewRoot.SizeChanged += OnPreviewRootSizeChanged;
         AppWindow.Closing += OnWindowClosing;
     }
@@ -90,6 +97,7 @@ public sealed partial class WindowPreviewWindow : Window
         AppWindow.Move(new PointInt32(x, y));
         AppWindow.Show(false);
         IsVisible = true;
+        _thumbnailAttempts = 0;
         PreviewRoot.UpdateLayout();
         QueueThumbnailUpdate();
     }
@@ -272,14 +280,18 @@ public sealed partial class WindowPreviewWindow : Window
 
         var destinationWindow = WinRT.Interop.WindowNative.GetWindowHandle(this);
         var scale = PreviewRoot.XamlRoot?.RasterizationScale ?? GetScale();
+        var hasUnresolvedThumbnail = false;
+        _thumbnailAttempts++;
         foreach (var entry in _entries)
         {
+            entry.Fallback.Visibility = Visibility.Visible;
             // A newly shown WinUI window can report the button's desired size
             // before its first arrange pass. Waiting here prevents DWM from
             // permanently receiving a tiny fallback-sized destination.
             if (entry.Surface.ActualWidth < WindowPreviewLayout.CardWidth / 2d ||
                 entry.Surface.ActualHeight < WindowPreviewLayout.CardHeight / 3d)
             {
+                hasUnresolvedThumbnail = true;
                 continue;
             }
 
@@ -291,6 +303,7 @@ public sealed partial class WindowPreviewWindow : Window
                     out var thumbnail) ||
                 thumbnail is null)
             {
+                hasUnresolvedThumbnail = true;
                 continue;
             }
 
@@ -305,11 +318,20 @@ public sealed partial class WindowPreviewWindow : Window
             if (!thumbnail.TryShow(destination))
             {
                 thumbnail.Dispose();
+                hasUnresolvedThumbnail = true;
                 continue;
             }
 
             entry.Thumbnail = thumbnail;
             entry.Fallback.Visibility = Visibility.Collapsed;
+        }
+
+        if (WindowPreviewRetryPolicy.ShouldRetry(
+                hasUnresolvedThumbnail,
+                _thumbnailAttempts))
+        {
+            _thumbnailRetryTimer.Stop();
+            _thumbnailRetryTimer.Start();
         }
     }
 
@@ -334,8 +356,18 @@ public sealed partial class WindowPreviewWindow : Window
         }
     }
 
+    private void OnThumbnailRetryTimerTick(
+        DispatcherQueueTimer sender,
+        object args)
+    {
+        sender.Stop();
+        QueueThumbnailUpdate();
+    }
+
     private void ClearEntries()
     {
+        _thumbnailRetryTimer.Stop();
+        _thumbnailAttempts = 0;
         foreach (var entry in _entries)
         {
             entry.Thumbnail?.Dispose();

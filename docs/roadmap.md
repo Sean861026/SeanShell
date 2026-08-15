@@ -178,6 +178,7 @@
 - [x] Group-wide minimize and non-activating restore actions
 - [x] Live DWM hover previews with per-window switch and graceful-close actions
 - [x] Layout-aware DWM previews that fill each available aspect-fit surface
+- [x] Bounded post-layout recovery for transient DWM preview registration failures
 - [x] Safe Open new instance action for explicitly matched running applications
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input
