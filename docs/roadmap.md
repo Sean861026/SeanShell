@@ -180,6 +180,8 @@
 - [x] Layout-aware DWM previews that fill each available aspect-fit surface
 - [x] Bounded post-layout recovery for transient DWM preview registration failures
 - [x] Layout-stable loading and final-failure states for live window previews
+- [x] Monitor-DPI-correct preview geometry when Dock XAML reports identity scale
+- [x] Full-card preview surfaces with non-activating, layout-safe window startup
 - [x] Safe Open new instance action for explicitly matched running applications
 - [x] Standard middle-click new-instance behavior with ambiguity-safe selection
 - [x] Native Show desktop / Restore windows toggle without simulated input

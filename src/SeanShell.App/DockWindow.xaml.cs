@@ -990,7 +990,9 @@ public sealed partial class DockWindow : Window
         var point = anchor
             .TransformToVisual(DockRoot)
             .TransformPoint(new global::Windows.Foundation.Point(0, 0));
-        var scale = DockRoot.XamlRoot?.RasterizationScale ?? 1;
+        var scale = WindowPreviewScaleResolver.Resolve(
+            _displayScaleFactor,
+            DockRoot.XamlRoot?.RasterizationScale);
         var anchorCenterX =
             AppWindow.Position.X +
             (int)Math.Round((point.X + (anchor.ActualWidth / 2)) * scale);

@@ -93,12 +93,10 @@ public sealed partial class WindowPreviewWindow : Window
             monitor.WorkAreaY,
             maximumY);
 
-        AppWindow.Resize(new SizeInt32(pixelWidth, pixelHeight));
-        AppWindow.Move(new PointInt32(x, y));
-        AppWindow.Show(false);
         IsVisible = true;
         _thumbnailAttempts = 0;
-        PreviewRoot.UpdateLayout();
+        AppWindow.Show(false);
+        AppWindow.MoveAndResize(new RectInt32(x, y, pixelWidth, pixelHeight));
         QueueThumbnailUpdate();
     }
 
@@ -218,6 +216,8 @@ public sealed partial class WindowPreviewWindow : Window
             Background = new SolidColorBrush(
                 Microsoft.UI.Colors.Transparent),
             BorderThickness = new Thickness(0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
