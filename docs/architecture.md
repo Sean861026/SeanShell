@@ -595,3 +595,10 @@ launch. Single-project MSIX permits one application executable, so the signed Ap
 binary also hosts the broker mode while its runtime remains UI-independent.
 Production certificate management, release signing, update channels, and
 full-shell policy are deferred until the MVP has measured compatibility data.
+
+Window previews register native DWM thumbnails only after their WinUI surfaces
+have completed layout. Because a newly shown non-activating window can report a
+transient desired size before its first arrange pass, unresolved thumbnails use
+a 32 ms bounded retry policy and stop after eight attempts. Successful previews
+stop immediately, and unsupported source windows never create a background
+polling loop.
