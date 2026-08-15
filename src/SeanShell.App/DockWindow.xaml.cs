@@ -111,6 +111,7 @@ public sealed partial class DockWindow : Window
         _displayScaleFactor = DisplayDpiService.GetScaleFactor(_monitor.Handle);
         _expandedDockWidth = CalculateExpandedWidth(0, 0);
         ApplyDisplayDensity(density);
+        ApplyEmptyState(DockEmptyStatePresentation.Loading());
         ExpandedDock.Loaded += OnExpandedDockLoaded;
         PinnedList.ItemsSource = PinnedItems;
         WindowList.ItemsSource = Items;
@@ -584,7 +585,7 @@ public sealed partial class DockWindow : Window
         DismissDockMagnifier();
         RefreshWindowItems();
         DockCountText.Text = windows.Count == 1 ? "1 window" : $"{windows.Count} windows";
-        EmptyStateText.Text = $"No open application windows on {_monitor.DeviceName}";
+        ApplyEmptyState(DockEmptyStatePresentation.NoWindows(_monitor.DeviceName));
         EmptyState.Visibility = Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         RefreshPinnedItems();
     }
@@ -772,9 +773,21 @@ public sealed partial class DockWindow : Window
         Items.Clear();
         WindowList.SelectedItem = null;
         DockCountText.Text = "Unavailable";
-        EmptyStateText.Text = $"Dock unavailable: {message}";
+        ApplyEmptyState(DockEmptyStatePresentation.Unavailable(message));
         EmptyState.Visibility = Visibility.Visible;
         RefreshPinnedItems();
+    }
+
+    private void ApplyEmptyState(DockEmptyStateState state)
+    {
+        EmptyStateIcon.Glyph = state.Glyph;
+        EmptyStateIcon.Foreground = GetThemeBrush(
+            state.IsError
+                ? "SystemFillColorCriticalBrush"
+                : "TextFillColorSecondaryBrush");
+        EmptyStateToolTipText.Text = state.Description;
+        AutomationProperties.SetName(EmptyState, state.Description);
+        AutomationProperties.SetHelpText(EmptyState, state.Description);
     }
 
     private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
