@@ -185,8 +185,8 @@ public sealed partial class WindowPreviewWindow : Window
         });
         var iconImage = new Image
         {
-            Width = 24,
-            Height = 24,
+            Width = 32,
+            Height = 32,
             Stretch = Stretch.Uniform,
             Visibility = Visibility.Collapsed,
         };
@@ -196,27 +196,33 @@ public sealed partial class WindowPreviewWindow : Window
             FontSize = 16,
             Glyph = "\uE737",
         };
-        var iconTile = new Border
+        var iconFallbackTile = new Border
         {
             Width = 36,
             Height = 36,
             Background = Application.Current.Resources[
                 "AccentFillColorSecondaryBrush"] as Brush,
             CornerRadius = new CornerRadius(10),
+            Child = iconFallback,
+        };
+        var iconTile = new Border
+        {
+            Width = 36,
+            Height = 36,
             Child = new Grid
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Children =
                 {
-                    iconFallback,
+                    iconFallbackTile,
                     iconImage,
                 },
             },
         };
         Grid.SetColumn(iconTile, 0);
         header.Children.Add(iconTile);
-        _ = LoadPreviewIconAsync(iconImage, iconFallback, window.Icon);
+        _ = LoadPreviewIconAsync(iconImage, iconFallbackTile, window.Icon);
 
         var title = new TextBlock
         {
@@ -358,7 +364,7 @@ public sealed partial class WindowPreviewWindow : Window
 
     private static async Task LoadPreviewIconAsync(
         Image image,
-        FontIcon fallback,
+        FrameworkElement fallback,
         ApplicationIconSnapshot? snapshot)
     {
         var source = await ApplicationIconSourceCache.GetAsync(snapshot);
