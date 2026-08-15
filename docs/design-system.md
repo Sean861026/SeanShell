@@ -102,6 +102,11 @@ Raw colors must not be embedded in individual views.
   The complete monitor-specific status or failure reason remains available in a
   wrapped Tooltip and as the automation name/help text; failures additionally
   use the native critical semantic brush.
+- Live window-preview cards reserve their complete image surface from the first
+  frame. Bounded DWM recovery shows only a quiet Fluent loading glyph; the
+  explicit unavailable message appears after recovery is exhausted, avoiding a
+  false error flash without shifting card geometry. Automation help text exposes
+  loading, success, and unavailable states independently of color.
 - Application artwork and the Launcher brand mark share the 40 px icon token and
   magnify only their visual layer, leaving the 44 px interaction target stable.
   System controls and the clock use contained 1.03 hover feedback without lift,
