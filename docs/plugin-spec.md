@@ -179,6 +179,13 @@ strictly decoded. The DTOs contain no `ShellCommand` delegate and no field for
 an executable, arguments, URL, local path, or shell string. They remain
 disconnected from protocol v4.
 
+Future activation has a separate strict request contract. The selected entry
+type must be a bounded dotted ASCII identifier, and requested capability bits
+must be a non-empty subset of the fresh consent-backed grant. Nested, generic,
+assembly-qualified, path-like, unknown-capability, and escalation-shaped values
+are rejected before any future loader can receive them. This is contract work
+only; the current broker still does not activate external code.
+
 Single-project MSIX exposes only the App executable. The broker runtime is a
 UI-independent class library shared with a standalone console test harness.
 Production App composition never accepts a configurable broker path, and the

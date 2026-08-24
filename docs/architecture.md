@@ -527,6 +527,10 @@ does not match.
   The protocol assembly separately defines strict bounded command DTOs and a
   canonical descriptor-set digest. They contain only display text, opaque IDs,
   fixed outcomes, and hashes; no enabled request/response references them.
+  A separate data-only activation contract restricts the future entry type to a
+  bounded dotted ASCII identifier and requires requested capabilities to be a
+  non-empty subset of the short-lived grant. Protocol v4 does not carry that
+  contract and cannot trigger loading.
   The preview broker handles one bounded frame and exits. Before a
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects

@@ -89,6 +89,7 @@
 - [x] Bounded same-publisher managed/native dependency allowlist and broker revalidation
 - [x] Inactive allowlist-only managed/native resolver with no host fallback
 - [x] Strict bounded data-only command DTOs and canonical command-set digest
+- [x] Strict data-only activation target and capability-subset contract
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

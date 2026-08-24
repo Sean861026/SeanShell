@@ -173,6 +173,13 @@ duplicate IDs/keywords, oversized frames, and invalid digests. There is no
 delegate, executable, path, argument, URL, or shell field. These types do not
 change protocol v4 and no request or response currently carries them.
 
+The protocol also reserves a data-only `PluginBrokerActivationRequest`. Its
+entry type is limited to a 256-character dotted ASCII identifier with no nested,
+generic, assembly-qualified, path, or argument syntax. Requested capabilities
+must be non-empty, contain only known bits, and be a subset of the independently
+validated short-lived grant. Protocol v4 still carries no activation request and
+does not load the declared type.
+
 Before code execution is added, the broker still needs:
 
 - a broker-owned staging and cleanup design for verified native bytes before
