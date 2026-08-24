@@ -262,6 +262,25 @@ public sealed partial class WindowPreviewWindow : Window
         Grid.SetColumn(identity, 1);
         header.Children.Add(identity);
 
+        var closeGlyph = new FontIcon
+        {
+            FontFamily = new FontFamily("Segoe Fluent Icons"),
+            FontSize = 12,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = Application.Current.Resources[
+                "TextFillColorSecondaryBrush"] as Brush,
+            Glyph = "\uE8BB",
+        };
+        var closeChrome = new Border
+        {
+            Width = 32,
+            Height = 32,
+            Background = new SolidColorBrush(
+                Microsoft.UI.Colors.Transparent),
+            CornerRadius = new CornerRadius(8),
+            Child = closeGlyph,
+        };
         var closeButton = new Button
         {
             Width = 44,
@@ -271,12 +290,42 @@ public sealed partial class WindowPreviewWindow : Window
                 Microsoft.UI.Colors.Transparent),
             BorderThickness = new Thickness(0),
             CornerRadius = new CornerRadius(8),
-            Content = new FontIcon
-            {
-                FontFamily = new FontFamily("Segoe Fluent Icons"),
-                FontSize = 12,
-                Glyph = "\uE8BB",
-            },
+            Content = closeChrome,
+        };
+        var closePointerOver = false;
+        var closeFocused = false;
+        void UpdateCloseEmphasis()
+        {
+            var emphasized = closePointerOver || closeFocused;
+            closeChrome.Background = emphasized
+                ? Application.Current.Resources[
+                    "SystemFillColorCriticalBackgroundBrush"] as Brush
+                : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            closeGlyph.Foreground = Application.Current.Resources[
+                emphasized
+                    ? "SystemFillColorCriticalBrush"
+                    : "TextFillColorSecondaryBrush"] as Brush;
+        }
+
+        closeButton.PointerEntered += (_, _) =>
+        {
+            closePointerOver = true;
+            UpdateCloseEmphasis();
+        };
+        closeButton.PointerExited += (_, _) =>
+        {
+            closePointerOver = false;
+            UpdateCloseEmphasis();
+        };
+        closeButton.GotFocus += (_, _) =>
+        {
+            closeFocused = true;
+            UpdateCloseEmphasis();
+        };
+        closeButton.LostFocus += (_, _) =>
+        {
+            closeFocused = false;
+            UpdateCloseEmphasis();
         };
         AutomationProperties.SetName(closeButton, $"Close {window.Title}");
         ToolTipService.SetToolTip(closeButton, "Close window");

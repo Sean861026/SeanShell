@@ -221,6 +221,14 @@ neutral Running state. Hover temporarily promotes any neutral stroke to accent
 and restores the resolved state on exit, so the active indication never depends
 on hover and never uses color without text.
 
+The per-card close button keeps a 44-by-44 native `Button` target and system
+focus visual around a 32-by-32 inner chrome. Pointer hover or keyboard focus
+promotes that chrome to WinUI's semantic critical foreground and background
+brushes. Normal state remains visually subordinate, while the tooltip and
+automation name ensure the destructive meaning is not conveyed by color alone.
+The inner chrome changes brushes only, so close feedback never shifts card
+layout or the DWM thumbnail destination.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses
