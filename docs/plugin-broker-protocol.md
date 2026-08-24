@@ -180,6 +180,12 @@ must be non-empty, contain only known bits, and be a subset of the independently
 validated short-lived grant. Protocol v4 still carries no activation request and
 does not load the declared type.
 
+The reserved entry type is also carried by the short-lived grant. Activation
+validation requires an ordinal, character-for-character match between request
+and grant in addition to the capability subset check. Existing metadata-probe
+grants omit this optional field, so this binding still cannot enable protocol-v4
+execution.
+
 Before code execution is added, the broker still needs:
 
 - a broker-owned staging and cleanup design for verified native bytes before
