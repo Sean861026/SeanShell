@@ -235,6 +235,11 @@ DWM thumbnail destinations remain stable. SeanShell resolves the motion from the
 same system accessibility snapshot as the Dock and shows the surface immediately
 when Windows animations are disabled or high contrast requests reduced effects.
 
+Each preview card resolves one shared interaction emphasis for pointer hover and
+keyboard focus. The semantic secondary card fill and accent stroke rise together,
+including when focus moves to the close action, so mouse and keyboard users see
+the same card ownership without changing dimensions or thumbnail placement.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses
