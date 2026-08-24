@@ -242,6 +242,10 @@ public sealed partial class WindowPreviewWindow : Window
             "CardStrokeColorDefaultBrush"] as Brush;
         var accentCardStroke = Application.Current.Resources[
             "AccentFillColorDefaultBrush"] as Brush;
+        var neutralCardBackground = Application.Current.Resources[
+            "CardBackgroundFillColorDefaultBrush"] as Brush;
+        var emphasizedCardBackground = Application.Current.Resources[
+            "CardBackgroundFillColorSecondaryBrush"] as Brush;
         var presentation = WindowPreviewCardPresentation.Resolve(
             window.IsMinimized,
             window.IsForeground);
@@ -250,14 +254,32 @@ public sealed partial class WindowPreviewWindow : Window
             : neutralCardStroke;
         var card = new Grid
         {
-            Background = Application.Current.Resources[
-                "CardBackgroundFillColorDefaultBrush"] as Brush,
+            Background = neutralCardBackground,
             BorderBrush = defaultCardStroke,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
         };
-        card.PointerEntered += (_, _) => card.BorderBrush = accentCardStroke;
-        card.PointerExited += (_, _) => card.BorderBrush = defaultCardStroke;
+        var cardPointerOver = false;
+        var cardKeyboardFocused = false;
+        void UpdateCardEmphasis()
+        {
+            var emphasized = cardPointerOver || cardKeyboardFocused;
+            card.BorderBrush = emphasized ? accentCardStroke : defaultCardStroke;
+            card.Background = emphasized
+                ? emphasizedCardBackground
+                : neutralCardBackground;
+        }
+
+        card.PointerEntered += (_, _) =>
+        {
+            cardPointerOver = true;
+            UpdateCardEmphasis();
+        };
+        card.PointerExited += (_, _) =>
+        {
+            cardPointerOver = false;
+            UpdateCardEmphasis();
+        };
         card.RowDefinitions.Add(new RowDefinition
         {
             Height = new GridLength(56),
@@ -410,11 +432,15 @@ public sealed partial class WindowPreviewWindow : Window
         closeButton.GotFocus += (_, _) =>
         {
             closeFocused = true;
+            cardKeyboardFocused = true;
+            UpdateCardEmphasis();
             UpdateCloseEmphasis();
         };
         closeButton.LostFocus += (_, _) =>
         {
             closeFocused = false;
+            cardKeyboardFocused = false;
+            UpdateCardEmphasis();
             UpdateCloseEmphasis();
         };
         AutomationProperties.SetName(closeButton, $"Close {window.Title}");
@@ -487,6 +513,16 @@ public sealed partial class WindowPreviewWindow : Window
             ? "Window is minimized."
             : "Window is running.";
         AutomationProperties.SetHelpText(surface, helpText);
+        surface.GotFocus += (_, _) =>
+        {
+            cardKeyboardFocused = true;
+            UpdateCardEmphasis();
+        };
+        surface.LostFocus += (_, _) =>
+        {
+            cardKeyboardFocused = false;
+            UpdateCardEmphasis();
+        };
         surface.Click += (_, _) =>
         {
             _ = _windowService.RestoreAndActivate(window.Handle);

@@ -190,6 +190,7 @@
 - [x] Explicit Active preview state with persistent accent identification
 - [x] Semantic critical hover and keyboard-focus treatment for preview close actions
 - [x] Reduced-motion-aware preview entrance transition with stable DWM geometry
+- [x] Shared pointer and keyboard-focus elevation for preview cards
 - [x] Layout-aware DWM previews that fill each available aspect-fit surface
 - [x] Bounded post-layout recovery for transient DWM preview registration failures
 - [x] Layout-stable loading and final-failure states for live window previews
