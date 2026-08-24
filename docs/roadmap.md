@@ -192,6 +192,7 @@
 - [x] Reduced-motion-aware preview entrance transition with stable DWM geometry
 - [x] Shared pointer and keyboard-focus elevation for preview cards
 - [x] Compact semantic status badges for Active, Running, and Minimized previews
+- [x] Full metadata tooltips and state-specific preview automation help text
 - [x] Layout-aware DWM previews that fill each available aspect-fit surface
 - [x] Bounded post-layout recovery for transient DWM preview registration failures
 - [x] Layout-stable loading and final-failure states for live window previews

@@ -353,6 +353,7 @@ public sealed partial class WindowPreviewWindow : Window
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         };
+        ToolTipService.SetToolTip(title, window.Title);
         var processName = new TextBlock
         {
             Text = window.ProcessName,
@@ -361,6 +362,7 @@ public sealed partial class WindowPreviewWindow : Window
             Foreground = Application.Current.Resources[
                 "TextFillColorSecondaryBrush"] as Brush,
         };
+        ToolTipService.SetToolTip(processName, window.ProcessName);
         var statusLabel = new TextBlock
         {
             Text = presentation.StatusLabel,
@@ -548,9 +550,7 @@ public sealed partial class WindowPreviewWindow : Window
         AutomationProperties.SetName(
             surface,
             $"Switch to {window.Title}, {window.ProcessName}");
-        var helpText = window.IsMinimized
-            ? "Window is minimized."
-            : "Window is running.";
+        var helpText = presentation.HelpText;
         AutomationProperties.SetHelpText(surface, helpText);
         surface.GotFocus += (_, _) =>
         {

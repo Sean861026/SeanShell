@@ -246,6 +246,11 @@ Running and Minimized retain a neutral state layer. Every badge keeps its text
 label and automation name, so state never depends on color alone and remains
 legible in system high-contrast themes.
 
+Ellipsized preview titles and process identities expose their complete values
+through native tooltips. The same presentation resolver supplies distinct
+Active, Running, and Minimized automation help text, keeping visual and narrated
+state synchronized instead of inferring accessibility text in the view.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses

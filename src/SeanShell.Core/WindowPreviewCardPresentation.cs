@@ -8,15 +8,25 @@ public static class WindowPreviewCardPresentation
     {
         if (isMinimized)
         {
-            return new WindowPreviewCardVisualState("Minimized", false);
+            return new WindowPreviewCardVisualState(
+                "Minimized",
+                "Window is minimized.",
+                false);
         }
 
         return isForeground
-            ? new WindowPreviewCardVisualState("Active", true)
-            : new WindowPreviewCardVisualState("Running", false);
+            ? new WindowPreviewCardVisualState(
+                "Active",
+                "Window is active.",
+                true)
+            : new WindowPreviewCardVisualState(
+                "Running",
+                "Window is running.",
+                false);
     }
 }
 
 public sealed record WindowPreviewCardVisualState(
     string StatusLabel,
+    string HelpText,
     bool UsesAccentStroke);
