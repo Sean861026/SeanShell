@@ -9,4 +9,5 @@ public sealed record PluginBrokerGrant(
     int GrantedCapabilities,
     DateTimeOffset IssuedAtUtc,
     DateTimeOffset ExpiresAtUtc,
-    PluginBrokerDependency[]? Dependencies = null);
+    PluginBrokerDependency[]? Dependencies = null,
+    string? EntryType = null);

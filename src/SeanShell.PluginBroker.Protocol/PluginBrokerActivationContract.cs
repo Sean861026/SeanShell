@@ -6,16 +6,23 @@ public static class PluginBrokerActivationContract
 
     public static string? Validate(
         PluginBrokerActivationRequest? request,
-        int grantedCapabilities)
+        PluginBrokerGrant? grant)
     {
-        if (request is null || !IsEntryType(request.EntryType))
+        if (request is null ||
+            grant is null ||
+            !IsEntryType(request.EntryType) ||
+            !IsEntryType(grant.EntryType) ||
+            !string.Equals(
+                request.EntryType,
+                grant.EntryType,
+                StringComparison.Ordinal))
         {
-            return "The plugin activation entry type is invalid.";
+            return "The plugin activation entry type must exactly match the short-lived grant.";
         }
 
-        if (!IsCapabilitySet(grantedCapabilities) ||
+        if (!IsCapabilitySet(grant.GrantedCapabilities) ||
             !IsCapabilitySet(request.RequestedCapabilities) ||
-            (request.RequestedCapabilities & grantedCapabilities) !=
+            (request.RequestedCapabilities & grant.GrantedCapabilities) !=
             request.RequestedCapabilities)
         {
             return "Plugin activation capabilities must be a non-empty subset of the short-lived grant.";

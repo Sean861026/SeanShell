@@ -12,7 +12,9 @@ public sealed class PluginBrokerActivationContractTests
             new PluginBrokerActivationRequest(
                 "Example.Publisher.LauncherPlugin",
                 RequestedCapabilities: 1),
-            grantedCapabilities: 3));
+            CreateGrant(
+                entryType: "Example.Publisher.LauncherPlugin",
+                grantedCapabilities: 3)));
     }
 
     [DataRow("")]
@@ -26,7 +28,7 @@ public sealed class PluginBrokerActivationContractTests
     {
         Assert.IsNotNull(PluginBrokerActivationContract.Validate(
             new PluginBrokerActivationRequest(entryType, 1),
-            grantedCapabilities: 1));
+            CreateGrant()));
     }
 
     [DataRow(0, 1)]
@@ -43,7 +45,7 @@ public sealed class PluginBrokerActivationContractTests
             new PluginBrokerActivationRequest(
                 "Example.Publisher.LauncherPlugin",
                 requestedCapabilities),
-            grantedCapabilities));
+            CreateGrant(grantedCapabilities: grantedCapabilities)));
     }
 
     [TestMethod]
@@ -54,6 +56,40 @@ public sealed class PluginBrokerActivationContractTests
 
         Assert.IsNotNull(PluginBrokerActivationContract.Validate(
             new PluginBrokerActivationRequest(entryType, 1),
-            grantedCapabilities: 1));
+            CreateGrant()));
     }
+
+    [TestMethod]
+    public void EntryTypeMustExactlyMatchTheGrant()
+    {
+        Assert.IsNotNull(PluginBrokerActivationContract.Validate(
+            new PluginBrokerActivationRequest(
+                "Example.Publisher.OtherPlugin",
+                RequestedCapabilities: 1),
+            CreateGrant()));
+    }
+
+    [TestMethod]
+    public void MissingGrantEntryTypeIsRejected()
+    {
+        Assert.IsNotNull(PluginBrokerActivationContract.Validate(
+            new PluginBrokerActivationRequest(
+                "Example.Publisher.LauncherPlugin",
+                RequestedCapabilities: 1),
+            CreateGrant(entryType: null)));
+    }
+
+    private static PluginBrokerGrant CreateGrant(
+        string? entryType = "Example.Publisher.LauncherPlugin",
+        int grantedCapabilities = 1) =>
+        new(
+            "example.publisher.plugin",
+            "C:\\Plugin",
+            "C:\\Plugin\\Plugin.dll",
+            new string('A', 64),
+            new string('B', 64),
+            grantedCapabilities,
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddSeconds(15),
+            EntryType: entryType);
 }

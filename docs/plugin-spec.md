@@ -186,6 +186,11 @@ assembly-qualified, path-like, unknown-capability, and escalation-shaped values
 are rejected before any future loader can receive them. This is contract work
 only; the current broker still does not activate external code.
 
+The future request must match the entry type carried by its short-lived grant
+exactly. Consent and trust composition can therefore bind one explicit type
+rather than permitting a request to select another type from the same signed
+assembly. Current metadata probes leave the optional grant field empty.
+
 Single-project MSIX exposes only the App executable. The broker runtime is a
 UI-independent class library shared with a standalone console test harness.
 Production App composition never accepts a configurable broker path, and the
