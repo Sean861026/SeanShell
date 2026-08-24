@@ -260,6 +260,7 @@ public sealed partial class DockWindow : Window
     public void SetReducedEffects(bool enabled)
     {
         _reducedEffects = enabled;
+        _previewWindow?.SetReducedEffects(enabled);
         if (enabled)
         {
             DismissDockMagnifier();
@@ -1008,6 +1009,7 @@ public sealed partial class DockWindow : Window
     private WindowPreviewWindow CreateWindowPreview()
     {
         var preview = new WindowPreviewWindow(_windowService);
+        preview.SetReducedEffects(_reducedEffects);
         preview.PreviewEntered += (_, _) =>
         {
             _previewDismissTimer.Stop();

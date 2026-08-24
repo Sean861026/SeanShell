@@ -22,6 +22,9 @@
         CornerRadius="18"
         PointerEntered="OnPointerEntered"
         PointerExited="OnPointerExited">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="PreviewTranslate" />
+        </Border.RenderTransform>
         <Grid
             x:Name="PreviewGrid"
             ColumnSpacing="8"
