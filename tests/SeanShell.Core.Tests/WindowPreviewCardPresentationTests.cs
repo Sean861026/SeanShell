@@ -9,7 +9,10 @@ public sealed class WindowPreviewCardPresentationTests
     public void ForegroundWindowUsesActiveAccentState()
     {
         Assert.AreEqual(
-            new WindowPreviewCardVisualState("Active", true),
+            new WindowPreviewCardVisualState(
+                "Active",
+                "Window is active.",
+                true),
             WindowPreviewCardPresentation.Resolve(
                 isMinimized: false,
                 isForeground: true));
@@ -19,7 +22,10 @@ public sealed class WindowPreviewCardPresentationTests
     public void BackgroundWindowUsesRunningNeutralState()
     {
         Assert.AreEqual(
-            new WindowPreviewCardVisualState("Running", false),
+            new WindowPreviewCardVisualState(
+                "Running",
+                "Window is running.",
+                false),
             WindowPreviewCardPresentation.Resolve(
                 isMinimized: false,
                 isForeground: false));
@@ -29,7 +35,10 @@ public sealed class WindowPreviewCardPresentationTests
     public void MinimizedStateTakesPriorityOverForegroundSnapshot()
     {
         Assert.AreEqual(
-            new WindowPreviewCardVisualState("Minimized", false),
+            new WindowPreviewCardVisualState(
+                "Minimized",
+                "Window is minimized.",
+                false),
             WindowPreviewCardPresentation.Resolve(
                 isMinimized: true,
                 isForeground: true));
