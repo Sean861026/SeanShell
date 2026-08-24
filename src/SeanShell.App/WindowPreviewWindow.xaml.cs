@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using SeanShell.Core;
 using SeanShell.Windows;
 using Windows.Graphics;
@@ -20,7 +21,9 @@ public sealed partial class WindowPreviewWindow : Window
     private readonly DesktopWindowService _windowService;
     private readonly List<PreviewEntry> _entries = [];
     private readonly DispatcherQueueTimer _thumbnailRetryTimer;
+    private Storyboard? _entranceTransition;
     private bool _allowClose;
+    private bool _reducedEffects;
     private int _thumbnailAttempts;
     private bool _thumbnailUpdateQueued;
 
@@ -53,6 +56,23 @@ public sealed partial class WindowPreviewWindow : Window
     public event EventHandler? PreviewExited;
 
     public event EventHandler? Dismissed;
+
+    public void SetReducedEffects(bool enabled)
+    {
+        _reducedEffects = enabled;
+        if (enabled)
+        {
+            StopEntranceTransition();
+        }
+
+        SystemBackdrop = enabled
+            ? null
+            : new DesktopAcrylicBackdrop();
+        PreviewRoot.Background = Application.Current.Resources[
+            enabled
+                ? "CardBackgroundFillColorDefaultBrush"
+                : "LayerOnAcrylicFillColorDefaultBrush"] as Brush;
+    }
 
     public void Show(
         DockItemViewModel item,
@@ -97,6 +117,7 @@ public sealed partial class WindowPreviewWindow : Window
         _thumbnailAttempts = 0;
         AppWindow.Show(false);
         AppWindow.MoveAndResize(new RectInt32(x, y, pixelWidth, pixelHeight));
+        BeginEntranceTransition();
         QueueThumbnailUpdate();
     }
 
@@ -108,6 +129,7 @@ public sealed partial class WindowPreviewWindow : Window
         }
 
         ClearEntries();
+        StopEntranceTransition();
         AppWindow.Hide();
         IsVisible = false;
         Dismissed?.Invoke(this, EventArgs.Empty);
@@ -116,6 +138,7 @@ public sealed partial class WindowPreviewWindow : Window
     public void Shutdown()
     {
         ClearEntries();
+        StopEntranceTransition();
         IsVisible = false;
         _allowClose = true;
         Close();
@@ -141,6 +164,73 @@ public sealed partial class WindowPreviewWindow : Window
                 Height = new GridLength(WindowPreviewLayout.CardHeight),
             });
         }
+    }
+
+    private void BeginEntranceTransition()
+    {
+        StopEntranceTransition();
+        var motion = WindowPreviewEntranceMotion.Resolve(_reducedEffects);
+        PreviewRoot.Opacity = motion.StartOpacity;
+        PreviewTranslate.Y = motion.StartTranslationY;
+        if (motion.DurationMilliseconds == 0)
+        {
+            PreviewRoot.Opacity = motion.EndOpacity;
+            PreviewTranslate.Y = motion.EndTranslationY;
+            return;
+        }
+
+        var easing = new CubicEase
+        {
+            EasingMode = EasingMode.EaseOut,
+        };
+        var duration = new Duration(
+            TimeSpan.FromMilliseconds(motion.DurationMilliseconds));
+        var opacity = new DoubleAnimation
+        {
+            From = motion.StartOpacity,
+            To = motion.EndOpacity,
+            Duration = duration,
+            EasingFunction = easing,
+        };
+        Storyboard.SetTarget(opacity, PreviewRoot);
+        Storyboard.SetTargetProperty(opacity, nameof(UIElement.Opacity));
+        var translation = new DoubleAnimation
+        {
+            From = motion.StartTranslationY,
+            To = motion.EndTranslationY,
+            Duration = duration,
+            EasingFunction = easing,
+        };
+        Storyboard.SetTarget(translation, PreviewTranslate);
+        Storyboard.SetTargetProperty(
+            translation,
+            nameof(TranslateTransform.Y));
+
+        var transition = new Storyboard();
+        transition.Children.Add(opacity);
+        transition.Children.Add(translation);
+        transition.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(_entranceTransition, transition))
+            {
+                return;
+            }
+
+            PreviewRoot.Opacity = motion.EndOpacity;
+            PreviewTranslate.Y = motion.EndTranslationY;
+            _entranceTransition = null;
+            transition.Stop();
+        };
+        _entranceTransition = transition;
+        transition.Begin();
+    }
+
+    private void StopEntranceTransition()
+    {
+        _entranceTransition?.Stop();
+        _entranceTransition = null;
+        PreviewRoot.Opacity = 1;
+        PreviewTranslate.Y = 0;
     }
 
     private void AddPreviewCard(

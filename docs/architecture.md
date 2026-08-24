@@ -229,6 +229,12 @@ automation name ensure the destructive meaning is not conveyed by color alone.
 The inner chrome changes brushes only, so close feedback never shifts card
 layout or the DWM thumbnail destination.
 
+Preview surfaces enter with a short 160 ms opacity and upward ease-out motion.
+The transition changes only the root render transform, so card measurement and
+DWM thumbnail destinations remain stable. SeanShell resolves the motion from the
+same system accessibility snapshot as the Dock and shows the surface immediately
+when Windows animations are disabled or high contrast requests reduced effects.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses
