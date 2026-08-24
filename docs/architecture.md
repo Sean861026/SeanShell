@@ -240,6 +240,12 @@ keyboard focus. The semantic secondary card fill and accent stroke rise together
 including when focus moves to the close action, so mouse and keyboard users see
 the same card ownership without changing dimensions or thumbnail placement.
 
+Preview metadata separates the ellipsized process identity from a fixed-width
+status badge. Active windows use the system accent surface and on-accent text;
+Running and Minimized retain a neutral state layer. Every badge keeps its text
+label and automation name, so state never depends on color alone and remains
+legible in system high-contrast themes.
+
 Desktop Start Menu shortcuts receive an optional process identity by resolving
 their `.lnk` target through the Windows Shell Link COM contract during the
 one-time application index. Each monitor-local Dock uses

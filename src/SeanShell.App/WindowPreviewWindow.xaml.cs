@@ -353,14 +353,53 @@ public sealed partial class WindowPreviewWindow : Window
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         };
-        var status = new TextBlock
+        var processName = new TextBlock
         {
-            Text = $"{window.ProcessName} · {presentation.StatusLabel}",
+            Text = window.ProcessName,
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontSize = 12,
             Foreground = Application.Current.Resources[
                 "TextFillColorSecondaryBrush"] as Brush,
         };
+        var statusLabel = new TextBlock
+        {
+            Text = presentation.StatusLabel,
+            FontSize = 11,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Foreground = Application.Current.Resources[
+                presentation.UsesAccentStroke
+                    ? "TextOnAccentFillColorPrimaryBrush"
+                    : "TextFillColorSecondaryBrush"] as Brush,
+        };
+        var statusBadge = new Border
+        {
+            Padding = new Thickness(6, 1, 6, 1),
+            Background = Application.Current.Resources[
+                presentation.UsesAccentStroke
+                    ? "AccentFillColorSecondaryBrush"
+                    : "SubtleFillColorSecondaryBrush"] as Brush,
+            CornerRadius = new CornerRadius(8),
+            Child = statusLabel,
+        };
+        AutomationProperties.SetName(
+            statusBadge,
+            $"Window status: {presentation.StatusLabel}");
+        var metadata = new Grid
+        {
+            ColumnSpacing = 6,
+        };
+        metadata.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(1, GridUnitType.Star),
+        });
+        metadata.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = GridLength.Auto,
+        });
+        Grid.SetColumn(processName, 0);
+        metadata.Children.Add(processName);
+        Grid.SetColumn(statusBadge, 1);
+        metadata.Children.Add(statusBadge);
         var identity = new StackPanel
         {
             VerticalAlignment = VerticalAlignment.Center,
@@ -368,7 +407,7 @@ public sealed partial class WindowPreviewWindow : Window
             Children =
             {
                 title,
-                status,
+                metadata,
             },
         };
         Grid.SetColumn(identity, 1);
