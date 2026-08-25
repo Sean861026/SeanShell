@@ -524,6 +524,11 @@ does not match.
   dependencies. Managed dependencies load from the verified open stream; undeclared
   managed/native requests throw instead of falling through to host or platform
   search. No current broker operation constructs this context.
+  A separate inactive entry-point inspector reads PE/CLI metadata without loading
+  the candidate assembly. It can require the exact consent-bound type to be a
+  public, non-abstract class that directly implements the trusted
+  `ISeanShellPlugin` contract and exposes a public parameterless constructor.
+  No enabled protocol operation invokes this inspector yet.
   The protocol assembly separately defines strict bounded command DTOs and a
   canonical descriptor-set digest. They contain only display text, opaque IDs,
   fixed outcomes, and hashes; no enabled request/response references them.
