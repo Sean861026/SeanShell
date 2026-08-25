@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using SeanShell.PluginBroker.Protocol;
+using SeanShell.PluginBroker.Runtime;
 
 namespace SeanShell.PluginBroker;
 
@@ -37,7 +38,8 @@ public static class PluginBrokerEntryPoint
                 output,
                 processId,
                 sessionKey,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                entryPointValidator: PluginEntryPointInspector.Validate).ConfigureAwait(false);
             return response.Accepted ? 0 : 2;
         }
         catch (OperationCanceledException)

@@ -528,7 +528,9 @@ does not match.
   the candidate assembly. It can require the exact consent-bound type to be a
   public, non-abstract class that directly implements the trusted
   `ISeanShellPlugin` contract and exposes a public parameterless constructor.
-  No enabled protocol operation invokes this inspector yet.
+  The production broker injects it into schema-2 metadata probes after the
+  granted entry assembly hash is revalidated. Schema-1 probes bypass type
+  inspection, and the inspector still never loads or instantiates candidate code.
   The protocol assembly separately defines strict bounded command DTOs and a
   canonical descriptor-set digest. They contain only display text, opaque IDs,
   fixed outcomes, and hashes; no enabled request/response references them.
