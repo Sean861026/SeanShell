@@ -165,10 +165,11 @@ The exact packaged `SeanShell.App.exe` starts as a separate child process in
 operations described in
 [plugin-broker-protocol.md](plugin-broker-protocol.md). The host repeats trust
 and consent validation before issuing a 15-second grant bound to the package
-paths, assembly SHA-256, publisher certificate, exact capabilities, and the
-dependency allowlist. The broker rechecks containment, reparse points, size,
-lifetime, capability bits, and every file hash, then returns a path-free set
-digest. A new random pipe-delivered session key authenticates both frames
+paths, assembly SHA-256, publisher certificate, exact capabilities, activation
+entry type, and the dependency allowlist. The broker rechecks containment,
+reparse points, size, lifetime, capability bits, entry-type syntax, and every
+file hash, then returns a path-free set digest and the exact entry type. A new
+random pipe-delivered session key authenticates both frames
 for each one-shot process. The broker never receives the persisted consent
 document and is not a plugin host: there is no type, activation, method, or
 command payload.
@@ -199,7 +200,9 @@ only; the current broker still does not activate external code.
 The future request must match the entry type carried by its short-lived grant
 exactly. Consent and trust composition can therefore bind one explicit type
 rather than permitting a request to select another type from the same signed
-assembly. Current metadata probes leave the optional grant field empty.
+assembly. Schema-2 metadata probes carry this field through the authenticated
+Broker response, and the host rejects any ordinal mismatch; schema-1 diagnostic
+packages continue to use a null entry type.
 
 Single-project MSIX exposes only the App executable. The broker runtime is a
 UI-independent class library shared with a standalone console test harness.

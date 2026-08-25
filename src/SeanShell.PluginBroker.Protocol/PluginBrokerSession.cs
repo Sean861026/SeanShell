@@ -161,7 +161,8 @@ public static class PluginBrokerSession
                 grant.PublisherCertificateSha256.ToUpperInvariant(),
                 grant.GrantedCapabilities,
                 dependencies.Length,
-                PluginBrokerDependencySet.ComputeDigest(dependencies)),
+                PluginBrokerDependencySet.ComputeDigest(dependencies),
+                grant.EntryType),
             request.SessionId,
             request.Nonce);
     }
@@ -196,6 +197,12 @@ public static class PluginBrokerSession
             (grant.GrantedCapabilities & ~PluginBrokerProtocol.KnownCapabilityMask) != 0)
         {
             return "The grant contains unsupported capabilities.";
+        }
+
+        if (grant.EntryType is not null &&
+            !PluginBrokerActivationContract.IsValidEntryType(grant.EntryType))
+        {
+            return "The grant contains an invalid activation entry type.";
         }
 
         var lifetime = grant.ExpiresAtUtc - grant.IssuedAtUtc;

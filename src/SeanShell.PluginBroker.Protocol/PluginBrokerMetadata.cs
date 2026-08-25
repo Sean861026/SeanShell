@@ -6,4 +6,5 @@ public sealed record PluginBrokerMetadata(
     string PublisherCertificateSha256,
     int GrantedCapabilities,
     int DependencyCount = 0,
-    string? DependencySetSha256 = null);
+    string? DependencySetSha256 = null,
+    string? EntryType = null);

@@ -305,7 +305,8 @@ public sealed class ExternalPluginBrokerProbeServiceTests
                 grant.PublisherCertificateSha256,
                 grant.GrantedCapabilities,
                 grant.Dependencies?.Length ?? 0,
-                PluginBrokerDependencySet.ComputeDigest(grant.Dependencies ?? [])));
+                PluginBrokerDependencySet.ComputeDigest(grant.Dependencies ?? []),
+                grant.EntryType));
 
     private static string FindBrokerExecutable()
     {
