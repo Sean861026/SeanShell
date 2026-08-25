@@ -94,6 +94,7 @@
 - [x] External manifest v2 and migrated consent binding for activation entry types
 - [x] Broker-side entry-type validation and authenticated metadata round-trip
 - [x] Inactive metadata-only entry-point contract inspector without assembly loading
+- [x] Brokered schema-2 entry-point preflight after exact assembly hash validation
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

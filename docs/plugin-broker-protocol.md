@@ -163,12 +163,13 @@ instead of returning `null` for undeclared managed or native names. Managed
 assemblies load from the same open stream whose SHA-256 was checked, avoiding
 an unlocked path between verification and managed loading.
 
-The runtime also contains an inactive metadata-only entry-point inspector. It
+The runtime also contains a metadata-only entry-point inspector. It
 uses PE/CLI metadata rather than `Assembly.Load` to confirm that the exact
 consent-bound entry type is a public, concrete class, directly implements the
 trusted `ISeanShellPlugin` interface, and has a public parameterless constructor.
-No protocol operation invokes it, so metadata probing still does not inspect
-managed types or execute candidate code.
+Production schema-2 metadata probes invoke it only after the entry assembly hash
+is revalidated. Schema-1 probes do not inspect types, and neither path executes
+candidate code.
 
 The protocol assembly also reserves strict data-only command DTOs for a future
 activation version:

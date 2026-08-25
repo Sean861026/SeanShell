@@ -11,7 +11,8 @@ public static class PluginBrokerSession
         int processId,
         ReadOnlyMemory<byte> sessionKey,
         CancellationToken cancellationToken = default,
-        DateTimeOffset? currentTimeUtc = null)
+        DateTimeOffset? currentTimeUtc = null,
+        Func<string, string, string?>? entryPointValidator = null)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(output);
@@ -33,7 +34,8 @@ public static class PluginBrokerSession
                     request,
                     processId,
                     currentTimeUtc ?? DateTimeOffset.UtcNow,
-                    cancellationToken).ConfigureAwait(false)
+                    cancellationToken,
+                    entryPointValidator).ConfigureAwait(false)
                 : Reject(request, processId, "Request authentication failed.");
         }
         catch (Exception exception) when (
@@ -63,7 +65,8 @@ public static class PluginBrokerSession
         PluginBrokerRequest request,
         int processId,
         DateTimeOffset currentTimeUtc,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, string, string?>? entryPointValidator)
     {
         if (request.ProtocolVersion != PluginBrokerProtocol.CurrentVersion)
         {
@@ -136,6 +139,20 @@ public static class PluginBrokerSession
                 StringComparison.OrdinalIgnoreCase))
         {
             return Reject(request, processId, "The entry assembly changed after host verification.");
+        }
+
+        if (grant.EntryType is not null)
+        {
+            if (entryPointValidator is null)
+            {
+                return Reject(request, processId, "The broker entry-point validator is unavailable.");
+            }
+
+            var entryPointError = entryPointValidator(entryAssembly, grant.EntryType);
+            if (entryPointError is not null)
+            {
+                return Reject(request, processId, entryPointError);
+            }
         }
 
         var dependencies = grant.Dependencies ?? [];

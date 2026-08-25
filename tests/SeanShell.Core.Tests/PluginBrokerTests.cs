@@ -170,11 +170,40 @@ public sealed class PluginBrokerTests
             output,
             processId: 123,
             SessionKey,
-            currentTimeUtc: now);
+            currentTimeUtc: now,
+            entryPointValidator: static (_, _) => null);
 
         Assert.IsTrue(response.Accepted);
         Assert.IsNotNull(response.Metadata);
         Assert.AreEqual(request.Grant!.EntryType, response.Metadata.EntryType);
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsSchemaTwoGrantWhenEntryPointPreflightFails()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var original = CreateProbeRequest(package, now);
+        var request = Authenticate(original with
+        {
+            Grant = original.Grant! with
+            {
+                EntryType = "Example.Publisher.LauncherPlugin",
+            },
+        });
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now,
+            entryPointValidator: static (_, _) => "The entry type is not a valid plugin contract.");
+
+        Assert.IsFalse(response.Accepted);
+        StringAssert.Contains(response.Status, "not a valid plugin contract");
     }
 
     [TestMethod]
