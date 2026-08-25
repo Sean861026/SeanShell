@@ -314,9 +314,20 @@ public sealed class ExternalPluginCatalog
             return "plugin.json does not contain a manifest.";
         }
 
-        if (manifest.SchemaVersion != 1)
+        if (manifest.SchemaVersion is not (1 or 2))
         {
             return $"Unsupported external manifest schema {manifest.SchemaVersion}.";
+        }
+
+        if (manifest.SchemaVersion == 1 && manifest.EntryType is not null)
+        {
+            return "EntryType requires external manifest schema 2.";
+        }
+
+        if (manifest.SchemaVersion == 2 &&
+            !PluginBrokerActivationContract.IsValidEntryType(manifest.EntryType))
+        {
+            return "External manifest schema 2 requires a valid dotted ASCII EntryType.";
         }
 
         if (string.IsNullOrWhiteSpace(manifest.Id) ||
@@ -479,7 +490,8 @@ public sealed class ExternalPluginCatalog
             trustVerifiedAtUtc,
             packageDirectoryPath,
             entryAssemblyPath,
-            dependencies);
+            dependencies,
+            manifest.EntryType);
 
     private static ExternalPluginCandidate Invalid(
         string packageName,
@@ -507,7 +519,8 @@ public sealed class ExternalPluginCatalog
         string[]? Capabilities,
         string? EntryAssembly,
         string? PublisherCertificateSha256,
-        ExternalDependency[]? Dependencies);
+        ExternalDependency[]? Dependencies,
+        string? EntryType);
 
     private sealed record ExternalDependency(
         string? Path,

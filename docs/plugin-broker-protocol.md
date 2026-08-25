@@ -79,6 +79,7 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
     "assemblySha256": "64_HEXADECIMAL_CHARACTERS",
     "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
     "grantedCapabilities": 1,
+    "entryType": "Example.Publisher.LauncherPlugin",
     "issuedAtUtc": "2026-07-26T00:00:00+00:00",
     "expiresAtUtc": "2026-07-26T00:00:15+00:00",
     "dependencies": [
@@ -95,6 +96,8 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
 }
 ```
 
+Schema-1 diagnostic packages send `entryType: null`; schema-2 packages carry the
+exact consent-bound entry type even though `probe-metadata` does not activate it.
 The broker rejects grants with unknown capability bits, invalid IDs or hashes,
 non-absolute paths, a lifetime over 30 seconds, future/expired timestamps,
 missing or oversized files, directory traversal, reparse points, or a SHA-256

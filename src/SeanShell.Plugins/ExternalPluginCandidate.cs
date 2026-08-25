@@ -18,4 +18,5 @@ public sealed record ExternalPluginCandidate(
     DateTimeOffset? TrustVerifiedAtUtc = null,
     string? PackageDirectoryPath = null,
     string? EntryAssemblyPath = null,
-    PluginBrokerDependency[]? Dependencies = null);
+    PluginBrokerDependency[]? Dependencies = null,
+    string? EntryType = null);

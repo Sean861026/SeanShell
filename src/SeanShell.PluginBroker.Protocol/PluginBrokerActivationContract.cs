@@ -10,8 +10,8 @@ public static class PluginBrokerActivationContract
     {
         if (request is null ||
             grant is null ||
-            !IsEntryType(request.EntryType) ||
-            !IsEntryType(grant.EntryType) ||
+            !IsValidEntryType(request.EntryType) ||
+            !IsValidEntryType(grant.EntryType) ||
             !string.Equals(
                 request.EntryType,
                 grant.EntryType,
@@ -31,7 +31,7 @@ public static class PluginBrokerActivationContract
         return null;
     }
 
-    private static bool IsEntryType(string? value)
+    public static bool IsValidEntryType(string? value)
     {
         if (string.IsNullOrWhiteSpace(value) ||
             value.Length > MaximumEntryTypeCharacters)
