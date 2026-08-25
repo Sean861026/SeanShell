@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SeanShell.PluginBroker.Protocol;
 using SeanShell.PluginContracts;
 
 namespace SeanShell.Plugins;
@@ -142,6 +143,14 @@ public sealed class ExternalPluginTrustStore
                 throw new InvalidDataException("The plugin trust document is empty.");
             }
 
+            if (document.SchemaVersion == 1)
+            {
+                document = new ExternalPluginTrustDocument(
+                    Consents: document.EffectiveConsents
+                        .Select(static consent => consent with { EntryType = null })
+                        .ToArray());
+            }
+
             Validate(document);
             return true;
         }
@@ -198,6 +207,12 @@ public sealed class ExternalPluginTrustStore
             if (consent.GrantedAtUtc == default)
             {
                 throw new InvalidDataException("A plugin trust entry has an invalid grant timestamp.");
+            }
+
+            if (consent.EntryType is not null &&
+                !PluginBrokerActivationContract.IsValidEntryType(consent.EntryType))
+            {
+                throw new InvalidDataException("A plugin trust entry has an invalid entry type.");
             }
 
             if (!keys.Add($"{consent.PluginId}\n{fingerprint}"))

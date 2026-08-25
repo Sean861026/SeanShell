@@ -91,6 +91,7 @@
 - [x] Strict bounded data-only command DTOs and canonical command-set digest
 - [x] Strict data-only activation target and capability-subset contract
 - [x] Exact activation entry-type binding to the short-lived broker grant
+- [x] External manifest v2 and migrated consent binding for activation entry types
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

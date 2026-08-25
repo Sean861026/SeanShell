@@ -44,6 +44,60 @@ public sealed class ExternalPluginCatalogTests
     }
 
     [TestMethod]
+    public async Task ScanAsync_SchemaTwoCapturesBoundedEntryType()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "schema-two", "seanshell.v2", "Plugin.dll", PublisherHash);
+            var package = Path.Combine(root, "schema-two");
+            SetSchemaTwoEntryType(package, "Example.Publisher.LauncherPlugin");
+            var catalog = new ExternalPluginCatalog(
+                root,
+                new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash));
+
+            var candidate = (await catalog.ScanAsync()).Single();
+
+            Assert.AreEqual(ExternalPluginCandidateStatus.ReadyForConsent, candidate.Status);
+            Assert.AreEqual("Example.Publisher.LauncherPlugin", candidate.EntryType);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public async Task ScanAsync_SchemaTwoWithoutEntryTypeIsRejected()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            CreatePackage(root, "missing-entry-type", "seanshell.v2-missing", "Plugin.dll", PublisherHash);
+            var package = Path.Combine(root, "missing-entry-type");
+            var manifestPath = Path.Combine(package, "plugin.json");
+            File.WriteAllText(
+                manifestPath,
+                File.ReadAllText(manifestPath).Replace(
+                    "\"schemaVersion\": 1",
+                    "\"schemaVersion\": 2",
+                    StringComparison.Ordinal));
+            var catalog = new ExternalPluginCatalog(
+                root,
+                new FakeVerifier(AuthenticodeTrustStatus.Trusted, PublisherHash));
+
+            var candidate = (await catalog.ScanAsync()).Single();
+
+            Assert.AreEqual(ExternalPluginCandidateStatus.InvalidManifest, candidate.Status);
+            StringAssert.Contains(candidate.Detail, "EntryType");
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(root);
+        }
+    }
+
+    [TestMethod]
     public async Task ScanAsync_TrustedSamePublisherDependencies_AreBounded()
     {
         var root = CreateTemporaryDirectory();
@@ -269,6 +323,23 @@ public sealed class ExternalPluginCatalogTests
             "\"publisherCertificateSha256\":",
             $"\"dependencies\": {dependenciesJson},\r\n  \"publisherCertificateSha256\":",
             StringComparison.Ordinal);
+        File.WriteAllText(manifestPath, manifest);
+    }
+
+    private static void SetSchemaTwoEntryType(
+        string packageDirectory,
+        string entryType)
+    {
+        var manifestPath = Path.Combine(packageDirectory, "plugin.json");
+        var manifest = File.ReadAllText(manifestPath)
+            .Replace(
+                "\"schemaVersion\": 1",
+                "\"schemaVersion\": 2",
+                StringComparison.Ordinal)
+            .Replace(
+                "\"publisherCertificateSha256\":",
+                $"\"entryType\": \"{entryType}\",\r\n  \"publisherCertificateSha256\":",
+                StringComparison.Ordinal);
         File.WriteAllText(manifestPath, manifest);
     }
 

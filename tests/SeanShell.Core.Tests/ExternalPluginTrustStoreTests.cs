@@ -30,6 +30,7 @@ public sealed class ExternalPluginTrustStoreTests
         Assert.AreEqual(PublisherHash, consent.PublisherCertificateSha256);
         Assert.AreEqual(candidate.Capabilities, consent.GrantedCapabilities);
         Assert.AreEqual(grantedAt, consent.GrantedAtUtc);
+        Assert.AreEqual(candidate.EntryType, consent.EntryType);
     }
 
     [TestMethod]
@@ -63,6 +64,51 @@ public sealed class ExternalPluginTrustStoreTests
         };
 
         Assert.IsFalse(manager.IsApproved(changedPublisher));
+    }
+
+    [TestMethod]
+    public void ChangedEntryTypeRequiresNewConsent()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "plugin-trust.json");
+        var store = new ExternalPluginTrustStore(path);
+        var manager = new ExternalPluginTrustManager(store, store.Load());
+        var candidate = CreateCandidate(PluginCapability.LauncherCommands);
+        manager.Approve(candidate, DateTimeOffset.UtcNow);
+
+        Assert.IsFalse(manager.IsApproved(candidate with
+        {
+            EntryType = "SeanShell.OtherPlugin",
+        }));
+    }
+
+    [TestMethod]
+    public void SchemaOneConsentMigratesWithoutActivationEntryType()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "plugin-trust.json");
+        File.WriteAllText(path, $$"""
+            {
+              "schemaVersion": 1,
+              "consents": [
+                {
+                  "pluginId": "seanshell.sample",
+                  "publisherCertificateSha256": "{{PublisherHash}}",
+                  "grantedCapabilities": "launcherCommands",
+                  "grantedAtUtc": "2026-07-26T03:00:00+00:00"
+                }
+              ]
+            }
+            """);
+        var store = new ExternalPluginTrustStore(path);
+
+        var loaded = store.Load();
+
+        Assert.AreEqual(
+            ExternalPluginTrustDocument.CurrentSchemaVersion,
+            loaded.Document.SchemaVersion);
+        Assert.HasCount(1, loaded.Document.EffectiveConsents);
+        Assert.IsNull(loaded.Document.EffectiveConsents[0].EntryType);
     }
 
     [TestMethod]
@@ -163,7 +209,10 @@ public sealed class ExternalPluginTrustStoreTests
             ExternalPluginCandidateStatus.ReadyForConsent,
             "Trust checks passed.",
             new string('B', 64),
-            PublisherHash);
+            PublisherHash)
+        {
+            EntryType = "SeanShell.SamplePlugin",
+        };
 
     private sealed class TemporaryDirectory : IDisposable
     {

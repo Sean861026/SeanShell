@@ -32,6 +32,10 @@ public sealed class ExternalPluginTrustManager
 
         var consent = Find(candidate);
         return consent is not null &&
+               string.Equals(
+                   consent.EntryType,
+                   candidate.EntryType,
+                   StringComparison.Ordinal) &&
                (consent.GrantedCapabilities & candidate.Capabilities) == candidate.Capabilities;
     }
 
@@ -51,7 +55,8 @@ public sealed class ExternalPluginTrustManager
                 candidate.Id!,
                 fingerprint,
                 candidate.Capabilities,
-                grantedAtUtc.ToUniversalTime()))
+                grantedAtUtc.ToUniversalTime(),
+                candidate.EntryType))
             .OrderBy(static consent => consent.PluginId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(static consent => consent.PublisherCertificateSha256, StringComparer.OrdinalIgnoreCase)
             .ToArray();

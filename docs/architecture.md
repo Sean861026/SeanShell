@@ -607,9 +607,11 @@ Enabling while Gaming Mode is active initializes or resumes the plugin and then
 keeps it suspended until normal mode returns. A failed settings write rolls the
 runtime state back so persisted and visible state remain consistent.
 
-External consent is independent from built-in enablement. A schema-1
+External consent is independent from built-in enablement. A schema-2
 `plugin-trust.json` document binds the package ID, signer certificate SHA-256,
-exact capability flags, and UTC grant time. The trust manager saves a complete
+exact capability flags, optional activation entry type, and UTC grant time.
+Schema-1 documents migrate with a null entry type, retaining diagnostic consent
+while remaining unable to authorize activation. The trust manager saves a complete
 replacement document before changing its in-memory snapshot, so a failed write
 cannot create session-only approval. Primary corruption recovers from `.bak`;
 unrecoverable data fails closed to no approvals. Removing a package does not

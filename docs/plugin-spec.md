@@ -87,7 +87,7 @@ scan. Each package may contain a `plugin.json` of at most 64 KiB:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "example.publisher.plugin",
   "name": "Example plugin",
   "version": "0.1.0",
@@ -95,6 +95,7 @@ scan. Each package may contain a `plugin.json` of at most 64 KiB:
   "publisher": "Example Publisher",
   "capabilities": ["LauncherCommands"],
   "entryAssembly": "Example.Plugin.dll",
+  "entryType": "Example.Publisher.LauncherPlugin",
   "dependencies": [
     {
       "path": "lib/Example.Support.dll",
@@ -111,6 +112,11 @@ its package directory, and use no reparse-point path component. The catalog
 computes its SHA-256 content hash, asks Windows to validate its Authenticode trust
 chain and revocation status, then compares the signer's SHA-256 certificate
 fingerprint with the manifest. Duplicate IDs are rejected.
+
+External manifest schema 2 requires `entryType` to use the same bounded dotted
+ASCII identifier contract as broker activation. Schema 1 remains readable for
+diagnostic compatibility but cannot declare an activation entry type. Adding or
+changing an entry type therefore requires both schema 2 and fresh consent.
 
 `dependencies` is optional and contains at most 32 unique package-relative DLLs.
 Each item has a path of at most 240 characters, a SHA-256 content identity, and
@@ -129,18 +135,22 @@ diagnostic snapshot and provides an explicit **Recheck trust** action.
 
 Passing these checks makes the package eligible for explicit consent. The
 dashboard confirmation shows the package name, publisher, signer certificate
-SHA-256 fingerprint, and exact requested capabilities. A schema-1 decision is
+SHA-256 fingerprint, exact requested capabilities, and the schema-2 entry type
+when present. A schema-2 decision is
 stored separately in `%LOCALAPPDATA%\SeanShell\plugin-trust.json` and binds:
 
 - the stable plugin ID;
 - the signer certificate SHA-256 fingerprint;
 - the exact granted capability flags; and
+- the exact activation entry type, or `null` for a migrated schema-1 package; and
 - the UTC grant time.
 
 A new signer certificate or additional capability is not covered by an older
 decision. A user may revoke a candidate's decision or clear every stored decision,
 including approvals whose package directory no longer exists. Writes are atomic,
 retain a `.bak`, and recover safely; an unreadable document means no approvals.
+Schema-1 trust files migrate in memory to schema 2 with a null entry type, which
+preserves metadata-probe consent but cannot satisfy activation validation.
 
 Consent does not call `Assembly.Load`, instantiate a type, register a command, or
 pass the candidate to `PluginHost`. Third-party loading remains blocked until the

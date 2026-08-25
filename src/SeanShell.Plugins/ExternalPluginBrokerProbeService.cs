@@ -65,7 +65,8 @@ public sealed class ExternalPluginBrokerProbeService
             (int)candidate.Capabilities,
             issuedAtUtc,
             issuedAtUtc + GrantLifetime,
-            candidate.Dependencies ?? []);
+            candidate.Dependencies ?? [],
+            candidate.EntryType);
         try
         {
             var response = await _broker.ProbeMetadataAsync(grant, cancellationToken)
