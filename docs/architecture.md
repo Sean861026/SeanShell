@@ -532,7 +532,9 @@ does not match.
   non-empty subset of the short-lived grant. Protocol v4 does not carry that
   contract and cannot trigger loading. The grant reserves the same optional
   entry type, and future validation requires an ordinal exact match before any
-  loader can be reached; current metadata probes leave it empty.
+  loader can be reached. Schema-2 metadata probes carry the consent-bound value;
+  the broker validates its syntax, returns it inside the authenticated metadata,
+  and the host rejects any ordinal mismatch. Schema-1 probes retain a null value.
   The preview broker handles one bounded frame and exits. Before a
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects

@@ -99,6 +99,7 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
 Schema-1 diagnostic packages send `entryType: null`; schema-2 packages carry the
 exact consent-bound entry type even though `probe-metadata` does not activate it.
 The broker rejects grants with unknown capability bits, invalid IDs or hashes,
+invalid non-null activation entry types,
 non-absolute paths, a lifetime over 30 seconds, future/expired timestamps,
 missing or oversized files, directory traversal, reparse points, or a SHA-256
 mismatch. A dependency allowlist is limited to 32 canonical package-relative
@@ -122,7 +123,8 @@ returns only normalized identity metadata and never returns a path.
     "publisherCertificateSha256": "64_HEXADECIMAL_CHARACTERS",
     "grantedCapabilities": 1,
     "dependencyCount": 1,
-    "dependencySetSha256": "64_HEXADECIMAL_CHARACTERS"
+    "dependencySetSha256": "64_HEXADECIMAL_CHARACTERS",
+    "entryType": "Example.Publisher.LauncherPlugin"
   },
   "sessionId": "same_session_id",
   "nonce": "same_nonce",
@@ -133,6 +135,7 @@ returns only normalized identity metadata and never returns a path.
 The dependency-set digest is SHA-256 over a length-prefixed, path-normalized,
 case-normalized sequence sorted by relative path. The client first authenticates
 the response, then compares its envelope, metadata, dependency count/digest,
+exact ordinal activation entry type,
 started-process PID, exit code, and deadline. Any mismatch fails
 closed. A captured frame cannot authenticate in a later broker process because
 that process receives a different random key.

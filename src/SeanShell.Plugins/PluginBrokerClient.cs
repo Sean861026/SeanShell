@@ -35,35 +35,44 @@ public sealed class PluginBrokerClient : IPluginBrokerProbeClient
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(grant);
-        var dependencies = grant.Dependencies ?? [];
         var request = new PluginBrokerRequest(
             PluginBrokerProtocol.CurrentVersion,
             PluginBrokerProtocol.CreateRequestId(),
             PluginBrokerProtocol.MetadataProbeOperation,
             grant);
         var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
-        if (response.Metadata is null ||
-            !string.Equals(response.Metadata.PluginId, grant.PluginId, StringComparison.Ordinal) ||
-            !string.Equals(
-                response.Metadata.AssemblySha256,
-                grant.AssemblySha256,
-                StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(
-                response.Metadata.PublisherCertificateSha256,
-                grant.PublisherCertificateSha256,
-                StringComparison.OrdinalIgnoreCase) ||
-            response.Metadata.GrantedCapabilities != grant.GrantedCapabilities ||
-            response.Metadata.DependencyCount != dependencies.Length ||
-            !string.Equals(
-                response.Metadata.DependencySetSha256,
-                PluginBrokerDependencySet.ComputeDigest(dependencies),
-                StringComparison.OrdinalIgnoreCase))
+        if (!MetadataMatchesGrant(response.Metadata, grant))
         {
             throw new InvalidDataException(
                 "The plugin broker returned metadata that does not match the capability grant.");
         }
 
         return response;
+    }
+
+    internal static bool MetadataMatchesGrant(
+        PluginBrokerMetadata? metadata,
+        PluginBrokerGrant grant)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        var dependencies = grant.Dependencies ?? [];
+        return metadata is not null &&
+               string.Equals(metadata.PluginId, grant.PluginId, StringComparison.Ordinal) &&
+               string.Equals(
+                   metadata.AssemblySha256,
+                   grant.AssemblySha256,
+                   StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(
+                   metadata.PublisherCertificateSha256,
+                   grant.PublisherCertificateSha256,
+                   StringComparison.OrdinalIgnoreCase) &&
+               metadata.GrantedCapabilities == grant.GrantedCapabilities &&
+               metadata.DependencyCount == dependencies.Length &&
+               string.Equals(
+                   metadata.DependencySetSha256,
+                   PluginBrokerDependencySet.ComputeDigest(dependencies),
+                   StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(metadata.EntryType, grant.EntryType, StringComparison.Ordinal);
     }
 
     private async Task<PluginBrokerResponse> SendAsync(

@@ -145,7 +145,83 @@ public sealed class PluginBrokerTests
         Assert.IsNotNull(response.Metadata);
         Assert.AreEqual(request.Grant!.PluginId, response.Metadata.PluginId);
         Assert.AreEqual(request.Grant.AssemblySha256, response.Metadata.AssemblySha256);
+        Assert.IsNull(response.Metadata.EntryType);
         StringAssert.Contains(response.Status, "activation remains disabled");
+    }
+
+    [TestMethod]
+    public async Task SessionReturnsExactValidatedActivationEntryType()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var original = CreateProbeRequest(package, now);
+        var request = Authenticate(original with
+        {
+            Grant = original.Grant! with
+            {
+                EntryType = "Example.Publisher.LauncherPlugin",
+            },
+        });
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now);
+
+        Assert.IsTrue(response.Accepted);
+        Assert.IsNotNull(response.Metadata);
+        Assert.AreEqual(request.Grant!.EntryType, response.Metadata.EntryType);
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsInvalidActivationEntryType()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var original = CreateProbeRequest(package, now);
+        var request = Authenticate(original with
+        {
+            Grant = original.Grant! with { EntryType = "Example.Plugin, UnsafeAssembly" },
+        });
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now);
+
+        Assert.IsFalse(response.Accepted);
+        StringAssert.Contains(response.Status, "invalid activation entry type");
+    }
+
+    [TestMethod]
+    public void ClientMetadataValidationRequiresExactActivationEntryType()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var grant = CreateProbeRequest(package, now).Grant! with
+        {
+            EntryType = "Example.Publisher.LauncherPlugin",
+        };
+        var metadata = new PluginBrokerMetadata(
+            grant.PluginId,
+            grant.AssemblySha256,
+            grant.PublisherCertificateSha256,
+            grant.GrantedCapabilities,
+            DependencySetSha256: PluginBrokerDependencySet.ComputeDigest([]),
+            EntryType: "Example.Publisher.OtherPlugin");
+
+        Assert.IsFalse(PluginBrokerClient.MetadataMatchesGrant(metadata, grant));
+        Assert.IsTrue(PluginBrokerClient.MetadataMatchesGrant(
+            metadata with { EntryType = grant.EntryType },
+            grant));
     }
 
     [TestMethod]
@@ -433,6 +509,7 @@ public sealed class PluginBrokerTests
         Assert.IsTrue(response.Accepted);
         Assert.IsNotNull(response.Metadata);
         Assert.AreEqual(request.Grant!.PluginId, response.Metadata.PluginId);
+        Assert.AreEqual(request.Grant.EntryType, response.Metadata.EntryType);
         Assert.AreEqual(1, response.Metadata.DependencyCount);
         Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
     }
