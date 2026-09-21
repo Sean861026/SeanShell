@@ -161,7 +161,8 @@ revocation state immediately before every brokered activation rather than
 trusting an earlier diagnostic snapshot.
 
 The exact packaged `SeanShell.App.exe` starts as a separate child process in
-`--plugin-broker` mode and implements the version-4 health and metadata-probe
+`--plugin-broker` mode and implements the version-5 health, metadata-probe, and
+non-loading activation-preflight
 operations described in
 [plugin-broker-protocol.md](plugin-broker-protocol.md). The host repeats trust
 and consent validation before issuing a 15-second grant bound to the package
@@ -188,7 +189,7 @@ assembly's data-only DTOs. Query text, display descriptors, opaque command IDs,
 descriptor-set digests, fixed outcomes, and short messages are bounded and
 strictly decoded. The DTOs contain no `ShellCommand` delegate and no field for
 an executable, arguments, URL, local path, or shell string. They remain
-disconnected from protocol v4.
+disconnected from protocol v5.
 
 Future activation has a separate strict request contract. The selected entry
 type must be a bounded dotted ASCII identifier, and requested capability bits

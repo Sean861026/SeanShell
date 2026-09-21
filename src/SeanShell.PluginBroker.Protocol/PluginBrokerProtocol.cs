@@ -5,7 +5,7 @@ namespace SeanShell.PluginBroker.Protocol;
 
 public static class PluginBrokerProtocol
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
     public const int MaximumFrameCharacters = 64 * 1024;
     public const long MaximumEntryAssemblyBytes = 256 * 1024 * 1024;
     public const long MaximumDependencyBytes = 256 * 1024 * 1024;
@@ -15,6 +15,7 @@ public static class PluginBrokerProtocol
     public const int KnownCapabilityMask = 3;
     public const string HealthOperation = "health";
     public const string MetadataProbeOperation = "probe-metadata";
+    public const string ActivationPreflightOperation = "preflight-activation";
     public static readonly TimeSpan MaximumGrantLifetime = TimeSpan.FromSeconds(30);
 
     private static readonly JsonSerializerOptions SerializerOptions = new()

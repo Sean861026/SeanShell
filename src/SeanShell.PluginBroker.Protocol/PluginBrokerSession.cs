@@ -86,7 +86,7 @@ public static class PluginBrokerSession
                 PluginBrokerProtocol.HealthOperation,
                 StringComparison.Ordinal))
         {
-            return request.Grant is null
+            return request.Grant is null && request.Activation is null
                 ? new PluginBrokerResponse(
                     PluginBrokerProtocol.CurrentVersion,
                     request.RequestId,
@@ -95,15 +95,25 @@ public static class PluginBrokerSession
                     processId,
                     SessionId: request.SessionId,
                     Nonce: request.Nonce)
-                : Reject(request, processId, "Health requests may not include a capability grant.");
+                : Reject(request, processId, "Health requests may not include a grant or activation target.");
         }
 
-        if (!string.Equals(
-                request.Operation,
-                PluginBrokerProtocol.MetadataProbeOperation,
-                StringComparison.Ordinal))
+        var isMetadataProbe = string.Equals(
+            request.Operation,
+            PluginBrokerProtocol.MetadataProbeOperation,
+            StringComparison.Ordinal);
+        var isActivationPreflight = string.Equals(
+            request.Operation,
+            PluginBrokerProtocol.ActivationPreflightOperation,
+            StringComparison.Ordinal);
+        if (!isMetadataProbe && !isActivationPreflight)
         {
             return Reject(request, processId, "The requested operation is not enabled.");
+        }
+
+        if (isMetadataProbe && request.Activation is not null)
+        {
+            return Reject(request, processId, "Metadata probes may not include an activation target.");
         }
 
         var validationError = ValidateGrant(request.Grant, currentTimeUtc);
@@ -155,6 +165,17 @@ public static class PluginBrokerSession
             }
         }
 
+        if (isActivationPreflight)
+        {
+            var activationError = PluginBrokerActivationContract.Validate(
+                request.Activation,
+                grant);
+            if (activationError is not null)
+            {
+                return Reject(request, processId, activationError);
+            }
+        }
+
         var dependencies = grant.Dependencies ?? [];
         var dependencyError = await ValidateDependenciesAsync(
             packageDirectory,
@@ -170,7 +191,9 @@ public static class PluginBrokerSession
             PluginBrokerProtocol.CurrentVersion,
             request.RequestId,
             true,
-            "Package metadata matched the short-lived capability grant; activation remains disabled.",
+            isActivationPreflight
+                ? "Activation preflight matched the short-lived grant; loading remains disabled."
+                : "Package metadata matched the short-lived capability grant; activation remains disabled.",
             processId,
             new PluginBrokerMetadata(
                 grant.PluginId,

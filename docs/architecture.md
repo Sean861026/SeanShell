@@ -45,8 +45,8 @@ optional Windows features, Winlogon, the current user SID, or Explorer startup.
 - Packaged production composition starts the exact `SeanShell.App.exe` in
   `--plugin-broker` mode. The custom entry point selects this path before WinUI
   initialization. `SeanShell.PluginBroker` is a console test harness over the
-  same runtime. Protocol v4 accepts a health handshake and a short-lived,
-  capability-bound metadata probe, but contains no loading or activation path.
+  same runtime. Protocol v5 accepts a health handshake, a short-lived
+  capability-bound metadata probe, and a non-loading activation preflight.
 - projects under `plugins/` contain explicitly registered built-in implementations.
 
 Dependencies point inward: App may depend on every module; Gaming and
@@ -536,10 +536,10 @@ does not match.
   fixed outcomes, and hashes; no enabled request/response references them.
   A separate data-only activation contract restricts the future entry type to a
   bounded dotted ASCII identifier and requires requested capabilities to be a
-  non-empty subset of the short-lived grant. Protocol v4 does not carry that
-  contract and cannot trigger loading. The grant reserves the same optional
-  entry type, and future validation requires an ordinal exact match before any
-  loader can be reached. Schema-2 metadata probes carry the consent-bound value;
+  non-empty subset of the short-lived grant. Protocol v5 carries that contract
+  only through a preflight operation that cannot trigger loading. The grant
+  carries the same optional entry type, and validation requires an ordinal exact
+  match before any loader can be reached. Schema-2 metadata probes carry the consent-bound value;
   the broker validates its syntax, returns it inside the authenticated metadata,
   and the host rejects any ordinal mismatch. Schema-1 probes retain a null value.
   The preview broker handles one bounded frame and exits. Before a

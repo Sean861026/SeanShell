@@ -141,7 +141,7 @@ host.
 
 ```text
 PluginBrokerClient
-  -> create protocol-v4 request + random request/session IDs, nonce, session key
+  -> create protocol-v5 request + random request/session IDs, nonce, session key
   -> App composition supplies Environment.ProcessPath from the packaged App
   -> CreateProcessW exact SeanShell.App.exe path + --plugin-broker + CREATE_SUSPENDED
   -> STARTUPINFOEX inherits stdin / stdout / stderr + private key pipe only
@@ -178,11 +178,12 @@ External plugin ID
        3 failures / 10 minutes -> quarantine for 30 minutes
 ```
 
-Protocol v4 uses paths only inside the one-shot metadata probe. It carries no
-file content, persisted consent document, type, method, launcher query, or
-activation operation. No response returns a local path and nothing connects the
-probe to `PluginHost`. No broker instruction or runtime initialization executes
-before Job assignment.
+Protocol v5 uses paths only inside one-shot metadata and activation-preflight
+requests. It carries no file content, persisted consent document, method,
+launcher query, or executable command. Preflight carries only the exact bounded
+entry type and capability subset; no response returns a local path and nothing
+connects the operation to `PluginHost`. No broker instruction or runtime
+initialization executes before Job assignment.
 
 Dependency manifests contain at most 32 canonical package-relative `.dll` paths,
 their managed/native kind, and SHA-256. The host also checks Authenticode and

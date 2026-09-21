@@ -616,7 +616,7 @@
                                                 TextWrapping="Wrap" />
                                             <TextBlock
                                                 Style="{StaticResource SeanCaptionTextStyle}"
-                                                Text="Broker protocol v2 can match an approved package hash to a 15-second capability grant in a separate process. Activation and command execution remain unavailable."
+                                                Text="Broker protocol v5 can validate an approved package, exact entry type, and capability subset in a separate process. Loading and command execution remain unavailable."
                                                 TextWrapping="Wrap" />
                                         </StackPanel>
                                         <TextBlock
