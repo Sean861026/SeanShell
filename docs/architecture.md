@@ -546,6 +546,9 @@ does not match.
   metadata probe, the host repeats catalog trust and consent checks and sends a
   grant valid for 15 seconds. The broker accepts at most 30 seconds, rejects
   unknown capabilities, traversal and reparse points, and recomputes SHA-256.
+  Schema-2 diagnostics then issue a second one-shot activation preflight with
+  the same grant, exact entry type, and consented capability mask. Schema-1
+  diagnostics stop after metadata probing. Neither path loads candidate code.
 - External manifests may allowlist at most 32 managed/native dependency DLLs.
   The host requires canonical package-relative paths, bounded individual and
   aggregate size, declared SHA-256, Authenticode trust, and the same publisher

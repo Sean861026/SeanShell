@@ -71,6 +71,22 @@ public sealed class ExternalPluginBrokerProbeService
         {
             var response = await _broker.ProbeMetadataAsync(grant, cancellationToken)
                 .ConfigureAwait(false);
+            if (candidate.EntryType is not null)
+            {
+                if (_broker is not IPluginBrokerActivationPreflightClient preflightClient)
+                {
+                    throw new InvalidOperationException(
+                        "Schema-2 external diagnostics require activation-preflight support.");
+                }
+
+                response = await preflightClient.PreflightActivationAsync(
+                    grant,
+                    new PluginBrokerActivationRequest(
+                        candidate.EntryType,
+                        (int)candidate.Capabilities),
+                    cancellationToken).ConfigureAwait(false);
+            }
+
             _quarantine.RecordSuccess(candidate.Id!);
             return response;
         }
