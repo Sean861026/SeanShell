@@ -35,6 +35,28 @@ public sealed class ExternalPluginBrokerProbeServiceTests
     }
 
     [TestMethod]
+    public async Task ProbeAsync_SchemaTwoRunsBoundActivationPreflightAfterMetadataProbe()
+    {
+        using var package = new TemporaryExternalPackage(schemaVersion: 2);
+        var setup = await CreateApprovedSetupAsync(package);
+        var broker = new PreflightStubBroker();
+        var service = new ExternalPluginBrokerProbeService(
+            setup.Catalog,
+            setup.Trust,
+            broker,
+            CreateQuarantineManager(package.RootDirectory));
+
+        var response = await service.ProbeAsync(setup.Candidate.Id!);
+
+        Assert.IsTrue(response.Accepted);
+        Assert.AreEqual(1, broker.MetadataProbeCount);
+        Assert.AreEqual(1, broker.PreflightCount);
+        Assert.IsNotNull(broker.Activation);
+        Assert.AreEqual(setup.Candidate.EntryType, broker.Activation.EntryType);
+        Assert.AreEqual((int)setup.Candidate.Capabilities, broker.Activation.RequestedCapabilities);
+    }
+
+    [TestMethod]
     public async Task ProbeAsync_RevokedAfterConsent_FailsBeforeBrokerLaunch()
     {
         using var package = new TemporaryExternalPackage();
@@ -373,6 +395,35 @@ public sealed class ExternalPluginBrokerProbeServiceTests
         }
     }
 
+    private sealed class PreflightStubBroker : IPluginBrokerActivationPreflightClient
+    {
+        public int MetadataProbeCount { get; private set; }
+
+        public int PreflightCount { get; private set; }
+
+        public PluginBrokerActivationRequest? Activation { get; private set; }
+
+        public Task<PluginBrokerResponse> ProbeMetadataAsync(
+            PluginBrokerGrant grant,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            MetadataProbeCount++;
+            return Task.FromResult(CreateAcceptedResponse(grant));
+        }
+
+        public Task<PluginBrokerResponse> PreflightActivationAsync(
+            PluginBrokerGrant grant,
+            PluginBrokerActivationRequest activation,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            PreflightCount++;
+            Activation = activation;
+            return Task.FromResult(CreateAcceptedResponse(grant));
+        }
+    }
+
     private sealed class ManualTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         private DateTimeOffset _utcNow = utcNow;
@@ -389,7 +440,7 @@ public sealed class ExternalPluginBrokerProbeServiceTests
 
     private sealed class TemporaryExternalPackage : IDisposable
     {
-        public TemporaryExternalPackage()
+        public TemporaryExternalPackage(int schemaVersion = 1)
         {
             RootDirectory = Path.Combine(
                 Path.GetTempPath(),
@@ -402,7 +453,7 @@ public sealed class ExternalPluginBrokerProbeServiceTests
                 Path.Combine(packageDirectory, "plugin.json"),
                 $$"""
                   {
-                    "schemaVersion": 1,
+                    "schemaVersion": {{schemaVersion}},
                     "id": "seanshell.sample-probe",
                     "name": "Sample probe",
                     "version": "0.1.0",
@@ -410,6 +461,7 @@ public sealed class ExternalPluginBrokerProbeServiceTests
                     "publisher": "SeanShell tests",
                     "capabilities": [ "LauncherCommands" ],
                     "entryAssembly": "Sample.Plugin.dll",
+                    {{(schemaVersion == 2 ? "\"entryType\": \"Example.Publisher.LauncherPlugin\"," : string.Empty)}}
                     "publisherCertificateSha256": "{{PublisherHash}}"
                   }
                   """);
