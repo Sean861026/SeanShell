@@ -7,4 +7,5 @@ public sealed record PluginBrokerRequest(
     PluginBrokerGrant? Grant = null,
     string SessionId = "",
     string Nonce = "",
-    string? AuthenticationTag = null);
+    string? AuthenticationTag = null,
+    PluginBrokerActivationRequest? Activation = null);

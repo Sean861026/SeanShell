@@ -95,6 +95,7 @@
 - [x] Broker-side entry-type validation and authenticated metadata round-trip
 - [x] Inactive metadata-only entry-point contract inspector without assembly loading
 - [x] Brokered schema-2 entry-point preflight after exact assembly hash validation
+- [x] Authenticated activation-preflight operation with no assembly loading
 - [ ] Capability-restricted broker activation and out-of-process isolation
 - [ ] Production certificate pipeline and signed external loading through an isolated broker
 - [x] Persistent per-plugin enable/disable controls with schema v3 migration

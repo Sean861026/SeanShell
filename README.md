@@ -347,19 +347,20 @@ before external plugins can be accepted for execution. See the
 [plugin specification](docs/plugin-spec.md) for the preview manifest and consent
 boundary.
 
-Protocol v4 now runs in a fail-closed child process of the exact packaged
+Protocol v5 now runs in a fail-closed child process of the exact packaged
 `SeanShell.App.exe`. A custom entry point selects broker mode before WinUI or
 WinRT initialization; normal launches continue into the desktop UI. The
 standalone `SeanShell.PluginBroker` executable remains only as a test harness,
 and both hosts share `SeanShell.PluginBroker.Runtime`. The protocol accepts
-bounded `health` and read-only
-`probe-metadata` requests over a per-process HMAC-authenticated channel; the host
+bounded `health`, read-only `probe-metadata`, and non-loading
+`preflight-activation` requests over a per-process HMAC-authenticated channel; the host
 verifies the response envelope, PID, and request ID within two seconds. Every
 broker receives a one-process, 256 MiB, kill-on-close Windows Job Object before
 its suspended primary thread is resumed. Only the three redirected streams and
 a one-use session-key pipe are inherited. The broker then disables
 legacy extension points, unsafe image sources, and child-process creation before
-reading a request. The protocol still never loads or activates a plugin, and the
+reading a request. Preflight binds the exact consented entry type and capability
+subset but still never loads or activates a plugin, and the
 App does not use the new load context to run external code. See the
 [broker protocol](docs/plugin-broker-protocol.md).
 

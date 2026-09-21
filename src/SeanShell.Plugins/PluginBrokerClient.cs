@@ -50,6 +50,29 @@ public sealed class PluginBrokerClient : IPluginBrokerProbeClient
         return response;
     }
 
+    public async Task<PluginBrokerResponse> PreflightActivationAsync(
+        PluginBrokerGrant grant,
+        PluginBrokerActivationRequest activation,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        ArgumentNullException.ThrowIfNull(activation);
+        var request = new PluginBrokerRequest(
+            PluginBrokerProtocol.CurrentVersion,
+            PluginBrokerProtocol.CreateRequestId(),
+            PluginBrokerProtocol.ActivationPreflightOperation,
+            grant,
+            Activation: activation);
+        var response = await SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!MetadataMatchesGrant(response.Metadata, grant))
+        {
+            throw new InvalidDataException(
+                "The plugin broker returned metadata that does not match the capability grant.");
+        }
+
+        return response;
+    }
+
     internal static bool MetadataMatchesGrant(
         PluginBrokerMetadata? metadata,
         PluginBrokerGrant grant)

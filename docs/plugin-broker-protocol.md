@@ -2,9 +2,10 @@
 
 ## Status
 
-Protocol version 4 is a fail-closed, process-boundary preview. It supports a
-health handshake and a read-only `probe-metadata` operation. It does not load an
-assembly, inspect managed types, activate a plugin, or execute a command.
+Protocol version 5 is a fail-closed, process-boundary preview. It supports a
+health handshake, a read-only `probe-metadata` operation, and a non-loading
+`preflight-activation` operation. It does not load an assembly, instantiate a
+plugin, or execute a command.
 
 Each request uses a new broker process and a new random 256-bit session key. The
 host creates the broker with its primary thread suspended and permits inheritance
@@ -49,7 +50,7 @@ query text, arbitrary command strings, or persisted consent documents.
 
 ```json
 {
-  "protocolVersion": 4,
+  "protocolVersion": 5,
   "requestId": "32_character_lowercase_guid",
   "operation": "health",
   "grant": null,
@@ -59,7 +60,7 @@ query text, arbitrary command strings, or persisted consent documents.
 }
 ```
 
-A health request containing a grant is rejected.
+A health request containing a grant or activation target is rejected.
 
 ## Metadata probe request
 
@@ -69,7 +70,7 @@ exact publisher/capability consent, and creates a grant valid for 15 seconds.
 
 ```json
 {
-  "protocolVersion": 4,
+  "protocolVersion": 5,
   "requestId": "32_character_lowercase_guid",
   "operation": "probe-metadata",
   "grant": {
@@ -108,11 +109,42 @@ are `managed` or `native`. The broker rejects duplicates, the entry assembly
 listed as its own dependency, traversal, reparse points, and hash changes. It
 returns only normalized identity metadata and never returns a path.
 
+## Activation preflight request
+
+Schema-2 packages can request a non-loading preflight after the same trust and
+grant checks. The activation target must exactly match the grant entry type, and
+requested capabilities must be a non-empty subset of the granted capabilities.
+
+```json
+{
+  "protocolVersion": 5,
+  "requestId": "32_character_lowercase_guid",
+  "operation": "preflight-activation",
+  "grant": {
+    "pluginId": "example.publisher.plugin",
+    "entryType": "Example.Publisher.LauncherPlugin",
+    "grantedCapabilities": 1
+  },
+  "activation": {
+    "entryType": "Example.Publisher.LauncherPlugin",
+    "requestedCapabilities": 1
+  },
+  "sessionId": "32_character_lowercase_guid",
+  "nonce": "64_HEXADECIMAL_CHARACTERS",
+  "authenticationTag": "64_HEXADECIMAL_CHARACTERS"
+}
+```
+
+The abbreviated grant above highlights the binding; production requests include
+all paths, hashes, timestamps, and dependencies shown in the metadata probe.
+Acceptance means only that the package, type metadata, and capability subset
+matched. The process exits without loading or instantiating the plugin.
+
 ## Accepted response
 
 ```json
 {
-  "protocolVersion": 4,
+  "protocolVersion": 5,
   "requestId": "same_request_id",
   "accepted": true,
   "status": "Package metadata matched the short-lived capability grant; activation remains disabled.",
@@ -185,20 +217,19 @@ activation version:
 Their codec rejects unknown JSON members, control characters, invalid IDs,
 duplicate IDs/keywords, oversized frames, and invalid digests. There is no
 delegate, executable, path, argument, URL, or shell field. These types do not
-change protocol v4 and no request or response currently carries them.
+change protocol v5 and no request or response currently carries them.
 
 The protocol also reserves a data-only `PluginBrokerActivationRequest`. Its
 entry type is limited to a 256-character dotted ASCII identifier with no nested,
 generic, assembly-qualified, path, or argument syntax. Requested capabilities
 must be non-empty, contain only known bits, and be a subset of the independently
-validated short-lived grant. Protocol v4 still carries no activation request and
-does not load the declared type.
+validated short-lived grant. Protocol v5 carries this request only for
+`preflight-activation` and does not load the declared type.
 
 The reserved entry type is also carried by the short-lived grant. Activation
 validation requires an ordinal, character-for-character match between request
-and grant in addition to the capability subset check. Existing metadata-probe
-grants omit this optional field, so this binding still cannot enable protocol-v4
-execution.
+and grant in addition to the capability subset check. Schema-2 probes carry the
+field while schema-1 probes leave it null; neither path enables execution.
 
 Before code execution is added, the broker still needs:
 

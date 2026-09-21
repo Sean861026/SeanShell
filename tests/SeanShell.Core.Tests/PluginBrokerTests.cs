@@ -125,6 +125,64 @@ public sealed class PluginBrokerTests
     }
 
     [TestMethod]
+    public async Task SessionAcceptsBoundActivationPreflightWithoutLoadingAssembly()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var original = CreateProbeRequest(package, now);
+        var entryType = "Example.Publisher.LauncherPlugin";
+        var request = Authenticate(original with
+        {
+            Operation = PluginBrokerProtocol.ActivationPreflightOperation,
+            Grant = original.Grant! with { EntryType = entryType },
+            Activation = new PluginBrokerActivationRequest(entryType, 1),
+        });
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now,
+            entryPointValidator: static (_, _) => null);
+
+        Assert.IsTrue(response.Accepted);
+        Assert.IsNotNull(response.Metadata);
+        Assert.AreEqual(entryType, response.Metadata.EntryType);
+        StringAssert.Contains(response.Status, "loading remains disabled");
+    }
+
+    [TestMethod]
+    public async Task SessionRejectsActivationPreflightCapabilityEscalation()
+    {
+        using var package = new TemporaryBrokerPackage();
+        var now = DateTimeOffset.UtcNow;
+        var original = CreateProbeRequest(package, now);
+        var entryType = "Example.Publisher.LauncherPlugin";
+        var request = Authenticate(original with
+        {
+            Operation = PluginBrokerProtocol.ActivationPreflightOperation,
+            Grant = original.Grant! with { EntryType = entryType },
+            Activation = new PluginBrokerActivationRequest(entryType, 3),
+        });
+        using var input = new StringReader(PluginBrokerProtocol.Serialize(request));
+        using var output = new StringWriter();
+
+        var response = await PluginBrokerSession.RunAsync(
+            input,
+            output,
+            processId: 123,
+            SessionKey,
+            currentTimeUtc: now,
+            entryPointValidator: static (_, _) => null);
+
+        Assert.IsFalse(response.Accepted);
+        StringAssert.Contains(response.Status, "subset");
+    }
+
+    [TestMethod]
     public async Task SessionProbesMatchingMetadataWithoutLoadingAssembly()
     {
         using var package = new TemporaryBrokerPackage();
@@ -540,6 +598,37 @@ public sealed class PluginBrokerTests
         Assert.AreEqual(request.Grant!.PluginId, response.Metadata.PluginId);
         Assert.AreEqual(request.Grant.EntryType, response.Metadata.EntryType);
         Assert.AreEqual(1, response.Metadata.DependencyCount);
+        Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
+    }
+
+    [TestMethod]
+    public async Task ClientCompletesActivationPreflightInSeparateProcess()
+    {
+        var entryAssembly = typeof(SeanShell.Plugin.DeveloperTools.DeveloperToolsPlugin)
+            .Assembly.Location;
+        var now = DateTimeOffset.UtcNow;
+        var entryType = typeof(SeanShell.Plugin.DeveloperTools.DeveloperToolsPlugin)
+            .FullName!;
+        var grant = new PluginBrokerGrant(
+            "seanshell.developer-tools",
+            Path.GetDirectoryName(entryAssembly)!,
+            entryAssembly,
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                await File.ReadAllBytesAsync(entryAssembly))),
+            new string('A', 64),
+            1,
+            now,
+            now + TimeSpan.FromSeconds(15),
+            EntryType: entryType);
+        var client = new PluginBrokerClient(FindBrokerExecutable());
+
+        var response = await client.PreflightActivationAsync(
+            grant,
+            new PluginBrokerActivationRequest(entryType, 1));
+
+        Assert.IsTrue(response.Accepted);
+        Assert.IsNotNull(response.Metadata);
+        Assert.AreEqual(entryType, response.Metadata.EntryType);
         Assert.AreNotEqual(Environment.ProcessId, response.BrokerProcessId);
     }
 

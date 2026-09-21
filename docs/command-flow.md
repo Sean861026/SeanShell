@@ -175,7 +175,7 @@ User revokes one candidate or all stored consent
 ## Plugin broker boundary checks
 
 ```text
-Host creates a protocol-v4 health request + random 256-bit session key
+Host creates a protocol-v5 health request + random 256-bit session key
   -> production composition resolves exact packaged SeanShell.App.exe
   -> CreateProcessW starts it with --plugin-broker and CREATE_SUSPENDED
   -> inherit only stdin / stdout / stderr + private key-pipe handles
@@ -243,7 +243,7 @@ bounded query text + maximum results
   -> canonical command-set SHA-256
   -> invocation contains only opaque command ID + set digest
   -> result contains only fixed outcome + bounded display message
-  -> no protocol v4 operation consumes or produces these DTOs
+  -> no protocol v5 operation consumes or produces these command DTOs
 ```
 
 ## Git repository refresh
