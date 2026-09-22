@@ -5,16 +5,39 @@
 
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
-            <SolidColorBrush x:Key="SeanDockGlassShellBrush" Color="#80202024" />
-            <SolidColorBrush x:Key="SeanDockGlassRegionBrush" Color="#403F3F45" />
-            <SolidColorBrush x:Key="SeanDockGlassSystemBrush" Color="#593F3F45" />
-            <SolidColorBrush x:Key="SeanDockGlassStrokeBrush" Color="#5CFFFFFF" />
+            <LinearGradientBrush x:Key="SeanDockGlassShellBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#DA193747" Offset="0" />
+                <GradientStop Color="#EE0B1220" Offset="0.4" />
+                <GradientStop Color="#E72C2046" Offset="0.8" />
+                <GradientStop Color="#D0443541" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="SeanDockGlassRegionBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#384EE4F4" Offset="0" />
+                <GradientStop Color="#120B1220" Offset="0.35" />
+                <GradientStop Color="#304F3288" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SeanDockGlassSystemBrush" Color="#60242138" />
+            <LinearGradientBrush x:Key="SeanDockGlassStrokeBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#B889EEFF" Offset="0" />
+                <GradientStop Color="#304AA9CC" Offset="0.4" />
+                <GradientStop Color="#808F79E8" Offset="0.72" />
+                <GradientStop Color="#B8E5C99B" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SeanLuxuryDetailBrush" Color="#E5C99B" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="SeanDockGlassShellBrush" Color="#8CF5F5F7" />
             <SolidColorBrush x:Key="SeanDockGlassRegionBrush" Color="#45FFFFFF" />
             <SolidColorBrush x:Key="SeanDockGlassSystemBrush" Color="#66FFFFFF" />
             <SolidColorBrush x:Key="SeanDockGlassStrokeBrush" Color="#70FFFFFF" />
+            <SolidColorBrush x:Key="SeanLuxuryDetailBrush" Color="#71501D" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <SolidColorBrush x:Key="SeanDockGlassShellBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SeanDockGlassRegionBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SeanDockGlassSystemBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SeanDockGlassStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SeanLuxuryDetailBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
