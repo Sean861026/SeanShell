@@ -12,7 +12,7 @@
         <MicaBackdrop Kind="BaseAlt" />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="LauncherRoot" KeyDown="OnWindowKeyDown">
+    <Grid x:Name="LauncherRoot" Background="{ThemeResource SeanDockGlassShellBrush}" KeyDown="OnWindowKeyDown">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -32,8 +32,8 @@
 
             <Border
                 Padding="16,16,16,16"
-                Background="{ThemeResource AccentFillColorSecondaryBrush}"
-                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                Background="{ThemeResource SeanDockGlassRegionBrush}"
+                BorderBrush="{ThemeResource SeanDockGlassStrokeBrush}"
                 BorderThickness="1"
                 CornerRadius="{StaticResource SeanCardCornerRadius}">
                 <StackPanel Spacing="{StaticResource SeanSpace12}">
@@ -46,6 +46,8 @@
                             <TextBlock
                                 FontSize="11"
                                 FontWeight="SemiBold"
+                                CharacterSpacing="180"
+                                Foreground="{ThemeResource SeanLuxuryDetailBrush}"
                                 Text="COMMAND PALETTE" />
                             <TextBlock
                                 Style="{StaticResource SeanSectionTitleTextStyle}"
