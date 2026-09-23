@@ -71,7 +71,7 @@ public sealed partial class WindowPreviewWindow : Window
         PreviewRoot.Background = Application.Current.Resources[
             enabled
                 ? "CardBackgroundFillColorDefaultBrush"
-                : "LayerOnAcrylicFillColorDefaultBrush"] as Brush;
+                : "SeanDockGlassShellBrush"] as Brush;
     }
 
     public void Show(
