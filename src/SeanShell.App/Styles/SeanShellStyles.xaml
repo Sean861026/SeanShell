@@ -32,6 +32,14 @@
             <SolidColorBrush x:Key="SeanDashboardHeroTextBrush" Color="#FFF5F8FF" />
             <SolidColorBrush x:Key="SeanDashboardCardBrush" Color="#FF1D2538" />
             <SolidColorBrush x:Key="SeanDashboardCardStrokeBrush" Color="#655DADC2" />
+            <LinearGradientBrush x:Key="SeanDashboardIconTileBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#FF19566A" Offset="0" />
+                <GradientStop Color="#FF30345F" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SeanDashboardIconTileStrokeBrush" Color="#8089EEFF" />
+            <SolidColorBrush x:Key="SeanDashboardAccentBrush" Color="#FF89EEFF" />
+            <SolidColorBrush x:Key="SeanDashboardStatusPillBrush" Color="#FF294558" />
+            <SolidColorBrush x:Key="SeanDashboardStatusTextBrush" Color="#FFC6F5FF" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
             <SolidColorBrush x:Key="SeanDockGlassShellBrush" Color="#8CF5F5F7" />
@@ -46,6 +54,11 @@
             <SolidColorBrush x:Key="SeanDashboardHeroTextBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="SeanDashboardCardBrush" Color="#FFF2F6FC" />
             <SolidColorBrush x:Key="SeanDashboardCardStrokeBrush" Color="#80617393" />
+            <SolidColorBrush x:Key="SeanDashboardIconTileBrush" Color="#FFD7EDF3" />
+            <SolidColorBrush x:Key="SeanDashboardIconTileStrokeBrush" Color="#806A98B4" />
+            <SolidColorBrush x:Key="SeanDashboardAccentBrush" Color="#FF006B82" />
+            <SolidColorBrush x:Key="SeanDashboardStatusPillBrush" Color="#FFDEF4F9" />
+            <SolidColorBrush x:Key="SeanDashboardStatusTextBrush" Color="#FF005E73" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <SolidColorBrush x:Key="SeanDockGlassShellBrush" Color="{ThemeResource SystemColorWindowColor}" />
@@ -57,6 +70,11 @@
             <SolidColorBrush x:Key="SeanDashboardHeroTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="SeanDashboardCardBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="SeanDashboardCardStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SeanDashboardIconTileBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SeanDashboardIconTileStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SeanDashboardAccentBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="SeanDashboardStatusPillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="SeanDashboardStatusTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -176,7 +194,9 @@
     <Style x:Key="SeanIconTileStyle" TargetType="Border">
         <Setter Property="Width" Value="40" />
         <Setter Property="Height" Value="40" />
-        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource SeanDashboardIconTileBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource SeanDashboardIconTileStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanIconCornerRadius}" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -193,8 +213,8 @@
         x:Key="SeanAccentStatusPillStyle"
         BasedOn="{StaticResource SeanStatusPillStyle}"
         TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource AccentFillColorDefaultBrush}" />
+        <Setter Property="Background" Value="{ThemeResource SeanDashboardStatusPillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource SeanDashboardIconTileStrokeBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
 
