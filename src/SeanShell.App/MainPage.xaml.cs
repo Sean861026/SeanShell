@@ -518,6 +518,19 @@ public sealed partial class MainPage : Page
 
     private void ApplyAdaptiveLayout(double width)
     {
+        // A ScrollViewer measures its content with an unconstrained width. Pin the
+        // dashboard to the viewport so wide child controls cannot push the
+        // centered page off-screen while horizontal scrolling is disabled.
+        if (double.IsFinite(width) && width > 0)
+        {
+            DashboardRoot.Width = Math.Min(width, DashboardRoot.MaxWidth);
+            DashboardSections.Width = Math.Max(
+                0,
+                DashboardRoot.Width -
+                DashboardRoot.Padding.Left -
+                DashboardRoot.Padding.Right);
+        }
+
         var medium = width >= 760;
         var wide = width >= 1280;
         var star = new GridLength(1, GridUnitType.Star);
