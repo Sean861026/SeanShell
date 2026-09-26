@@ -193,6 +193,9 @@ bypass Windows foreground restrictions.
 Companion Taskbar mode covers running-window switching, a Launcher/Start button,
 Show desktop / Restore windows, and up to eight pinned Start Menu applications
 synchronized across every Dock.
+Closing the Dashboard window hides only the Dashboard; the Dock continues to run.
+Open the Dashboard again from the Dock, or choose **Exit SeanShell** from the
+Dock background menu to stop the shell and restore the Windows taskbars.
 Search for an installed App in Launcher and use its pin button to add or remove
 it. A running app with an explicitly matched Start Menu shortcut can also be
 pinned from its Dock context menu; multiple matching shortcuts appear in a
