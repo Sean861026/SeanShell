@@ -71,12 +71,14 @@
                             Width="44"
                             Height="44"
                             HorizontalAlignment="Left"
-                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            Background="{ThemeResource SeanDashboardIconTileBrush}"
+                            BorderBrush="{ThemeResource SeanDashboardIconTileStrokeBrush}"
+                            BorderThickness="1"
                             CornerRadius="{StaticResource SeanIconCornerRadius}">
                             <FontIcon
                                 FontFamily="Segoe Fluent Icons"
                                 FontSize="19"
-                                Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                Foreground="{ThemeResource SeanDashboardIconForegroundBrush}"
                                 Glyph="&#xE721;" />
                         </Border>
                         <TextBox
@@ -115,6 +117,7 @@
                             <TextBlock
                                 x:Name="ResultStatus"
                                 AutomationProperties.LiveSetting="Polite"
+                                Foreground="{ThemeResource SeanDashboardStatusTextBrush}"
                                 Style="{StaticResource SeanCaptionTextStyle}"
                                 Text="Loading commands…" />
                         </Border>
@@ -146,7 +149,9 @@
                                             CornerRadius="{StaticResource SeanCompactCornerRadius}">
                                             <Grid>
                                                 <Border
-                                                    Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                                    Background="{ThemeResource SeanDashboardIconTileBrush}"
+                                                    BorderBrush="{ThemeResource SeanDashboardIconTileStrokeBrush}"
+                                                    BorderThickness="1"
                                                     CornerRadius="{StaticResource SeanCompactCornerRadius}"
                                                     Visibility="{Binding FallbackIconVisibility}" />
                                                 <FontIcon
@@ -154,6 +159,7 @@
                                                     VerticalAlignment="Center"
                                                     FontFamily="Segoe Fluent Icons"
                                                     FontSize="18"
+                                                    Foreground="{ThemeResource SeanDashboardIconForegroundBrush}"
                                                     Glyph="{Binding Glyph}"
                                                     Visibility="{Binding FallbackIconVisibility}" />
                                                 <Image
