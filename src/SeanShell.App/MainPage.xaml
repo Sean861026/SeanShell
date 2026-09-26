@@ -136,6 +136,7 @@
                                     Text="Sampling…" />
                                 <ProgressBar
                                     x:Name="CpuProgress"
+                                    Foreground="{ThemeResource SeanDashboardAccentBrush}"
                                     Maximum="100"
                                     AutomationProperties.Name="CPU usage" />
                             </StackPanel>
@@ -166,6 +167,7 @@
                                     Text="Loading…" />
                                 <ProgressBar
                                     x:Name="MemoryProgress"
+                                    Foreground="{ThemeResource SeanDashboardAccentBrush}"
                                     Maximum="100"
                                     AutomationProperties.Name="Memory usage" />
                             </StackPanel>
@@ -224,6 +226,7 @@
                                         x:Name="ModeText"
                                         FontSize="18"
                                         FontWeight="SemiBold"
+                                        Foreground="{ThemeResource SeanDashboardStatusTextBrush}"
                                         Text="Normal" />
                                 </Border>
                                 <TextBlock
