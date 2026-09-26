@@ -293,6 +293,12 @@ public sealed partial class MainPage : Page
             message,
             InfoBarSeverity.Warning);
 
+    public void SetLauncherFailed(string message) =>
+        SetSettingsStatus(
+            "Launcher unavailable",
+            message,
+            InfoBarSeverity.Warning);
+
     public void SetTaskbarReplacementPreferenceUnchanged(
         bool enabled,
         string message)

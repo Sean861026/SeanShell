@@ -77,6 +77,7 @@ public sealed partial class LauncherWindow : Window
     public async Task ShowLauncherAsync(DisplayMonitorSnapshot? targetMonitor = null)
     {
         var firstUsableStopwatch = Stopwatch.StartNew();
+        var searchToken = BeginSearch();
         ResizeAndCenterOnDisplay(targetMonitor);
         AppWindow.Show();
         Activate();
@@ -93,14 +94,25 @@ public sealed partial class LauncherWindow : Window
 
         SearchBox.Focus(FocusState.Programmatic);
         SearchBox.SelectAll();
-        await RefreshResultsAsync(string.Empty).ConfigureAwait(true);
-        firstUsableStopwatch.Stop();
-        _performanceMonitor.RecordFirstUsable(firstUsableStopwatch.Elapsed);
+        try
+        {
+            await RefreshResultsAsync(string.Empty, searchToken).ConfigureAwait(true);
+            firstUsableStopwatch.Stop();
+            _performanceMonitor.RecordFirstUsable(firstUsableStopwatch.Elapsed);
+        }
+        catch (OperationCanceledException) when (searchToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            ShowError("Search unavailable", exception);
+        }
     }
 
     public void HideLauncher()
     {
         _searchCancellation?.Cancel();
+        SearchProgress.IsActive = false;
         AppWindow.Hide();
     }
 
@@ -116,8 +128,20 @@ public sealed partial class LauncherWindow : Window
 
     public void Shutdown()
     {
+        _searchCancellation?.Cancel();
+        _searchCancellation?.Dispose();
+        _searchCancellation = null;
         _allowClose = true;
         Close();
+    }
+
+    private CancellationToken BeginSearch()
+    {
+        // Each async search keeps its own token. Disposing the previous source
+        // here can race provider and icon tasks still observing that token.
+        _searchCancellation?.Cancel();
+        _searchCancellation = new CancellationTokenSource();
+        return _searchCancellation.Token;
     }
 
     private void ConfigurePresenter()
@@ -185,17 +209,19 @@ public sealed partial class LauncherWindow : Window
             return;
         }
 
-        _searchCancellation?.Cancel();
-        _searchCancellation?.Dispose();
-        _searchCancellation = new CancellationTokenSource();
-
         try
         {
-            await Task.Delay(60, _searchCancellation.Token).ConfigureAwait(true);
-            await RefreshResultsAsync(SearchBox.Text, _searchCancellation.Token).ConfigureAwait(true);
+            var searchToken = BeginSearch();
+            var query = SearchBox.Text;
+            await Task.Delay(60, searchToken).ConfigureAwait(true);
+            await RefreshResultsAsync(query, searchToken).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            ShowError("Search unavailable", exception);
         }
     }
 
@@ -225,10 +251,14 @@ public sealed partial class LauncherWindow : Window
             ResultsList.SelectedIndex = Results.Count > 0 ? 0 : -1;
             EmptyState.Visibility = Results.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             ResultStatus.Text = Results.Count == 1 ? "1 result" : $"{Results.Count} results";
+            ErrorInfoBar.IsOpen = false;
         }
         finally
         {
-            SearchProgress.IsActive = false;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                SearchProgress.IsActive = false;
+            }
         }
     }
 
@@ -247,6 +277,19 @@ public sealed partial class LauncherWindow : Window
         catch (OperationCanceledException)
         {
         }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Debug.WriteLine($"Unable to load a Launcher result icon. {exception}");
+        }
+    }
+
+    private void ShowError(string title, Exception exception)
+    {
+        Debug.WriteLine($"Launcher error: {exception}");
+        SearchProgress.IsActive = false;
+        ErrorInfoBar.Title = title;
+        ErrorInfoBar.Message = exception.Message;
+        ErrorInfoBar.IsOpen = true;
     }
 
     private async void OnResultClicked(object sender, ItemClickEventArgs e)
@@ -282,10 +325,9 @@ public sealed partial class LauncherWindow : Window
                 result.SetPinned(shouldPin);
             }
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ErrorInfoBar.Message = exception.Message;
-            ErrorInfoBar.IsOpen = true;
+            ShowError("Unable to change pin", exception);
         }
     }
 
@@ -341,10 +383,9 @@ public sealed partial class LauncherWindow : Window
             await result.Command.ExecuteAsync(CancellationToken.None).ConfigureAwait(true);
             HideLauncher();
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ErrorInfoBar.Message = exception.Message;
-            ErrorInfoBar.IsOpen = true;
+            ShowError("Unable to open command", exception);
         }
     }
 
