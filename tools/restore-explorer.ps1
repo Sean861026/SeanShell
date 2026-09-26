@@ -13,18 +13,9 @@ if ($null -eq $explorer) {
 $seanShell = Get-Process -Name SeanShell.App -ErrorAction SilentlyContinue
 if ($null -ne $seanShell) {
     foreach ($process in @($seanShell)) {
-        $process.CloseMainWindow() | Out-Null
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "Requested SeanShell to close."
-
-    Start-Sleep -Seconds 2
-    $remaining = Get-Process -Name SeanShell.App -ErrorAction SilentlyContinue
-    if ($null -ne $remaining) {
-        foreach ($process in @($remaining)) {
-            Stop-Process -Id $process.Id -Force
-        }
-        Write-Host "Stopped SeanShell after it did not close within 2 seconds."
-    }
+    Write-Host "Stopped SeanShell processes for emergency taskbar recovery."
 }
 
 if (-not ("SeanShellTaskbarRecovery.NativeMethods" -as [type])) {

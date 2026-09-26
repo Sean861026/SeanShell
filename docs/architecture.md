@@ -643,9 +643,9 @@ available.
 
 When an automatic launch is blocked, the Windows boundary ensures Explorer is
 running before SeanShell exits. `tools/restore-explorer.ps1` provides the same
-recovery path, requests a graceful close, stops only a still-running
-`SeanShell.App` process after two seconds, and removes both packaged and
-unpackaged health-document locations. The guard does not change Winlogon,
+recovery path, stops `SeanShell.App` processes immediately because dashboard
+close now only hides the window, and removes both packaged and unpackaged
+health-document locations. The guard does not change Winlogon,
 Scheduled Tasks, registry Run keys, or the configured Windows shell.
 
 `GamingModeManager` combines two independent sources: a session-only manual

@@ -757,8 +757,7 @@ game executables to avoid keeping gaming mode active indefinitely.
 ```text
 User runs tools/restore-explorer.ps1
   -> start explorer.exe when it is not running
-  -> request a graceful SeanShell shutdown
-  -> still running after two seconds: stop only SeanShell.App
+  -> stop SeanShell.App processes for emergency recovery
   -> explicitly show primary and secondary Windows taskbars
   -> remove startup-health.json to reset automatic-start protection
 ```

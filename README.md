@@ -64,7 +64,10 @@ The default remains **Overlay mode** beside Explorer. Users can opt into
 guard before hiding any primary or secondary Windows taskbar and restores all
 taskbars when the option is disabled or SeanShell closes. If the main process is
 forced to exit, the independent guard restores them. If the UI and guard both
-become unavailable, run `tools/restore-explorer.ps1` from PowerShell.
+become unavailable, run `tools/restore-explorer.ps1` from PowerShell. This
+emergency script stops SeanShell processes, restores the Windows taskbars, and
+resets startup-health history; use the Dock's **Exit SeanShell** menu item for
+normal shutdown.
 
 Gaming mode pauses optional background work; it does not change process priority,
 disable Windows security, or inject an overlay into games.
