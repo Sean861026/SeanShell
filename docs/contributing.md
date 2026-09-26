@@ -23,6 +23,26 @@ dotnet build SeanShell.sln -c Release -p:Platform=x64 --no-restore
 dotnet test SeanShell.sln -c Release -p:Platform=x64 --no-build
 ```
 
+## Interactive Launcher and Dock smoke check
+
+Automated Core tests do not exercise WinUI's background image-surface work. For
+changes to the Launcher, Dock, or application icons, run the packaged x64 Release
+app in an interactive Windows session and check the following before merging:
+
+1. Open the Launcher from the Dock button, click the search box, and search for
+   installed applications with native icons.
+2. Replace the query quickly with a different app name, then close and reopen
+   the Launcher from the Dock. Confirm results and icons update without the app
+   exiting or a stale progress indicator remaining.
+3. Leave the Dock and Launcher running for at least two minutes after icon-heavy
+   searches. Exit SeanShell normally and confirm the Windows taskbar returns if
+   Companion Taskbar mode was enabled.
+
+If the process exits unexpectedly, inspect the local Windows Application event
+and crash dump before assigning the cause to the last visible click. A WinUI
+background image task can fail after the initiating UI action has completed.
+Crash dumps may contain private window data; do not commit or upload them.
+
 ## Change guidelines
 
 1. Create a focused branch and explain the user impact in the pull request.
