@@ -1586,19 +1586,34 @@ public sealed partial class MainWindow : Window
         _settings.AutomaticGamingModeEnabled &&
         GameDetector.ParseRules(_settings.GameProcessRules).Count > 0;
 
-    private void OnLauncherRequested(object? sender, EventArgs e)
+    private async void OnLauncherRequested(object? sender, EventArgs e)
     {
-        var requestedMonitorHandle = sender is DockWindow dock
-            ? dock.MonitorHandle
-            : 0;
-        var targetIndex = LauncherTargetMonitorResolver.Resolve(
-            _monitors,
-            requestedMonitorHandle,
-            _desktopWindows.CaptureForegroundMonitorHandle());
-        var targetMonitor = targetIndex >= 0 && targetIndex < _monitors.Count
-            ? _monitors[targetIndex]
-            : null;
-        _ = GetOrCreateLauncherWindow().ShowLauncherAsync(targetMonitor);
+        try
+        {
+            var requestedMonitorHandle = sender is DockWindow dock
+                ? dock.MonitorHandle
+                : 0;
+            var targetIndex = LauncherTargetMonitorResolver.Resolve(
+                _monitors,
+                requestedMonitorHandle,
+                _desktopWindows.CaptureForegroundMonitorHandle());
+            var targetMonitor = targetIndex >= 0 && targetIndex < _monitors.Count
+                ? _monitors[targetIndex]
+                : null;
+            await GetOrCreateLauncherWindow()
+                .ShowLauncherAsync(targetMonitor)
+                .ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Debug.WriteLine($"Unable to open Launcher: {exception}");
+            if (RootFrame.Content is MainPage mainPage)
+            {
+                mainPage.SetLauncherFailed(exception.Message);
+            }
+
+            ShowDashboard();
+        }
     }
 
     private LauncherWindow GetOrCreateLauncherWindow()
