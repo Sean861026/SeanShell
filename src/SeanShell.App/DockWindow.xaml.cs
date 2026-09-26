@@ -1792,7 +1792,6 @@ public sealed partial class DockWindow : Window
 
     private void OnLauncherClicked(object sender, RoutedEventArgs e)
     {
-        PlayLaunchFeedback(LauncherIcon);
         LauncherRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
     }
@@ -2292,14 +2291,10 @@ public sealed partial class DockWindow : Window
             previous.Stop();
         }
 
-        var translate = target.RenderTransform as TranslateTransform;
-        if (translate is null)
-        {
-            translate = new TranslateTransform();
-            target.RenderTransform = translate;
-        }
-
-        translate.Y = 0;
+        // Dock magnification owns ScaleTransition on this visual. Changing its
+        // RenderTransform while that transition is active throws in WinUI and
+        // terminates the shell, so launch feedback animates opacity instead.
+        target.Opacity = 1;
         var animation = new DoubleAnimationUsingKeyFrames
         {
             Duration = new Duration(TimeSpan.FromMilliseconds(
@@ -2311,18 +2306,18 @@ public sealed partial class DockWindow : Window
             {
                 KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(
                     motion.DurationMilliseconds * frame.Progress)),
-                Value = frame.TranslationY,
+                Value = frame.Opacity,
                 EasingFunction = new CubicEase
                 {
-                    EasingMode = frame.TranslationY == 0
+                    EasingMode = frame.Opacity == 1
                         ? EasingMode.EaseIn
                         : EasingMode.EaseOut,
                 },
             });
         }
 
-        Storyboard.SetTarget(animation, translate);
-        Storyboard.SetTargetProperty(animation, nameof(TranslateTransform.Y));
+        Storyboard.SetTarget(animation, target);
+        Storyboard.SetTargetProperty(animation, nameof(UIElement.Opacity));
         var transition = new Storyboard();
         transition.Children.Add(animation);
         transition.Completed += (_, _) =>
@@ -2333,7 +2328,7 @@ public sealed partial class DockWindow : Window
                 return;
             }
 
-            translate.Y = 0;
+            target.Opacity = 1;
             transition.Stop();
         };
         _launchFeedbackTransitions[target] = transition;
