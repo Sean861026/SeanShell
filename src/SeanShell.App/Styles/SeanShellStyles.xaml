@@ -268,6 +268,8 @@
     </Style>
 
     <Style x:Key="SeanDockMenuFlyoutPresenterStyle" TargetType="MenuFlyoutPresenter">
+        <Setter Property="Background" Value="{ThemeResource SeanDockGlassShellBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource SeanDockGlassStrokeBrush}" />
         <Setter Property="MinWidth" Value="{StaticResource SeanDockMenuMinWidth}" />
         <Setter Property="MaxWidth" Value="420" />
         <Setter Property="Padding" Value="4" />
@@ -297,14 +299,14 @@
 
     <Style x:Key="SeanDockFlyoutPresenterStyle" TargetType="FlyoutPresenter">
         <Setter Property="Padding" Value="0" />
-        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource SeanDockGlassStrokeBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
     </Style>
 
     <Style x:Key="SeanDockFlyoutSurfaceStyle" TargetType="Border">
         <Setter Property="Padding" Value="{StaticResource SeanSpace16}" />
-        <Setter Property="Background" Value="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}" />
+        <Setter Property="Background" Value="{ThemeResource SeanDockGlassShellBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCardCornerRadius}" />
     </Style>
 
@@ -331,7 +333,7 @@
     <Style x:Key="SeanDockFlyoutIconTileStyle" TargetType="Border">
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="36" />
-        <Setter Property="Background" Value="{ThemeResource AccentFillColorSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource SeanDockGlassRegionBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource SeanCompactCornerRadius}" />
     </Style>
 
