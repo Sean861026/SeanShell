@@ -41,37 +41,37 @@
                                 Height="48"
                                 HorizontalAlignment="Left"
                                 Background="Transparent"
-                                BorderBrush="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                BorderBrush="{ThemeResource SeanDashboardHeroTextBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12">
                                 <FontIcon
                                     FontFamily="Segoe Fluent Icons"
                                     FontSize="22"
-                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                    Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                                     Glyph="&#xE8A7;" />
                             </Border>
                             <StackPanel Spacing="{StaticResource SeanSpace8}">
                                 <TextBlock
-                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                    Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                                     Style="{StaticResource SeanHeroTitleTextStyle}"
                                     Text="Developer workspace" />
                                 <TextBlock
                                     MaxWidth="720"
                                     HorizontalAlignment="Left"
-                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                    Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                                     Text="Your live Windows context, organized for focused development without replacing Explorer." />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource SeanSpace8}">
                                 <Border Style="{StaticResource SeanStatusPillStyle}">
                                     <TextBlock
                                         FontSize="12"
-                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                        Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                                         Text="Explorer compatible" />
                                 </Border>
                                 <Border Style="{StaticResource SeanStatusPillStyle}">
                                     <TextBlock
                                         FontSize="12"
-                                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                        Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                                         Text="No hooks or injection" />
                                 </Border>
                             </StackPanel>
@@ -84,8 +84,8 @@
                             HorizontalAlignment="Left"
                             AutomationProperties.HelpText="Open the keyboard-first application launcher."
                             Background="Transparent"
-                            BorderBrush="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                            BorderBrush="{ThemeResource SeanDashboardHeroTextBrush}"
+                            Foreground="{ThemeResource SeanDashboardHeroTextBrush}"
                             Click="OnOpenLauncherClicked"
                             Content="Open Launcher"
                             Style="{StaticResource DefaultButtonStyle}" />
