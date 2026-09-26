@@ -11,6 +11,8 @@ internal static class ApplicationIconSourceCache
 {
     private static readonly ConditionalWeakTable<ApplicationIconSnapshot, ImageSource>
         Sources = new();
+    private static readonly ConditionalWeakTable<ImageSource, SoftwareBitmap>
+        SourceBitmaps = new();
     private static readonly object Gate = new();
 
     public static async Task<ImageSource?> GetAsync(ApplicationIconSnapshot? icon)
@@ -31,13 +33,17 @@ internal static class ApplicationIconSourceCache
         try
         {
             var pixels = icon.BgraPixels.ToArray();
-            using var bitmap = SoftwareBitmap.CreateCopyFromBuffer(
+            var bitmap = SoftwareBitmap.CreateCopyFromBuffer(
                 pixels.AsBuffer(),
                 BitmapPixelFormat.Bgra8,
                 icon.Width,
                 icon.Height,
                 BitmapAlphaMode.Premultiplied);
             var source = new SoftwareBitmapSource();
+            // XAML may copy the pixels to its surface after SetBitmapAsync
+            // returns. Closing the bitmap here can fail-fast that worker with
+            // RO_E_CLOSED, so keep it alive for as long as the source is used.
+            SourceBitmaps.Add(source, bitmap);
             await source.SetBitmapAsync(bitmap);
 
             lock (Gate)
