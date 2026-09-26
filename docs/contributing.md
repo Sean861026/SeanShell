@@ -35,7 +35,9 @@ app in an interactive Windows session and check the following before merging:
    the Launcher from the Dock. Confirm results and icons update without the app
    exiting or a stale progress indicator remaining.
 3. Leave the Dock and Launcher running for at least two minutes after icon-heavy
-   searches. Exit SeanShell normally and confirm the Windows taskbar returns if
+   searches. Close the Dashboard with its title-bar X and confirm the Dock stays
+   available; reopen the Dashboard from the Dock. Then choose **Exit SeanShell**
+   from the Dock background menu and confirm the Windows taskbar returns if
    Companion Taskbar mode was enabled.
 
 If the process exits unexpectedly, inspect the local Windows Application event

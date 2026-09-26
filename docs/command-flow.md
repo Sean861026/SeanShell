@@ -26,7 +26,7 @@ Windows sign-in
   -> 30 seconds alive: mark startup healthy and clear failure count
 ```
 
-A normal main-window close clears the pending session immediately. Unexpected
+A deliberate **Exit SeanShell** clears the pending session immediately. Unexpected
 termination during the first 30 seconds leaves it pending for the next launch.
 The Shell preferences toggle calls the packaged Windows startup-task API. The
 dashboard displays the live Windows state rather than persisting a second copy.
@@ -48,6 +48,20 @@ SeanShell is already running
 The primary process owns the only set of monitor-local Docks. Redirected
 activation never injects into another process and does not create another shell
 composition root.
+
+## Dashboard close and shell exit
+
+```text
+User closes Dashboard with the title-bar X
+  -> cancel only the Dashboard window close
+  -> hide the Dashboard; monitor-local Docks and replacement state stay active
+  -> Dock Dashboard command or redirected manual launch restores the same window
+
+User chooses Exit SeanShell from the Dock background menu
+  -> allow the main window to close
+  -> remove Dock AppBar reservations and restore native Windows taskbars
+  -> stop timers, Docks, plugins, and recovery guard normally
+```
 
 ## Full shell readiness preview
 

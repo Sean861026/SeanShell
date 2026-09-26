@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using SeanShell.Core;
@@ -51,6 +52,7 @@ public sealed partial class MainWindow : Window
     private SystemAccessibilityService? _accessibility;
     private DesktopWindowChangeObserver? _desktopWindowObserver;
     private volatile bool _isClosing;
+    private bool _exitRequested;
     private SystemAccessibilitySnapshot _systemAccessibility = new(true, 1, false);
     private DisplayChangeObserver? _displayChangeObserver;
     private IReadOnlyList<DisplayMonitorSnapshot> _monitors;
@@ -162,6 +164,7 @@ public sealed partial class MainWindow : Window
         _shellState.StateChanged += OnShellStateChanged;
         _gamingMode.StatusChanged += OnGamingSessionStatusChanged;
         Activated += OnActivated;
+        AppWindow.Closing += OnDashboardClosing;
         Closed += OnClosed;
     }
 
@@ -1643,7 +1646,22 @@ public sealed partial class MainWindow : Window
         ShowDashboard();
     }
 
-    private void OnExitRequested(object? sender, EventArgs e) => Close();
+    private void OnExitRequested(object? sender, EventArgs e)
+    {
+        _exitRequested = true;
+        Close();
+    }
+
+    private void OnDashboardClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_exitRequested)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        AppWindow.Hide();
+    }
 
     private void OnDockRequested(object? sender, EventArgs e)
     {
