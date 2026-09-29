@@ -60,6 +60,8 @@ public sealed partial class DockWindow : Window
     private bool _autoHide = true;
     private bool _collapsed;
     private bool _contextMenuOpen;
+    private bool _clockFlyoutOpen;
+    private bool _quickSettingsFlyoutOpen;
     private bool _hasKeyboardFocus;
     private bool _immersiveSuppressed;
     private bool _modalDialogOpen;
@@ -539,18 +541,23 @@ public sealed partial class DockWindow : Window
         }
     }
 
+    private bool CanAutoHide => DockAutoHidePolicy.CanCollapse(
+        _autoHide,
+        _pointerInside,
+        _hasKeyboardFocus,
+        _contextMenuOpen || _modalDialogOpen ||
+            _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
+            _previewWindow?.IsVisible == true,
+        _shellState.Current.Mode == ShellMode.Gaming);
+
     private void ScheduleAutoHide()
     {
-        if ((!_autoHide && !_immersiveSuppressed) ||
-            _contextMenuOpen ||
-            _modalDialogOpen ||
-            _previewWindow?.IsVisible == true ||
-            _shellState.Current.Mode == ShellMode.Gaming)
+        _autoHideTimer.Stop();
+        if (!CanAutoHide)
         {
             return;
         }
 
-        _autoHideTimer.Stop();
         _autoHideTimer.Start();
     }
 
@@ -793,7 +800,8 @@ public sealed partial class DockWindow : Window
 
     private void OnAutoHideTimerTick(DispatcherQueueTimer sender, object args)
     {
-        if (!_pointerInside && !_hasKeyboardFocus && _autoHide)
+        sender.Stop();
+        if (CanAutoHide)
         {
             SetCollapsed(true);
         }
@@ -2034,11 +2042,14 @@ public sealed partial class DockWindow : Window
 
     private void OnClockFlyoutOpening(object sender, object e)
     {
+        _clockFlyoutOpen = true;
+        _autoHideTimer.Stop();
         DockCalendarView.SetDisplayDate(_clockTimestamp);
     }
 
     private void OnClockFlyoutClosed(object sender, object e)
     {
+        _clockFlyoutOpen = false;
         ScheduleAutoHide();
     }
 
@@ -2054,6 +2065,8 @@ public sealed partial class DockWindow : Window
 
     private void OnQuickSettingsOpening(object sender, object e)
     {
+        _quickSettingsFlyoutOpen = true;
+        _autoHideTimer.Stop();
         _quickAudioControlsActive = false;
         _lastSystemStatus = _systemStatus.Capture();
         var systemText =
@@ -2067,6 +2080,7 @@ public sealed partial class DockWindow : Window
 
     private void OnQuickSettingsClosed(object sender, object e)
     {
+        _quickSettingsFlyoutOpen = false;
         _quickAudioControlsActive = false;
         ScheduleAutoHide();
     }
