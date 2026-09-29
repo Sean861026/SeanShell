@@ -80,6 +80,7 @@ public sealed partial class DockWindow : Window
     private SystemStatusSnapshot _lastSystemStatus =
         new(null, false, null, null, false);
     private nint _returnFocusWindow;
+    private long _keyboardEntryVersion;
     private InputWindowIdentity? _lastInputStatusTarget;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
@@ -229,8 +230,14 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    public void FocusDock()
+    public long FocusDock()
     {
+        if (_allowClose)
+        {
+            return 0;
+        }
+
+        var request = ++_keyboardEntryVersion;
         _explicitGamingSwitch = _shellState.Current.Mode == ShellMode.Gaming;
         _autoHideTimer.Stop();
         var foregroundWindow = _windowService.CaptureForegroundWindowHandle();
@@ -246,6 +253,37 @@ public sealed partial class DockWindow : Window
         Activate();
         _ = _windowService.RestoreAndActivate(dockWindow);
         _ = LauncherButton.Focus(FocusState.Keyboard);
+        return request;
+    }
+
+    public void CompleteKeyboardEntry(long request)
+    {
+        if (!_allowClose)
+        {
+            // A hotkey can complete the inventory refresh inside the current
+            // input dispatch. Give WinUI one turn to settle focus/layout first.
+            _ = DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low,
+                () => ApplyKeyboardEntry(request));
+        }
+    }
+
+    private void ApplyKeyboardEntry(long request)
+    {
+        // The one-shot inventory refresh can finish after the user has already
+        // navigated, switched applications, dismissed the Dock, or exited.
+        if (_allowClose || request != _keyboardEntryVersion || !_explicitGamingSwitch ||
+            _shellState.Current.Mode != ShellMode.Gaming ||
+            _contextMenuOpen || _modalDialogOpen ||
+            _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
+            LauncherButton.FocusState == FocusState.Unfocused ||
+            !IsDockForeground())
+        {
+            return;
+        }
+
+        var index = TaskbarWindowCycleResolver.ResolveNextIndex(
+            Items.Select(static item => item.IsForeground).ToArray());
+        FocusRunningItem(index);
     }
 
     public void SetAutoHide(bool enabled)
@@ -374,6 +412,13 @@ public sealed partial class DockWindow : Window
 
     public void Shutdown()
     {
+        if (_allowClose)
+        {
+            return;
+        }
+
+        _allowClose = true;
+        _keyboardEntryVersion++;
         _autoHideTimer.Stop();
         _displayScaleRefreshTimer.Stop();
         _previewDelayTimer.Stop();
@@ -398,7 +443,6 @@ public sealed partial class DockWindow : Window
         _shellState.StateChanged -= OnShellStateChanged;
         Activated -= OnDockActivated;
         _ = _workAreaReservation.Release();
-        _allowClose = true;
         Close();
     }
 
@@ -611,6 +655,14 @@ public sealed partial class DockWindow : Window
 
     private void RefreshWindowItems()
     {
+        if (_allowClose)
+        {
+            return;
+        }
+
+        var preserveKeyboardFocus = HasKeyboardFocusWithin(WindowList);
+        var previousIndex = WindowList.SelectedIndex;
+        var previousKey = (WindowList.SelectedItem as DockItemViewModel)?.GroupKey;
         Items.Clear();
         var orderedGroups = TaskbarWindowOrder.Apply(
             TaskbarWindowGrouper.Group(_monitorWindows),
@@ -626,8 +678,75 @@ public sealed partial class DockWindow : Window
             _ = item.LoadIconAsync();
         }
 
-        WindowList.SelectedItem = Items.FirstOrDefault(static item => item.IsForeground);
+        var foregroundIndex = Items.ToList().FindIndex(static item => item.IsForeground);
+        var selectedIndex = DockKeyboardNavigation.ResolveRefreshIndex(
+            Items.Select(static item => item.GroupKey).ToArray(),
+            previousKey, previousIndex, preserveKeyboardFocus, foregroundIndex);
+        WindowList.SelectedIndex = selectedIndex;
+        if (preserveKeyboardFocus && IsDockForeground())
+        {
+            if (selectedIndex >= 0)
+            {
+                FocusRunningItem(selectedIndex);
+            }
+            else
+            {
+                _ = LauncherButton.Focus(FocusState.Keyboard);
+            }
+        }
+
         ResetWindowOverflowControls();
+    }
+
+    private bool IsDockForeground() => !_allowClose &&
+        _windowService.CaptureForegroundWindowHandle() ==
+        WinRT.Interop.WindowNative.GetWindowHandle(this);
+
+    private bool HasKeyboardFocusWithin(DependencyObject ancestor)
+    {
+        if (_allowClose || !_hasKeyboardFocus || WindowList.XamlRoot is null || !IsDockForeground())
+        {
+            return false;
+        }
+
+        var focused = FocusManager.GetFocusedElement(WindowList.XamlRoot) as DependencyObject;
+        while (focused is not null)
+        {
+            if (ReferenceEquals(focused, ancestor))
+            {
+                return true;
+            }
+
+            focused = VisualTreeHelper.GetParent(focused);
+        }
+
+        return false;
+    }
+
+    private void FocusRunningItem(int index)
+    {
+        if (_allowClose || index < 0 || index >= Items.Count || !IsDockForeground())
+        {
+            return;
+        }
+
+        var item = Items[index];
+        WindowList.SelectedItem = item;
+        WindowList.ScrollIntoView(item);
+        WindowList.UpdateLayout();
+        if (_allowClose || !IsDockForeground())
+        {
+            return;
+        }
+
+        if (WindowList.ContainerFromItem(item) is Control container)
+        {
+            _ = container.Focus(FocusState.Keyboard);
+        }
+        else
+        {
+            _ = WindowList.Focus(FocusState.Keyboard);
+        }
     }
 
     private void OnWindowListLoaded(object sender, RoutedEventArgs e)
@@ -827,6 +946,7 @@ public sealed partial class DockWindow : Window
 
     private void HideGamingSwitch()
     {
+        _keyboardEntryVersion++;
         _explicitGamingSwitch = false;
         _hasKeyboardFocus = false;
         _pointerInside = false;
@@ -1488,7 +1608,7 @@ public sealed partial class DockWindow : Window
 
     private void OnDockKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key != global::Windows.System.VirtualKey.Escape)
+        if (_allowClose || e.Key != global::Windows.System.VirtualKey.Escape)
         {
             return;
         }
@@ -1509,6 +1629,59 @@ public sealed partial class DockWindow : Window
         {
             _autoHideTimer.Stop();
             SetCollapsed(true);
+        }
+    }
+
+    private void OnWindowListPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (_allowClose || _contextMenuOpen || _modalDialogOpen ||
+            _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
+            KeyboardModifierStateReader.IsControlPressed() ||
+            KeyboardModifierStateReader.IsShiftPressed() ||
+            KeyboardModifierStateReader.IsAltPressed())
+        {
+            return;
+        }
+
+        DockNavigationDirection? direction = e.Key switch
+        {
+            global::Windows.System.VirtualKey.Left => DockNavigationDirection.Previous,
+            global::Windows.System.VirtualKey.Right => DockNavigationDirection.Next,
+            global::Windows.System.VirtualKey.Home => DockNavigationDirection.First,
+            global::Windows.System.VirtualKey.End => DockNavigationDirection.Last,
+            _ => null,
+        };
+        if (direction is not null)
+        {
+            e.Handled = true;
+            DismissWindowPreview();
+            FocusRunningItem(DockKeyboardNavigation.Move(Items.Count, WindowList.SelectedIndex, direction.Value));
+            return;
+        }
+
+        if (e.Key is not (global::Windows.System.VirtualKey.Enter or global::Windows.System.VirtualKey.Space) ||
+            WindowList.SelectedItem is not DockItemViewModel item)
+        {
+            return;
+        }
+
+        // Handle before ListView's default ItemClick to avoid its mouse toggle
+        // semantics minimizing the application the keyboard user wants to enter.
+        e.Handled = true;
+        DismissWindowPreview();
+        if (item.WindowCount == 1)
+        {
+            if (!_windowService.RestoreAndActivate(item.PrimaryWindow.Handle))
+            {
+                ReportApplicationActionFailure("Unable to switch window",
+                    new InvalidOperationException("Windows did not activate the selected window."));
+            }
+
+            ScheduleAutoHide();
+        }
+        else if (WindowList.ContainerFromItem(item) is FrameworkElement anchor)
+        {
+            ShowWindowPicker(item, anchor);
         }
     }
 

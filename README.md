@@ -135,6 +135,20 @@ before the Dock opened and immediately collapse an auto-hidden Dock.
 are registered independently, and either one rolls back to its previous binding
 if Windows reports a conflict.
 
+In Gaming mode, the Dock shortcut performs a one-shot window refresh and moves
+focus directly to the next running application on that display, skipping the
+previous foreground group when another group exists. If you already navigated
+or switched away during the refresh, it does not move focus again. An empty list
+keeps the Launcher button available.
+
+Within the running-app list, Left/Right wrap between groups; Home/End select the
+first/last. Enter or Space restores and activates a single window, even when it
+was active before entering the Dock. Multi-window groups open the native window
+picker. Mouse clicks retain their normal minimize/restore toggle. Inventory
+updates preserve the keyboard-selected group; a closed group falls back to the
+nearest remaining slot. Tab still reaches the other Dock controls and Escape
+returns to the previous application.
+
 The Launcher card measures the first successful window presentation and the most
 recent 50 successful provider/ranking operations. It shows the latest search and
 nearest-rank P95 beside the M1 targets. Measurements remain in memory for the

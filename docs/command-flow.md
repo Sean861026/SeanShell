@@ -384,6 +384,19 @@ User presses Ctrl+Alt+D (or the selected Dock preset)
   -> preserve the captured application's active state while no live app is foreground
   -> standard WinUI Tab and arrow navigation continues through Dock controls
 
+Gaming mode keyboard entry
+  -> explicitly refresh the otherwise paused window inventory once
+  -> same request, Dock still foreground, and Launcher still focused: focus next running group
+  -> already navigated, dismissed, switched away, or shut down: do not steal focus
+  -> no running groups: retain Launcher focus
+
+Running-app list owns keyboard focus
+  -> Left/Right wrap; Home/End select the boundary groups
+  -> Enter/Space activate a single window, or open a multi-window picker
+  -> keyboard activation never uses the mouse minimize-toggle action
+  -> inventory refresh: preserve selected group key and restore item focus
+  -> selected group closed: use nearest remaining slot, or Launcher if now empty
+
 User presses Escape while the Dock owns keyboard focus
   -> consume the routed Dock key event
   -> restore and activate the captured foreground window if it remains valid
@@ -393,6 +406,12 @@ User presses Escape while the Dock owns keyboard focus
 Changing the Dock shortcut follows the same register-first, persist-on-success,
 rollback-on-conflict flow as the Launcher shortcut. It does not simulate input
 or install a keyboard hook.
+
+Modified keys, popup menus, and system flyouts retain their native handling. The
+list handles plain activation keys in the tunneling `PreviewKeyDown` event before
+the default ListView ItemClick can invoke mouse-toggle semantics. Focus restoration
+is scoped to the active Dock XamlRoot and never activates a Dock in the background.
+Final shell exit invalidates keyboard entry and ignores late inventory results.
 
 ## Dock window activation
 

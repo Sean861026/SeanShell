@@ -1107,7 +1107,7 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshDockWindowsAsync(bool explicitlyRequested = false)
     {
-        if (_refreshingDockWindows ||
+        if (_isClosing || _exitRequested || _refreshingDockWindows ||
             (_gamingMode.Current.IsGaming && !explicitlyRequested))
         {
             return;
@@ -1117,6 +1117,11 @@ public sealed partial class MainWindow : Window
         try
         {
             var snapshot = await Task.Run(_desktopWindows.Capture).ConfigureAwait(true);
+            if (_isClosing || _exitRequested)
+            {
+                return;
+            }
+
             if (_showDesktop.IsDesktopShown &&
                 snapshot.Any(static window =>
                     window.IsForeground && !window.IsMinimized))
@@ -1130,8 +1135,14 @@ public sealed partial class MainWindow : Window
                 dockWindow.ApplyWindowSnapshot(snapshot);
             }
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OutOfMemoryException)
         {
+            ((App)Application.Current).Diagnostics.TryWrite(DiagnosticEventKind.DockActionFailed, exception);
+            if (_isClosing || _exitRequested)
+            {
+                return;
+            }
+
             foreach (var dockWindow in _dockWindows)
             {
                 dockWindow.SetWindowSnapshotUnavailable(exception.Message);
@@ -1680,6 +1691,11 @@ public sealed partial class MainWindow : Window
 
     private async void OnDockRequested(object? sender, EventArgs e)
     {
+        if (_isClosing || _exitRequested)
+        {
+            return;
+        }
+
         try
         {
             var targetIndex = DockTargetMonitorResolver.Resolve(
@@ -1688,9 +1704,13 @@ public sealed partial class MainWindow : Window
             var dock = targetIndex >= 0 && targetIndex < _dockWindows.Count
                 ? _dockWindows[targetIndex]
                 : null;
-            dock?.FocusDock();
+            var request = dock?.FocusDock() ?? 0;
             _desktopWindows.InvalidateCache();
             await RefreshDockWindowsAsync(explicitlyRequested: true).ConfigureAwait(true);
+            if (!_isClosing && !_exitRequested)
+            {
+                dock?.CompleteKeyboardEntry(request);
+            }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {

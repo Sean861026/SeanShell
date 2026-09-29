@@ -473,7 +473,7 @@
 
                                 <TextBlock
                                     Style="{StaticResource SeanSecondaryTextStyle}"
-                                    Text="The shortcut expands the Dock on the active application's display and places keyboard focus on its Launcher button."
+                                    Text="The shortcut expands the Dock on the active application's display. Normal mode starts at Launcher; Gaming mode goes directly to running applications. Use Left/Right to choose and Enter to switch."
                                     TextWrapping="Wrap" />
 
                                 <ComboBox
