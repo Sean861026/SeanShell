@@ -1683,6 +1683,8 @@ public sealed partial class MainWindow : Window
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             Debug.WriteLine($"Unable to activate Dock: {exception}");
+            ((App)Application.Current).Diagnostics.TryWrite(
+                DiagnosticEventKind.DockActivationFailed, exception);
         }
     }
 

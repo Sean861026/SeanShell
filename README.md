@@ -257,6 +257,26 @@ Chinese/English mode; Win+Space remains the native input-method shortcut. Resume
 replacement with the Dock's system-area button when finished. Wi-Fi connections
 and credentials remain managed by Windows, and the Wi-Fi page requires an adapter.
 
+## Local failure diagnostics
+
+SeanShell keeps a best-effort local event journal in
+`%LOCALAPPDATA%\SeanShell\diagnostics\events.jsonl`. One previous file is retained;
+each file is capped at 128 KiB. Events include startup/clean exit, managed unhandled
+errors, and failed Dock actions. Error records contain only exception types,
+HRESULTs, and bounded method names: no exception messages, file paths, search
+queries, window titles, command arguments, or passwords are recorded. Nothing is
+uploaded automatically.
+
+For the packaged MSIX build, Windows redirects that location to
+`%LOCALAPPDATA%\Packages\<package-family>\LocalCache\Local\SeanShell\diagnostics\events.jsonl`.
+The current development package family is
+`EDFE4C52-E9FB-47BA-94FE-4B02C1B828F2_1z32rh13vfry6`.
+
+Recording an unhandled error does not suppress it or claim safe recovery. Native
+fail-fast/access-violation crashes can bypass managed handlers; Windows Application
+event logs remain necessary in those cases. Log-storage failures do not stop the
+shell. The journal starts with the next launch of this version.
+
 ## Gaming mode preview
 
 The M3 preview supports a manual override and opt-in automatic detection. Add one
