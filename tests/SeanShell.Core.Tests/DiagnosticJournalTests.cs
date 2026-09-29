@@ -7,7 +7,11 @@ namespace SeanShell.Core.Tests;
 public sealed class DiagnosticJournalTests
 {
     [TestMethod]
-    public void WritesSessionMetadataAndErrorsWithoutMessagesOrData()
+    [DataRow(DiagnosticEventKind.DockActionFailed)]
+    [DataRow(DiagnosticEventKind.LauncherSearchFailed)]
+    [DataRow(DiagnosticEventKind.LauncherActionFailed)]
+    [DataRow(DiagnosticEventKind.LauncherActivationFailed)]
+    public void WritesSessionMetadataAndErrorsWithoutMessagesOrData(DiagnosticEventKind kind)
     {
         using var directory = new TemporaryDirectory();
         var path = Path.Combine(directory.Path, "events.jsonl");
@@ -16,14 +20,14 @@ public sealed class DiagnosticJournalTests
             "private-search-query", new IOException("private-file-path"));
         exception.Data["secret"] = "wifi-password";
 
-        Assert.IsTrue(journal.TryWrite(DiagnosticEventKind.DockActionFailed, exception));
+        Assert.IsTrue(journal.TryWrite(kind, exception));
 
         var text = File.ReadAllText(path);
         Assert.IsFalse(text.Contains("private-search-query", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("private-file-path", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("wifi-password", StringComparison.Ordinal));
         using var entry = JsonDocument.Parse(text);
-        Assert.AreEqual("DockActionFailed", entry.RootElement.GetProperty("Event").GetString());
+        Assert.AreEqual(kind.ToString(), entry.RootElement.GetProperty("Event").GetString());
         Assert.AreEqual(2, entry.RootElement.GetProperty("Errors").GetArrayLength());
         Assert.AreEqual(exception.HResult,
             entry.RootElement.GetProperty("Errors")[0].GetProperty("HResult").GetInt32());

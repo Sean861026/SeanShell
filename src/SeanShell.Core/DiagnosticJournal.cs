@@ -15,6 +15,9 @@ public enum DiagnosticEventKind
     UnobservedTaskException,
     DockActivationFailed,
     DockActionFailed,
+    LauncherSearchFailed,
+    LauncherActionFailed,
+    LauncherActivationFailed,
 }
 
 /// <summary>

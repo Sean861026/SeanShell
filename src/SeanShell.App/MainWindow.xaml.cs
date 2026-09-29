@@ -1594,6 +1594,11 @@ public sealed partial class MainWindow : Window
 
     private async void OnLauncherRequested(object? sender, EventArgs e)
     {
+        if (_isClosing || _exitRequested)
+        {
+            return;
+        }
+
         try
         {
             var requestedMonitorHandle = sender is DockWindow dock
@@ -1613,6 +1618,13 @@ public sealed partial class MainWindow : Window
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             Debug.WriteLine($"Unable to open Launcher: {exception}");
+            ((App)Application.Current).Diagnostics.TryWrite(
+                DiagnosticEventKind.LauncherActivationFailed, exception);
+            if (_isClosing || _exitRequested)
+            {
+                return;
+            }
+
             if (RootFrame.Content is MainPage mainPage)
             {
                 mainPage.SetLauncherFailed(exception.Message);

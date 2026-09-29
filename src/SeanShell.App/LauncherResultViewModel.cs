@@ -50,9 +50,13 @@ public sealed class LauncherResultViewModel(
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public async Task LoadIconAsync(ApplicationIconSnapshot? iconSnapshot = null)
+    public async Task LoadIconAsync(
+        ApplicationIconSnapshot? iconSnapshot = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var icon = await ApplicationIconSourceCache.GetAsync(iconSnapshot ?? Command.Icon);
+        cancellationToken.ThrowIfCancellationRequested();
         if (icon is null || ReferenceEquals(_icon, icon))
         {
             return;

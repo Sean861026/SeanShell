@@ -103,8 +103,11 @@ User opens launcher
   -> successful provider/ranking duration enters the bounded in-memory sample
   -> first successful show records the one-time show-to-usable duration
   -> user selects a command
-  -> command executes with cancellation and audit logging
-  -> launcher closes or displays a recoverable error
+  -> acquire the single-flight command/pin gate and disable result interaction
+  -> execute the user-selected command without undoing it when Escape hides the palette
+  -> same visible session: hide on success or display a recoverable error
+  -> hidden, reopened, or shut-down session: ignore the old UI completion
+  -> release the gate; re-enable results only if a visible window still exists
 ```
 
 Start Menu shortcuts are indexed once per process and warmed after the dashboard
@@ -116,6 +119,15 @@ and failed searches do not enter the sample, and no query text is retained.
 Icon extraction starts only after ranking and follows the same query cancellation
 token. A missing or invalid icon leaves the fallback visible instead of removing
 or shifting the result row.
+
+Each show starts a new UI session. Query cancellation is checked before publishing
+results, errors, progress, and asynchronous icon notifications. Shutdown invalidates
+the session before cancelling searches or closing the native window. An action
+already dispatched keeps the command/pin gate busy across hide/reopen until it
+finishes, so repeated Enter/clicks cannot start concurrent duplicate operations.
+Searches and Escape remain available during an action. Recoverable Launcher
+failures enter the bounded local diagnostic journal without messages, queries,
+paths, or command arguments; this is failure reporting, not a command audit log.
 
 Commands carry behavior rather than raw shell strings. Providers that intentionally
 invoke a terminal must show the exact command and working directory before any
