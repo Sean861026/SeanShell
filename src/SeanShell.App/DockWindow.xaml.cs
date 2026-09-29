@@ -1916,6 +1916,8 @@ public sealed partial class DockWindow : Window
             "Windows taskbar settings",
             "\uE713",
             "ms-settings:taskbar");
+        AddSystemTool(flyout, "Wi-Fi settings", "\uE701", "ms-settings:network-wifi");
+        AddSystemTool(flyout, "Keyboard and input settings", "\uE765", "ms-settings:keyboard-advanced");
         AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
 
         if (SystemAreaButton.Visibility == Visibility.Visible)
@@ -2853,6 +2855,8 @@ public sealed partial class DockWindow : Window
         string title,
         Exception exception)
     {
+        ((App)Application.Current).Diagnostics.TryWrite(
+            DiagnosticEventKind.DockActionFailed, exception);
         DockCountText.Text = title;
         ToolTipService.SetToolTip(
             DockCountText,

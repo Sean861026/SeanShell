@@ -39,6 +39,13 @@ public partial class App : Application
     private Guid? _startupSessionId;
     private Window? _window;
 
+    public DiagnosticJournal Diagnostics { get; } = new(System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SeanShell", "diagnostics", "events.jsonl"),
+        buildVersion: System.Reflection.CustomAttributeExtensions.GetCustomAttribute<
+            System.Reflection.AssemblyInformationalVersionAttribute>(typeof(App).Assembly)
+            ?.InformationalVersion);
+
     public InstalledApplicationProvider InstalledApplications { get; } = new();
 
     public LauncherSearchService LauncherSearch { get; }
@@ -88,6 +95,10 @@ public partial class App : Application
     /// </summary>
     public App()
     {
+        UnhandledException += OnUnhandledUiException;
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledProcessException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        Diagnostics.TryWrite(DiagnosticEventKind.SessionStarted);
         var settingsPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SeanShell",
@@ -215,6 +226,7 @@ public partial class App : Application
         StartupSession = startup;
         if (!startup.CanStart)
         {
+            Diagnostics.TryWrite(DiagnosticEventKind.StartupBlocked);
             try
             {
                 ExplorerRecoveryService.EnsureRunning();
@@ -274,7 +286,10 @@ public partial class App : Application
             await Task.Delay(
                 StartupHealthyDelay,
                 _startupHealthCancellation.Token).ConfigureAwait(false);
-            _startupGuard.MarkHealthy(sessionId);
+            if (_startupGuard.MarkHealthy(sessionId))
+            {
+                Diagnostics.TryWrite(DiagnosticEventKind.StartupHealthy);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -283,6 +298,10 @@ public partial class App : Application
 
     private void OnMainWindowClosed(object sender, WindowEventArgs args)
     {
+        Diagnostics.TryWrite(DiagnosticEventKind.CleanExit);
+        UnhandledException -= OnUnhandledUiException;
+        AppDomain.CurrentDomain.UnhandledException -= OnUnhandledProcessException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
         if (AppLaunchContext.MainInstance is LifecycleAppInstance mainInstance)
         {
             mainInstance.Activated -= OnRedirectedActivation;
@@ -307,4 +326,17 @@ public partial class App : Application
             // The launcher remains usable with built-in system commands if indexing fails.
         }
     }
+
+    private void OnUnhandledUiException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs args)
+    {
+        Diagnostics.TryWrite(DiagnosticEventKind.UnhandledUiException, args.Exception);
+        // Do not mark arbitrary XAML/native failures handled: continuing may be unsafe.
+    }
+
+    private void OnUnhandledProcessException(object sender, System.UnhandledExceptionEventArgs args) =>
+        Diagnostics.TryWrite(
+            DiagnosticEventKind.UnhandledProcessException, args.ExceptionObject as Exception);
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs args) =>
+        Diagnostics.TryWrite(DiagnosticEventKind.UnobservedTaskException, args.Exception);
 }
