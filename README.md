@@ -250,12 +250,26 @@ and across light, dark, and transparent Windows surfaces.
 
 Dock Quick settings includes **Wi-Fi settings** and **Input methods**;
 **Keyboard and input settings** is available from the Dock background menu.
-The input-method action restores the previous window
-when available and reveals the native taskbar input indicator instead of changing
-SeanShell's own keyboard layout. Use the Windows indicator for different IMEs or
-Chinese/English mode; Win+Space remains the native input-method shortcut. Resume
-replacement with the Dock's system-area button when finished. Wi-Fi connections
-and credentials remain managed by Windows, and the Wi-Fi page requires an adapter.
+**Input methods** lists up to 64 loaded keyboard layouts and marks the previous
+application thread's current layout. Choosing one first restores that application's
+focus, validates its window/process/thread identity, and posts a focused-window
+`WM_INPUTLANGCHANGEREQUEST`. SeanShell checks the thread's reported layout once
+after 200 ms; a queued request alone is not displayed as a successful change.
+Closed/replaced windows, lost focus, removed layouts, and rejected requests do not
+fall back to changing SeanShell's own layout. No keyboard injection or hooks are used.
+
+Keyboard layouts are not a complete inventory of modern TSF input profiles, and
+changing layout is not the same as an IME's Chinese/English conversion mode.
+Use **Windows input indicator / IME mode** for those cases: it restores the prior
+window when available and reveals native taskbar controls. Win+Space remains the
+Windows input-method shortcut; conversion-mode shortcuts depend on your IME.
+Resume replacement with the Dock's system-area button when finished. Elevated
+applications can reject cross-process messages through Windows UIPI protections.
+Wi-Fi connections and credentials remain managed by Windows, and the Wi-Fi page
+requires an adapter.
+
+See [input-layout-validation.md](docs/input-layout-validation.md) for the isolated
+input-switch probe, regression checks, and compatibility limits.
 
 ## Local failure diagnostics
 

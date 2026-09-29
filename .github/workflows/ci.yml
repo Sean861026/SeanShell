@@ -40,6 +40,8 @@ jobs:
           }
       - name: Build
         run: dotnet build SeanShell.sln -c Release -p:Platform=x64 --no-restore
+      - name: Build isolated input layout probe
+        run: dotnet build tools/SeanShell.InputLayoutProbe/SeanShell.InputLayoutProbe.csproj -c Release
       - name: Test
         run: dotnet test SeanShell.sln -c Release -p:Platform=x64 --no-build
         env:
