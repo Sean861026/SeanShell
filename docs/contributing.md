@@ -39,6 +39,10 @@ app in an interactive Windows session and check the following before merging:
    available; reopen the Dashboard from the Dock. Then choose **Exit SeanShell**
    from the Dock background menu and confirm the Windows taskbar returns if
    Companion Taskbar mode was enabled.
+4. With Dock auto-hide enabled, open the clock calendar and move the pointer
+   into it. Change month and wait at least five seconds; both the calendar and
+   Dock should stay open. Repeat with Quick settings without changing volume.
+   Dismiss the flyout, move away, and confirm normal auto-hide resumes.
 
 If the process exits unexpectedly, inspect the local Windows Application event
 and crash dump before assigning the cause to the last visible click. A WinUI
