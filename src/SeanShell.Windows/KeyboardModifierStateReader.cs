@@ -6,6 +6,7 @@ public static class KeyboardModifierStateReader
 {
     private const int VirtualKeyShift = 0x10;
     private const int VirtualKeyControl = 0x11;
+    private const int VirtualKeyAlt = 0x12;
     private const short KeyPressedMask = unchecked((short)0x8000);
 
     public static bool IsShiftPressed() =>
@@ -13,6 +14,9 @@ public static class KeyboardModifierStateReader
 
     public static bool IsControlPressed() =>
         IsPressed(VirtualKeyControl);
+
+    public static bool IsAltPressed() =>
+        IsPressed(VirtualKeyAlt);
 
     private static bool IsPressed(int virtualKey) =>
         (GetKeyState(virtualKey) & KeyPressedMask) != 0;

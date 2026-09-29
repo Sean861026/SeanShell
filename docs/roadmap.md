@@ -60,6 +60,8 @@
 - [x] Persistent Dock auto-hide preference
 - [x] Configurable Launcher shortcut presets with conflict rollback
 - [x] Configurable active-display Dock focus shortcut with independent registration and conflict rollback
+- [x] Gaming shortcut enters the running-app list after its explicit one-shot refresh
+- [x] Keyboard activation restores rather than minimizes; selection survives inventory updates
 - [x] Source-aware manual and rule-based gaming mode
 - [x] Persisted opt-in process rules with schema v1 to v2 migration
 - [x] Pause/resume policy for dashboard sampling and all Dock windows
