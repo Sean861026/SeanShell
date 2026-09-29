@@ -36,4 +36,25 @@ public sealed class DockAutoHidePolicyTests
         Assert.IsFalse(DockAutoHidePolicy.CanCollapse(true, false, false, true, false));
         Assert.IsTrue(DockAutoHidePolicy.CanCollapse(true, false, false, false, false));
     }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ExplicitGamingSwitchCanDismissEvenIfNormalAutoHideIsDisabled(bool enabled)
+    {
+        Assert.IsTrue(DockAutoHidePolicy.CanCollapse(
+            enabled, false, false, false, true, explicitGamingSwitch: true));
+    }
+
+    [TestMethod]
+    [DataRow(true, false, false)]
+    [DataRow(false, true, false)]
+    [DataRow(false, false, true)]
+    public void ExplicitGamingSwitchStillProtectsInteraction(
+        bool pointerInside, bool keyboardFocus, bool surfaceOpen)
+    {
+        Assert.IsFalse(DockAutoHidePolicy.CanCollapse(
+            true, pointerInside, keyboardFocus, surfaceOpen, true,
+            explicitGamingSwitch: true));
+    }
 }

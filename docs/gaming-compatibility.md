@@ -42,6 +42,9 @@ For each game under test, record:
 | Check | Expected result |
 | --- | --- |
 | Start matching game | Dock hides and dashboard sampling pauses within four seconds |
+| Press the configured Dock shortcut during Gaming Mode | Active-display Dock appears with a refreshed window list; background polling stays paused |
+| Switch applications from that Dock and move the pointer away | Temporary Dock hides again, even when normal auto-hide is disabled |
+| Press Esc from the temporary Dock | Dock hides and requests return to the previously focused window |
 | Launcher remains open | Gaming mode follows the game executable, not the launcher |
 | Exit matching game | Workspace returns within four seconds unless manual mode is on |
 | Enable manual mode | Gaming mode stays active after the game exits |
@@ -66,3 +69,6 @@ that configuration only, not a guarantee for future anti-cheat updates.
 - Detection and restoration can take up to one polling interval, currently two
   seconds under normal conditions.
 - This milestone does not change Windows Game Mode or power plans.
+- Exclusive-fullscreen games may minimize when focus moves to the Dock, and
+  some games may consume shortcuts. Borderless-windowed mode and Windows
+  Alt+Tab remain alternatives; SeanShell never hooks game input to override them.

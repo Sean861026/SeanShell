@@ -85,9 +85,8 @@ SeanShell also registers one stable Windows App SDK instance key before WinUI
 starts. Later launches redirect their activation to that process and exit, so
 they restore the existing Dashboard instead of creating duplicate Docks.
 Redirected startup-task activations remain quiet and do not steal foreground.
-The recovery script also starts Explorer when needed and resets this health
-history. It first requests a normal SeanShell close, then stops only the
-`SeanShell.App` process if WinUI does not close within two seconds.
+The recovery script also starts Explorer when needed, stops SeanShell processes
+for emergency recovery, and resets this health history.
 
 The Dashboard includes a read-only **Full shell experiment** readiness card.
 It reads the installed Windows product and edition from the local operating
@@ -247,6 +246,17 @@ SeanShell package, title bar, and Dock Launcher now share a reproducibly
 generated terminal-prompt brand mark that stays legible from 16 to 256 pixels
 and across light, dark, and transparent Windows surfaces.
 
+## Network and input access
+
+Dock Quick settings includes **Wi-Fi settings** and **Input methods**;
+**Keyboard and input settings** is available from the Dock background menu.
+The input-method action restores the previous window
+when available and reveals the native taskbar input indicator instead of changing
+SeanShell's own keyboard layout. Use the Windows indicator for different IMEs or
+Chinese/English mode; Win+Space remains the native input-method shortcut. Resume
+replacement with the Dock's system-area button when finished. Wi-Fi connections
+and credentials remain managed by Windows, and the Wi-Fi page requires an adapter.
+
 ## Gaming mode preview
 
 The M3 preview supports a manual override and opt-in automatic detection. Add one
@@ -257,7 +267,12 @@ processes become snapshots, so SeanShell does not allocate or sort dashboard dat
 for every running process.
 
 While gaming mode is active, dashboard sampling stops and every Dock window is
-hidden. The small process detector remains active so SeanShell can restore the
+hidden by default. Press the configured Dock shortcut (default **Ctrl + Alt + D**)
+to temporarily show the active-display Dock with a freshly captured window list.
+Select a window to switch applications; after focus and pointer leave the Dock,
+it hides again. **Esc** dismisses it and attempts to return to the previous window.
+This one-shot refresh does not restart background polling or plugin work.
+The small process detector remains active so SeanShell can restore the
 workspace after the last matching game exits. Steam and other launchers are not
 matched unless the user explicitly adds them. No process handles are retained.
 The Gaming mode card keeps a bounded 60-sample diagnostic window with the latest

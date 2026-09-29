@@ -727,6 +727,7 @@ public sealed partial class MainWindow : Window
             _monitors = monitors;
             foreach (var dockWindow in previous)
             {
+                dockWindow.NativeInputRequested -= OnNativeInputRequested;
                 dockWindow.ExitRequested -= OnExitRequested;
                 dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
@@ -786,6 +787,7 @@ public sealed partial class MainWindow : Window
                 dockWindow.DashboardRequested += OnDashboardRequested;
                 dockWindow.ShowDesktopRequested += OnShowDesktopRequested;
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
+                dockWindow.NativeInputRequested += OnNativeInputRequested;
                 dockWindow.ExitRequested += OnExitRequested;
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
@@ -1103,9 +1105,10 @@ public sealed partial class MainWindow : Window
         return result;
     }
 
-    private async Task RefreshDockWindowsAsync()
+    private async Task RefreshDockWindowsAsync(bool explicitlyRequested = false)
     {
-        if (_refreshingDockWindows || _gamingMode.Current.IsGaming)
+        if (_refreshingDockWindows ||
+            (_gamingMode.Current.IsGaming && !explicitlyRequested))
         {
             return;
         }
@@ -1663,15 +1666,34 @@ public sealed partial class MainWindow : Window
         AppWindow.Hide();
     }
 
-    private void OnDockRequested(object? sender, EventArgs e)
+    private async void OnDockRequested(object? sender, EventArgs e)
     {
-        var targetIndex = DockTargetMonitorResolver.Resolve(
-            _monitors,
-            _desktopWindows.CaptureForegroundMonitorHandle());
-        var dock = targetIndex >= 0 && targetIndex < _dockWindows.Count
-            ? _dockWindows[targetIndex]
-            : null;
-        dock?.FocusDock();
+        try
+        {
+            var targetIndex = DockTargetMonitorResolver.Resolve(
+                _monitors,
+                _desktopWindows.CaptureForegroundMonitorHandle());
+            var dock = targetIndex >= 0 && targetIndex < _dockWindows.Count
+                ? _dockWindows[targetIndex]
+                : null;
+            dock?.FocusDock();
+            _desktopWindows.InvalidateCache();
+            await RefreshDockWindowsAsync(explicitlyRequested: true).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Debug.WriteLine($"Unable to activate Dock: {exception}");
+        }
+    }
+
+    private void OnNativeInputRequested(object? sender, EventArgs e)
+    {
+        // Input access is a reveal request, not a toggle: repeated requests must
+        // not hide Windows' input indicator while the user needs it.
+        if (!_taskbarAccessRevealed)
+        {
+            OnSystemAreaRequested(sender, e);
+        }
     }
 
     private void OnShowDesktopRequested(object? sender, EventArgs e)
@@ -1731,6 +1753,7 @@ public sealed partial class MainWindow : Window
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.ShowDesktopRequested -= OnShowDesktopRequested;
+            dockWindow.NativeInputRequested -= OnNativeInputRequested;
             dockWindow.ExitRequested -= OnExitRequested;
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
