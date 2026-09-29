@@ -45,6 +45,8 @@ public sealed partial class DockWindow : Window
     private readonly DisplayMonitorSnapshot _monitor;
     private readonly AudioEndpointService _audioEndpoint = new();
     private readonly SystemStatusSnapshotService _systemStatus = new();
+    private readonly InputLayoutSwitchController _inputLayouts = new(
+        new NativeInputLayoutBackend(), (uint)Environment.ProcessId);
     private readonly AppBarWorkAreaReservation _workAreaReservation = new();
     private readonly DispatcherQueueTimer _autoHideTimer;
     private readonly DispatcherQueueTimer _displayScaleRefreshTimer;
@@ -62,6 +64,7 @@ public sealed partial class DockWindow : Window
     private bool _contextMenuOpen;
     private bool _clockFlyoutOpen;
     private bool _quickSettingsFlyoutOpen;
+    private bool _inputSwitchPending;
     private bool _explicitGamingSwitch;
     private bool _hasKeyboardFocus;
     private bool _immersiveSuppressed;
@@ -552,7 +555,7 @@ public sealed partial class DockWindow : Window
         _pointerInside,
         _hasKeyboardFocus,
         _contextMenuOpen || _modalDialogOpen ||
-            _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
+            _clockFlyoutOpen || _quickSettingsFlyoutOpen || _inputSwitchPending ||
             _previewWindow?.IsVisible == true,
         _shellState.Current.Mode == ShellMode.Gaming,
         _explicitGamingSwitch);
@@ -2080,6 +2083,117 @@ public sealed partial class DockWindow : Window
     {
         SystemAreaRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
+    }
+
+    private void OnInputMethodsClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var snapshot = _inputLayouts.Capture(_returnFocusWindow);
+            QuickSettingsButton.Flyout?.Hide();
+            _autoHideTimer.Stop();
+            _contextMenuOpen = true;
+            var flyout = CreateDockMenuFlyout();
+            flyout.Items.Add(new MenuFlyoutItem
+            {
+                Text = snapshot.Target is null
+                    ? "Focus an application before opening Dock"
+                    : "Input language for previous application",
+                IsEnabled = false,
+            });
+            foreach (var layout in snapshot.Layouts)
+            {
+                var item = new ToggleMenuFlyoutItem
+                {
+                    Text = layout.DisplayName,
+                    IsChecked = layout.Handle == snapshot.ActiveLayout,
+                    IsEnabled = snapshot.Target is not null,
+                };
+                item.Click += async (_, _) =>
+                    await RequestInputLayoutAsync(snapshot.Target, layout.Handle);
+                flyout.Items.Add(item);
+            }
+
+            flyout.Items.Add(new MenuFlyoutSeparator());
+            var nativeItem = new MenuFlyoutItem { Text = "Windows input indicator / IME mode" };
+            nativeItem.Click += OnNativeInputClicked;
+            flyout.Items.Add(nativeItem);
+            AddSystemTool(flyout, "Keyboard and input settings", "\uE765", "ms-settings:keyboard-advanced");
+            flyout.Closed += (_, _) =>
+            {
+                _contextMenuOpen = false;
+                ScheduleAutoHide();
+            };
+            flyout.ShowAt(QuickSettingsButton);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _contextMenuOpen = false;
+            ReportApplicationActionFailure("Unable to list input languages", exception);
+            ScheduleAutoHide();
+        }
+    }
+
+    private async Task RequestInputLayoutAsync(InputWindowIdentity? target, nint layout)
+    {
+        if (_allowClose || _inputSwitchPending)
+        {
+            return;
+        }
+        _inputSwitchPending = true;
+        _autoHideTimer.Stop();
+        try
+        {
+            var result = target is null
+                ? InputLayoutSwitchResult.NoTarget
+                : !_inputLayouts.IsCurrentTarget(target)
+                    ? InputLayoutSwitchResult.TargetChanged
+                    : !_windowService.RestoreAndActivate(target.Handle)
+                        ? InputLayoutSwitchResult.FocusNotRestored
+                        : _inputLayouts.Request(target, layout);
+            if (result == InputLayoutSwitchResult.RequestPosted)
+            {
+                await Task.Delay(200);
+                if (_allowClose)
+                {
+                    return;
+                }
+                result = _inputLayouts.Confirm(target!, layout);
+            }
+
+            InputMethodStatusText.Text = result switch
+            {
+                InputLayoutSwitchResult.Confirmed => "Previous application's keyboard layout changed.",
+                InputLayoutSwitchResult.AlreadyActive => "That keyboard layout is already active.",
+                InputLayoutSwitchResult.NoTarget or InputLayoutSwitchResult.TargetChanged =>
+                    "Original window unavailable. Focus the application and try again.",
+                InputLayoutSwitchResult.FocusNotRestored =>
+                    "Windows did not restore the original window. Use the native input indicator.",
+                InputLayoutSwitchResult.LayoutUnavailable =>
+                    "That layout is no longer loaded. Reopen Input methods to refresh.",
+                _ => "Change not confirmed. Use Windows input indicator / IME mode instead.",
+            };
+            if (_shellState.Current.Mode == ShellMode.Gaming)
+            {
+                HideGamingSwitch();
+            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            if (!_allowClose)
+            {
+                InputMethodStatusText.Text = "Unable to change input language. Use the Windows input indicator.";
+                ReportApplicationActionFailure("Input language change failed", exception);
+            }
+        }
+        finally
+        {
+            _inputSwitchPending = false;
+            if (!_allowClose)
+            {
+                ScheduleAutoHide();
+            }
+        }
     }
 
     private void OnNativeInputClicked(object sender, RoutedEventArgs e)

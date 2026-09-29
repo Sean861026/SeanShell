@@ -527,11 +527,16 @@
                                                     Content="Wi-Fi settings"
                                                     Tag="ms-settings:network-wifi" />
                                                 <Button
-                                                    Click="OnNativeInputClicked"
+                                                    Click="OnInputMethodsClicked"
                                                     Content="Input methods"
-                                                    AutomationProperties.Name="Switch input method (Windows)"
-                                                    ToolTipService.ToolTip="Show the Windows input indicator. Win + Space also switches input methods." />
+                                                    AutomationProperties.Name="Choose input language for previous application"
+                                                    ToolTipService.ToolTip="Choose a loaded keyboard layout, or use the Windows input indicator." />
                                             </StackPanel>
+                                            <TextBlock
+                                                x:Name="InputMethodStatusText"
+                                                Style="{StaticResource SeanCaptionTextStyle}"
+                                                Text="Input language and IME Chinese/English mode are separate."
+                                                TextWrapping="Wrap" />
                                             <Border Style="{StaticResource SeanDockFlyoutSectionStyle}">
                                                 <StackPanel Spacing="8">
                                                     <StackPanel
