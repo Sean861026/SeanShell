@@ -14,6 +14,9 @@
 - [x] Global hotkey using `RegisterHotKey` without input hooks
 - [x] Installed application and system setting providers
 - [x] Ranked, cached, keyboard-first results
+- [x] Single-flight command/pin operations with hide/reopen/shutdown continuation guards
+- [x] Cancelled query/icon notifications cannot update a stale Launcher session
+- [x] Privacy-bounded local Launcher activation/search/action failure diagnostics
 - [x] In-app first-usable and bounded cached-query P95 diagnostics
 - [x] Validate cold-window and cached-query targets on representative hardware
 - Target: cached results under 50 ms; first window under 300 ms

@@ -101,6 +101,11 @@ Press `Alt+Space` or use **Open Launcher** on the dashboard. The M1 launcher
 indexes Start Menu shortcuts once, combines them with safe built-in Windows
 commands, and ranks up to eight results as you type. Use Up/Down to navigate,
 Enter to open, and Escape to close.
+Opening commands and changing pins share a single-flight gate: the result list
+temporarily disables while an operation runs, but typing and Escape remain
+available. Hiding or reopening the palette does not cancel an already dispatched
+command. Its later completion cannot close a newer palette session or show an
+old error there; final shell shutdown prevents all later UI updates.
 After ranking completes, visible application results load their Windows-provided
 192px shortcut icons asynchronously. System and plugin commands, unavailable
 icons, and individual extraction failures retain crisp Fluent glyph fallbacks;
@@ -276,7 +281,8 @@ input-switch probe, regression checks, and compatibility limits.
 SeanShell keeps a best-effort local event journal in
 `%LOCALAPPDATA%\SeanShell\diagnostics\events.jsonl`. One previous file is retained;
 each file is capped at 128 KiB. Events include startup/clean exit, managed unhandled
-errors, and failed Dock actions. Error records contain only exception types,
+errors, failed Dock actions, and Launcher activation/search/action failures.
+Error records contain only exception types,
 HRESULTs, and bounded method names: no exception messages, file paths, search
 queries, window titles, command arguments, or passwords are recorded. Nothing is
 uploaded automatically.

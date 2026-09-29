@@ -20,6 +20,7 @@ public sealed partial class LauncherWindow : Window
     private readonly InstalledApplicationProvider _installedApplications;
     private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
+    private readonly LauncherOperationLifetime _lifetime = new();
     private readonly HashSet<string> _pinnedApplicationIds =
         new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _searchCancellation;
@@ -53,6 +54,11 @@ public sealed partial class LauncherWindow : Window
     public void SetPinnedApplicationIds(IEnumerable<string> applicationIds)
     {
         ArgumentNullException.ThrowIfNull(applicationIds);
+        if (_lifetime.IsShutdown)
+        {
+            return;
+        }
+
         _pinnedApplicationIds.Clear();
         _pinnedApplicationIds.UnionWith(applicationIds);
         foreach (var result in Results)
@@ -76,8 +82,14 @@ public sealed partial class LauncherWindow : Window
 
     public async Task ShowLauncherAsync(DisplayMonitorSnapshot? targetMonitor = null)
     {
+        if (!_lifetime.TryShow(out var session))
+        {
+            return;
+        }
+
         var firstUsableStopwatch = Stopwatch.StartNew();
         var searchToken = BeginSearch();
+        UpdateInteractionState();
         ResizeAndCenterOnDisplay(targetMonitor);
         AppWindow.Show();
         Activate();
@@ -96,21 +108,31 @@ public sealed partial class LauncherWindow : Window
         SearchBox.SelectAll();
         try
         {
-            await RefreshResultsAsync(string.Empty, searchToken).ConfigureAwait(true);
-            firstUsableStopwatch.Stop();
-            _performanceMonitor.RecordFirstUsable(firstUsableStopwatch.Elapsed);
+            await RefreshResultsAsync(string.Empty, session, searchToken).ConfigureAwait(true);
+            if (IsCurrentSearch(session, searchToken))
+            {
+                firstUsableStopwatch.Stop();
+                _performanceMonitor.RecordFirstUsable(firstUsableStopwatch.Elapsed);
+            }
         }
         catch (OperationCanceledException) when (searchToken.IsCancellationRequested)
         {
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ShowError("Search unavailable", exception);
+            ShowError("Search unavailable", exception, DiagnosticEventKind.LauncherSearchFailed,
+                IsCurrentSearch(session, searchToken));
         }
     }
 
     public void HideLauncher()
     {
+        if (_lifetime.IsShutdown)
+        {
+            return;
+        }
+
+        _lifetime.Hide();
         _searchCancellation?.Cancel();
         SearchProgress.IsActive = false;
         AppWindow.Hide();
@@ -118,6 +140,11 @@ public sealed partial class LauncherWindow : Window
 
     public void SetReducedEffects(bool enabled)
     {
+        if (_lifetime.IsShutdown)
+        {
+            return;
+        }
+
         SystemBackdrop = enabled
             ? null
             : new MicaBackdrop { Kind = MicaKind.BaseAlt };
@@ -128,10 +155,17 @@ public sealed partial class LauncherWindow : Window
 
     public void Shutdown()
     {
+        if (_lifetime.IsShutdown)
+        {
+            return;
+        }
+
+        // Invalidate continuations before cancellation or native window teardown.
+        _lifetime.Shutdown();
+        _allowClose = true;
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
         _searchCancellation = null;
-        _allowClose = true;
         Close();
     }
 
@@ -204,29 +238,40 @@ public sealed partial class LauncherWindow : Window
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_suppressSearchRefresh)
+        if (_suppressSearchRefresh || !_lifetime.IsVisible)
         {
             return;
         }
 
+        var session = _lifetime.Session;
+        var searchToken = BeginSearch();
         try
         {
-            var searchToken = BeginSearch();
             var query = SearchBox.Text;
             await Task.Delay(60, searchToken).ConfigureAwait(true);
-            await RefreshResultsAsync(query, searchToken).ConfigureAwait(true);
+            await RefreshResultsAsync(query, session, searchToken).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ShowError("Search unavailable", exception);
+            ShowError("Search unavailable", exception, DiagnosticEventKind.LauncherSearchFailed,
+                IsCurrentSearch(session, searchToken));
         }
     }
 
-    private async Task RefreshResultsAsync(string query, CancellationToken cancellationToken = default)
+    private bool IsCurrentSearch(long session, CancellationToken cancellationToken) =>
+        _lifetime.IsCurrent(session) && !cancellationToken.IsCancellationRequested;
+
+    private async Task RefreshResultsAsync(
+        string query, long session, CancellationToken cancellationToken)
     {
+        if (!IsCurrentSearch(session, cancellationToken))
+        {
+            return;
+        }
+
         SearchProgress.IsActive = true;
         EmptyState.Visibility = Visibility.Collapsed;
 
@@ -235,6 +280,11 @@ public sealed partial class LauncherWindow : Window
             var searchStopwatch = Stopwatch.StartNew();
             var commands = await _searchService.SearchAsync(query, 8, cancellationToken).ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
+            if (!_lifetime.IsCurrent(session))
+            {
+                return;
+            }
+
             searchStopwatch.Stop();
             _performanceMonitor.RecordSuccessfulSearch(searchStopwatch.Elapsed);
 
@@ -250,12 +300,12 @@ public sealed partial class LauncherWindow : Window
 
             ResultsList.SelectedIndex = Results.Count > 0 ? 0 : -1;
             EmptyState.Visibility = Results.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ResultStatus.Text = Results.Count == 1 ? "1 result" : $"{Results.Count} results";
+            UpdateInteractionState();
             ErrorInfoBar.IsOpen = false;
         }
         finally
         {
-            if (!cancellationToken.IsCancellationRequested)
+            if (IsCurrentSearch(session, cancellationToken))
             {
                 SearchProgress.IsActive = false;
             }
@@ -272,7 +322,7 @@ public sealed partial class LauncherWindow : Window
                 .GetIconAsync(result.Command, cancellationToken)
                 .ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
-            await result.LoadIconAsync(icon).ConfigureAwait(true);
+            await result.LoadIconAsync(icon, cancellationToken).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -283,9 +333,16 @@ public sealed partial class LauncherWindow : Window
         }
     }
 
-    private void ShowError(string title, Exception exception)
+    private void ShowError(
+        string title, Exception exception, DiagnosticEventKind kind, bool canDisplay)
     {
         Debug.WriteLine($"Launcher error: {exception}");
+        ((App)Application.Current).Diagnostics.TryWrite(kind, exception);
+        if (!canDisplay || !_lifetime.IsVisible)
+        {
+            return;
+        }
+
         SearchProgress.IsActive = false;
         ErrorInfoBar.Title = title;
         ErrorInfoBar.Message = exception.Message;
@@ -311,7 +368,7 @@ public sealed partial class LauncherWindow : Window
         }
 
         var handler = PinChangedRequested;
-        if (handler is null)
+        if (handler is null || !_lifetime.TryBegin(out var operation))
         {
             return;
         }
@@ -319,20 +376,33 @@ public sealed partial class LauncherWindow : Window
         var shouldPin = !result.IsPinned;
         try
         {
+            UpdateInteractionState();
             ErrorInfoBar.IsOpen = false;
-            if (await handler(result.Command, shouldPin).ConfigureAwait(true))
+            if (await handler(result.Command, shouldPin).ConfigureAwait(true) &&
+                _lifetime.CanApply(operation))
             {
                 result.SetPinned(shouldPin);
             }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ShowError("Unable to change pin", exception);
+            ShowError("Unable to change pin", exception, DiagnosticEventKind.LauncherActionFailed,
+                _lifetime.CanApply(operation));
+        }
+        finally
+        {
+            _lifetime.Complete(operation);
+            UpdateInteractionState();
         }
     }
 
     private async void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (!_lifetime.IsVisible)
+        {
+            return;
+        }
+
         switch (e.Key)
         {
             case VirtualKey.Down:
@@ -365,7 +435,7 @@ public sealed partial class LauncherWindow : Window
 
     private void MoveSelection(int delta)
     {
-        if (Results.Count == 0)
+        if (!_lifetime.IsVisible || _lifetime.IsBusy || Results.Count == 0)
         {
             return;
         }
@@ -377,16 +447,44 @@ public sealed partial class LauncherWindow : Window
 
     private async Task ExecuteAsync(LauncherResultViewModel result)
     {
+        if (!_lifetime.TryBegin(out var operation))
+        {
+            return;
+        }
+
         try
         {
+            UpdateInteractionState();
             ErrorInfoBar.IsOpen = false;
             await result.Command.ExecuteAsync(CancellationToken.None).ConfigureAwait(true);
-            HideLauncher();
+            if (_lifetime.CanApply(operation))
+            {
+                HideLauncher();
+            }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            ShowError("Unable to open command", exception);
+            ShowError("Unable to open command", exception, DiagnosticEventKind.LauncherActionFailed,
+                _lifetime.CanApply(operation));
         }
+        finally
+        {
+            _lifetime.Complete(operation);
+            UpdateInteractionState();
+        }
+    }
+
+    private void UpdateInteractionState()
+    {
+        if (!_lifetime.IsVisible)
+        {
+            return;
+        }
+
+        ResultsList.IsEnabled = !_lifetime.IsBusy;
+        ResultStatus.Text = _lifetime.IsBusy
+            ? "Operation in progress..."
+            : Results.Count == 1 ? "1 result" : $"{Results.Count} results";
     }
 
     private void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
