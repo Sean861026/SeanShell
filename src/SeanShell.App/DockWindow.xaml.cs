@@ -80,6 +80,7 @@ public sealed partial class DockWindow : Window
     private SystemStatusSnapshot _lastSystemStatus =
         new(null, false, null, null, false);
     private nint _returnFocusWindow;
+    private InputWindowIdentity? _lastInputStatusTarget;
     private IReadOnlyList<ShellCommand> _availableApplications = [];
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private IReadOnlyList<DesktopWindowSnapshot> _monitorWindows = [];
@@ -2141,6 +2142,7 @@ public sealed partial class DockWindow : Window
             return;
         }
         _inputSwitchPending = true;
+        _lastInputStatusTarget = target;
         _autoHideTimer.Stop();
         try
         {
@@ -2163,8 +2165,8 @@ public sealed partial class DockWindow : Window
 
             InputMethodStatusText.Text = result switch
             {
-                InputLayoutSwitchResult.Confirmed => "Previous application's keyboard layout changed.",
-                InputLayoutSwitchResult.AlreadyActive => "That keyboard layout is already active.",
+                InputLayoutSwitchResult.Confirmed => "Last request: keyboard layout change confirmed.",
+                InputLayoutSwitchResult.AlreadyActive => "Last request: that keyboard layout was already active.",
                 InputLayoutSwitchResult.NoTarget or InputLayoutSwitchResult.TargetChanged =>
                     "Original window unavailable. Focus the application and try again.",
                 InputLayoutSwitchResult.FocusNotRestored =>
@@ -2241,6 +2243,13 @@ public sealed partial class DockWindow : Window
     {
         _quickSettingsFlyoutOpen = true;
         _autoHideTimer.Stop();
+        if (_lastInputStatusTarget is null ||
+            _lastInputStatusTarget.Handle != _returnFocusWindow ||
+            !_inputLayouts.IsCurrentTarget(_lastInputStatusTarget))
+        {
+            _lastInputStatusTarget = null;
+            InputMethodStatusText.Text = "Input language and IME Chinese/English mode are separate.";
+        }
         _quickAudioControlsActive = false;
         _lastSystemStatus = _systemStatus.Capture();
         var systemText =
