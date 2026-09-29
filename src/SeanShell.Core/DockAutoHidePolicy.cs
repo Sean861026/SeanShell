@@ -7,10 +7,11 @@ public static class DockAutoHidePolicy
         bool pointerInside,
         bool hasKeyboardFocus,
         bool interactiveSurfaceOpen,
-        bool gamingMode) =>
-        enabled &&
+        bool gamingMode,
+        bool explicitGamingSwitch = false) =>
+        (enabled || (gamingMode && explicitGamingSwitch)) &&
         !pointerInside &&
         !hasKeyboardFocus &&
         !interactiveSurfaceOpen &&
-        !gamingMode;
+        (!gamingMode || explicitGamingSwitch);
 }

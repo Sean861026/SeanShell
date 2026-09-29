@@ -62,6 +62,7 @@ public sealed partial class DockWindow : Window
     private bool _contextMenuOpen;
     private bool _clockFlyoutOpen;
     private bool _quickSettingsFlyoutOpen;
+    private bool _explicitGamingSwitch;
     private bool _hasKeyboardFocus;
     private bool _immersiveSuppressed;
     private bool _modalDialogOpen;
@@ -144,6 +145,7 @@ public sealed partial class DockWindow : Window
         _previewDismissTimer.Tick += OnPreviewDismissTimerTick;
 
         _shellState.StateChanged += OnShellStateChanged;
+        Activated += OnDockActivated;
         AppWindow.Closing += OnWindowClosing;
     }
 
@@ -160,6 +162,8 @@ public sealed partial class DockWindow : Window
     public event EventHandler? ShowDesktopRequested;
 
     public event EventHandler? SystemAreaRequested;
+
+    public event EventHandler? NativeInputRequested;
 
     public event EventHandler? ExitRequested;
 
@@ -223,6 +227,7 @@ public sealed partial class DockWindow : Window
 
     public void FocusDock()
     {
+        _explicitGamingSwitch = _shellState.Current.Mode == ShellMode.Gaming;
         _autoHideTimer.Stop();
         var foregroundWindow = _windowService.CaptureForegroundWindowHandle();
         var dockWindow = WinRT.Interop.WindowNative.GetWindowHandle(this);
@@ -387,6 +392,7 @@ public sealed partial class DockWindow : Window
             _windowListScrollViewer = null;
         }
         _shellState.StateChanged -= OnShellStateChanged;
+        Activated -= OnDockActivated;
         _ = _workAreaReservation.Release();
         _allowClose = true;
         Close();
@@ -548,7 +554,8 @@ public sealed partial class DockWindow : Window
         _contextMenuOpen || _modalDialogOpen ||
             _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
             _previewWindow?.IsVisible == true,
-        _shellState.Current.Mode == ShellMode.Gaming);
+        _shellState.Current.Mode == ShellMode.Gaming,
+        _explicitGamingSwitch);
 
     private void ScheduleAutoHide()
     {
@@ -803,8 +810,26 @@ public sealed partial class DockWindow : Window
         sender.Stop();
         if (CanAutoHide)
         {
-            SetCollapsed(true);
+            if (_shellState.Current.Mode == ShellMode.Gaming)
+            {
+                HideGamingSwitch();
+            }
+            else
+            {
+                SetCollapsed(true);
+            }
         }
+    }
+
+    private void HideGamingSwitch()
+    {
+        _explicitGamingSwitch = false;
+        _hasKeyboardFocus = false;
+        _pointerInside = false;
+        _autoHideTimer.Stop();
+        DismissWindowPreview();
+        DismissDockMagnifier();
+        AppWindow.Hide();
     }
 
     private void RefreshExpandedWidth()
@@ -907,6 +932,11 @@ public sealed partial class DockWindow : Window
 
     private void OnDockPointerEntered(object sender, PointerRoutedEventArgs e)
     {
+        var foreground = _windowService.CaptureForegroundWindowHandle();
+        if (_monitorWindows.Any(window => window.Handle == foreground))
+        {
+            _returnFocusWindow = foreground;
+        }
         _pointerInside = true;
         _autoHideTimer.Stop();
         if (_collapsed)
@@ -1437,6 +1467,15 @@ public sealed partial class DockWindow : Window
         }
     }
 
+    private void OnDockActivated(object sender, WindowActivatedEventArgs e)
+    {
+        if (e.WindowActivationState == WindowActivationState.Deactivated)
+        {
+            _hasKeyboardFocus = false;
+            ScheduleAutoHide();
+        }
+    }
+
     private void OnDockLostFocus(object sender, RoutedEventArgs e)
     {
         _hasKeyboardFocus = false;
@@ -1458,7 +1497,11 @@ public sealed partial class DockWindow : Window
             _ = _windowService.RestoreAndActivate(returnFocusWindow);
         }
 
-        if (_autoHide)
+        if (_shellState.Current.Mode == ShellMode.Gaming)
+        {
+            HideGamingSwitch();
+        }
+        else if (_autoHide)
         {
             _autoHideTimer.Stop();
             SetCollapsed(true);
@@ -1829,6 +1872,9 @@ public sealed partial class DockWindow : Window
         AddSystemTool(flyout, "Windows Terminal", "\uE756", "wt.exe");
         AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
         flyout.Items.Add(new MenuFlyoutSeparator());
+
+        AddSystemTool(flyout, "Wi-Fi settings", "\uE701", "ms-settings:network-wifi");
+        AddSystemTool(flyout, "Keyboard and input settings", "\uE765", "ms-settings:keyboard-advanced");
         AddSystemTool(flyout, "Windows Settings", "\uE713", "ms-settings:");
         flyout.Items.Add(new MenuFlyoutSeparator());
         AddPowerMenu(flyout);
@@ -1904,7 +1950,7 @@ public sealed partial class DockWindow : Window
         args.Handled = true;
     }
 
-    private static void AddSystemTool(
+    private void AddSystemTool(
         MenuFlyout flyout,
         string title,
         string glyph,
@@ -2032,6 +2078,18 @@ public sealed partial class DockWindow : Window
     {
         SystemAreaRequested?.Invoke(this, EventArgs.Empty);
         ScheduleAutoHide();
+    }
+
+    private void OnNativeInputClicked(object sender, RoutedEventArgs e)
+    {
+        QuickSettingsButton.Flyout?.Hide();
+        if (_returnFocusWindow != 0)
+        {
+            _ = _windowService.RestoreAndActivate(_returnFocusWindow);
+        }
+        NativeInputRequested?.Invoke(this, EventArgs.Empty);
+        _autoHideTimer.Stop();
+        SetCollapsed(true);
     }
 
     private void OnOpenDateTimeSettingsClicked(object sender, RoutedEventArgs e)
@@ -2214,12 +2272,17 @@ public sealed partial class DockWindow : Window
             ? brush
             : null;
 
-    private static void LaunchShellTarget(string target) =>
-        Process.Start(
-            new ProcessStartInfo(target)
-            {
-                UseShellExecute = true,
-            });
+    private void LaunchShellTarget(string target)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            ReportApplicationActionFailure("Unable to open system tool", exception);
+        }
+    }
 
     private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
     {
@@ -2897,6 +2960,7 @@ public sealed partial class DockWindow : Window
 
     private void OnShellStateChanged(object? sender, ShellState state)
     {
+        _explicitGamingSwitch = false;
         if (state.Mode == ShellMode.Gaming)
         {
             _autoHideTimer.Stop();
