@@ -267,6 +267,11 @@ HRESULTs, and bounded method names: no exception messages, file paths, search
 queries, window titles, command arguments, or passwords are recorded. Nothing is
 uploaded automatically.
 
+For the packaged MSIX build, Windows redirects that location to
+`%LOCALAPPDATA%\Packages\<package-family>\LocalCache\Local\SeanShell\diagnostics\events.jsonl`.
+The current development package family is
+`EDFE4C52-E9FB-47BA-94FE-4B02C1B828F2_1z32rh13vfry6`.
+
 Recording an unhandled error does not suppress it or claim safe recovery. Native
 fail-fast/access-violation crashes can bypass managed handlers; Windows Application
 event logs remain necessary in those cases. Log-storage failures do not stop the
