@@ -19,13 +19,26 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
         true);
 
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private readonly object _stateLock = new();
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly IReadOnlyList<string> _roots;
+    private readonly Func<IReadOnlyList<string>, CancellationToken, IReadOnlyList<DotNetWorkspaceSnapshot>> _scan;
     private IReadOnlyList<DotNetWorkspaceSnapshot> _workspaces = [];
+    private Task? _disposal;
     private bool _disposed;
 
     public DotNetWorkspacePlugin(IEnumerable<string> workspaceRoots)
+        : this(workspaceRoots, ScanWorkspaces)
+    {
+    }
+
+    internal DotNetWorkspacePlugin(
+        IEnumerable<string> workspaceRoots,
+        Func<IReadOnlyList<string>, CancellationToken, IReadOnlyList<DotNetWorkspaceSnapshot>> scan)
     {
         ArgumentNullException.ThrowIfNull(workspaceRoots);
+        ArgumentNullException.ThrowIfNull(scan);
+        _scan = scan;
         _roots = workspaceRoots
             .Where(static root => !string.IsNullOrWhiteSpace(root))
             .Select(Path.GetFullPath)
@@ -44,24 +57,30 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
         string query,
         CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         cancellationToken.ThrowIfCancellationRequested();
+        IReadOnlyList<DotNetWorkspaceSnapshot> workspaces;
+        lock (_stateLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            workspaces = _workspaces;
+        }
 
         var commands = new List<ShellCommand>
         {
             new(
                 $"plugin:{Manifest.Id}:refresh",
                 "Refresh .NET workspaces",
-                $"{_workspaces.Count} cached workspace{(_workspaces.Count == 1 ? string.Empty : "s")}",
+                $"{workspaces.Count} cached workspace{(workspaces.Count == 1 ? string.Empty : "s")}",
                 RefreshAsync)
             {
+                ExecutionTimeout = TimeSpan.FromSeconds(30),
                 Kind = ShellCommandKind.Plugin,
                 Glyph = "\uE72C",
                 Keywords = ["dotnet", ".net", "csharp", "blazor", "solution", "project", "rescan"],
             },
         };
 
-        foreach (var workspace in _workspaces)
+        foreach (var workspace in workspaces)
         {
             var stableId = CreateStableId(workspace.Path);
             var displayName = workspace.IsSolution
@@ -164,31 +183,84 @@ public sealed class DotNetWorkspacePlugin : ISeanShellPlugin
 
     public ValueTask DisposeAsync()
     {
-        _disposed = true;
-        return ValueTask.CompletedTask;
+        lock (_stateLock)
+        {
+            if (_disposal is not null)
+            {
+                return new(_disposal);
+            }
+
+            _disposed = true;
+            _disposal = DisposeCoreAsync();
+            return new(_disposal);
+        }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
+        await _lifetimeCancellation.CancelAsync().ConfigureAwait(false);
+        // Keep the gate alive until the worker actually exits, even if its caller
+        // cancels. In-flight filesystem operations cannot always be interrupted.
+        await _refreshGate.WaitAsync().ConfigureAwait(false);
+        _refreshGate.Release();
+        _lifetimeCancellation.Dispose();
     }
 
     private async ValueTask RefreshAsync(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        CancellationTokenSource refreshCancellation;
+        lock (_stateLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken,
+                _lifetimeCancellation.Token);
+        }
+
+        using var cancellation = refreshCancellation;
+        var token = cancellation.Token;
+        await _refreshGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
-            _workspaces = DotNetWorkspaceDiscovery.Discover(
-                    _roots,
-                    cancellationToken: cancellationToken)
-                .Select(DotNetWorkspaceInspector.Inspect)
-                .Where(static workspace => workspace is not null)
-                .Cast<DotNetWorkspaceSnapshot>()
-                .OrderByDescending(static workspace => workspace.IsSolution)
-                .ThenBy(static workspace => workspace.Name, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(static workspace => workspace.Path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            // An uncontended WaitAsync completes synchronously. Explicitly move
+            // discovery, XML parsing, and Razor traversal off the calling UI thread.
+            var workspaces = await Task.Run(() => _scan(_roots, token), token)
+                .ConfigureAwait(false);
+            lock (_stateLock)
+            {
+                token.ThrowIfCancellationRequested();
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                _workspaces = workspaces;
+            }
         }
         finally
         {
             _refreshGate.Release();
         }
+    }
+
+    private static IReadOnlyList<DotNetWorkspaceSnapshot> ScanWorkspaces(
+        IReadOnlyList<string> roots,
+        CancellationToken cancellationToken)
+    {
+        var workspaces = new List<DotNetWorkspaceSnapshot>();
+        foreach (var path in DotNetWorkspaceDiscovery.Discover(
+            roots,
+            cancellationToken: cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (DotNetWorkspaceInspector.Inspect(path, cancellationToken) is { } workspace)
+            {
+                workspaces.Add(workspace);
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return workspaces
+            .OrderByDescending(static workspace => workspace.IsSolution)
+            .ThenBy(static workspace => workspace.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static workspace => workspace.Path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static ShellCommand CreateCommand(

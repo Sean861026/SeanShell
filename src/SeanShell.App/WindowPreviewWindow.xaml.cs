@@ -19,6 +19,7 @@ public sealed partial class WindowPreviewWindow : Window
     private const long ToolWindowStyle = 0x00000080L;
     private const long NoActivateStyle = 0x08000000L;
     private readonly DesktopWindowService _windowService;
+    private readonly CancellationTokenSource _windowActionShutdown = new();
     private readonly List<PreviewEntry> _entries = [];
     private readonly DispatcherQueueTimer _thumbnailRetryTimer;
     private Storyboard? _entranceTransition;
@@ -26,6 +27,7 @@ public sealed partial class WindowPreviewWindow : Window
     private bool _reducedEffects;
     private int _thumbnailAttempts;
     private bool _thumbnailUpdateQueued;
+    private long _presentationVersion;
 
     public WindowPreviewWindow(DesktopWindowService windowService)
     {
@@ -81,6 +83,7 @@ public sealed partial class WindowPreviewWindow : Window
         DisplayMonitorSnapshot monitor,
         double rasterizationScale)
     {
+        ++_presentationVersion;
         ClearEntries();
         var layout = WindowPreviewLayout.Calculate(item.WindowCount);
         if (layout.VisibleCount == 0)
@@ -123,6 +126,7 @@ public sealed partial class WindowPreviewWindow : Window
 
     public void Dismiss()
     {
+        ++_presentationVersion;
         if (!IsVisible)
         {
             return;
@@ -141,6 +145,7 @@ public sealed partial class WindowPreviewWindow : Window
         StopEntranceTransition();
         IsVisible = false;
         _allowClose = true;
+        _windowActionShutdown.Cancel();
         Close();
     }
 
@@ -562,10 +567,15 @@ public sealed partial class WindowPreviewWindow : Window
             cardKeyboardFocused = false;
             UpdateCardEmphasis();
         };
-        surface.Click += (_, _) =>
+        surface.Click += async (_, _) =>
         {
-            _ = _windowService.RestoreAndActivate(window.Handle);
-            Dismiss();
+            var presentation = _presentationVersion;
+            _ = await _windowService.RestoreAndActivateAsync(
+                window.Handle, _windowActionShutdown.Token).ConfigureAwait(true);
+            if (!_allowClose && presentation == _presentationVersion)
+            {
+                Dismiss();
+            }
         };
         surface.SizeChanged += (_, _) =>
         {

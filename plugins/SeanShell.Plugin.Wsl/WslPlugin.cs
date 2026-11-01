@@ -50,6 +50,7 @@ public sealed class WslPlugin : ISeanShellPlugin
                 $"{_distributions.Count} installed distribution{(_distributions.Count == 1 ? string.Empty : "s")}",
                 RefreshAsync)
             {
+                ExecutionTimeout = TimeSpan.FromSeconds(30),
                 Kind = ShellCommandKind.Plugin,
                 Glyph = "\uE72C",
                 Keywords = ["wsl", "linux", "distribution", "rescan", "reload"],
@@ -100,9 +101,12 @@ public sealed class WslPlugin : ISeanShellPlugin
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             var distributions = await _provider
                 .GetDistributionsAsync(cancellationToken)
                 .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             _distributions = distributions
                 .Where(static distribution =>
                     !distribution.Name.StartsWith(

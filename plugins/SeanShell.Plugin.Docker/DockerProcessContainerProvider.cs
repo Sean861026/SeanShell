@@ -1,10 +1,24 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using SeanShell.Core;
 
 namespace SeanShell.Plugin.Docker;
 
 public sealed class DockerProcessContainerProvider : IDockerContainerProvider
 {
+    private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(10);
+    private readonly Func<ProcessStartInfo, TimeSpan, CancellationToken, Task<ProcessExecutionResult>> _runAsync;
+
+    public DockerProcessContainerProvider() : this(BoundedProcessRunner.RunAsync)
+    {
+    }
+
+    internal DockerProcessContainerProvider(
+        Func<ProcessStartInfo, TimeSpan, CancellationToken, Task<ProcessExecutionResult>> runAsync)
+    {
+        _runAsync = runAsync;
+    }
+
     public async ValueTask<DockerContainerQueryResult> GetContainersAsync(
         CancellationToken cancellationToken)
     {
@@ -21,25 +35,15 @@ public sealed class DockerProcessContainerProvider : IDockerContainerProvider
         startInfo.ArgumentList.Add("--format");
         startInfo.ArgumentList.Add("{{json .}}");
 
-        using var process = new Process { StartInfo = startInfo };
         try
         {
-            if (!process.Start())
-            {
-                return DockerContainerQueryResult.CliUnavailable;
-            }
-
-            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            var output = await outputTask.ConfigureAwait(false);
-            _ = await errorTask.ConfigureAwait(false);
-            if (process.ExitCode != 0)
+            var result = await _runAsync(startInfo, QueryTimeout, cancellationToken).ConfigureAwait(false);
+            if (result.ExitCode != 0)
             {
                 return DockerContainerQueryResult.EngineUnavailable;
             }
 
-            var containers = DockerContainerParser.Parse(output);
+            var containers = DockerContainerParser.Parse(result.StandardOutput);
             var running = containers.Count(static container =>
                 string.Equals(container.State, "running", StringComparison.OrdinalIgnoreCase));
             return new(
@@ -49,33 +53,19 @@ public sealed class DockerProcessContainerProvider : IDockerContainerProvider
         }
         catch (OperationCanceledException)
         {
-            TryTerminate(process);
+            throw;
+        }
+        catch (TimeoutException)
+        {
             throw;
         }
         catch (Win32Exception)
         {
-            TryTerminate(process);
             return DockerContainerQueryResult.CliUnavailable;
         }
         catch
         {
-            TryTerminate(process);
             return DockerContainerQueryResult.EngineUnavailable;
-        }
-    }
-
-    private static void TryTerminate(Process process)
-    {
-        try
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
-        }
-        catch
-        {
-            // The process may have already exited or become inaccessible.
         }
     }
 }

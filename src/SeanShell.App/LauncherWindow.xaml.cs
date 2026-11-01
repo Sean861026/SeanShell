@@ -21,6 +21,7 @@ public sealed partial class LauncherWindow : Window
     private readonly LauncherPerformanceMonitor _performanceMonitor;
     private readonly LauncherSearchService _searchService;
     private readonly LauncherOperationLifetime _lifetime = new();
+    private readonly CancellationTokenSource _commandShutdown = new();
     private readonly HashSet<string> _pinnedApplicationIds =
         new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _searchCancellation;
@@ -162,6 +163,11 @@ public sealed partial class LauncherWindow : Window
 
         // Invalidate continuations before cancellation or native window teardown.
         _lifetime.Shutdown();
+        _ = _commandShutdown.CancelAsync().ContinueWith(
+            static completed => _ = completed.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
         _allowClose = true;
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
@@ -456,11 +462,14 @@ public sealed partial class LauncherWindow : Window
         {
             UpdateInteractionState();
             ErrorInfoBar.IsOpen = false;
-            await result.Command.ExecuteAsync(CancellationToken.None).ConfigureAwait(true);
+            await ShellCommandExecutor.ExecuteAsync(result.Command, _commandShutdown.Token).ConfigureAwait(true);
             if (_lifetime.CanApply(operation))
             {
                 HideLauncher();
             }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsShutdown)
+        {
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {

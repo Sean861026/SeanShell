@@ -6,14 +6,14 @@ namespace SeanShell.Core.Tests;
 public sealed class TaskbarReplacementSessionTests
 {
     [TestMethod]
-    public void EnableStartsRecoveryGuardBeforeHidingTaskbars()
+    public async Task EnableStartsRecoveryGuardBeforeHidingTaskbars()
     {
         var calls = new List<string>();
         var controller = new StubController(calls);
         var guard = new StubGuard(calls);
-        using var session = new TaskbarReplacementSession(controller, guard);
+        await using var session = new TaskbarReplacementSession(controller, guard);
 
-        var result = session.Enable();
+        var result = await session.EnableAsync();
 
         Assert.IsTrue(result.Success);
         Assert.IsTrue(session.IsEnabled);
@@ -23,14 +23,14 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void GuardFailureLeavesTaskbarsVisible()
+    public async Task GuardFailureLeavesTaskbarsVisible()
     {
         var calls = new List<string>();
         var controller = new StubController(calls);
         var guard = new StubGuard(calls) { CanStart = false };
-        using var session = new TaskbarReplacementSession(controller, guard);
+        await using var session = new TaskbarReplacementSession(controller, guard);
 
-        var result = session.Enable();
+        var result = await session.EnableAsync();
 
         Assert.IsFalse(result.Success);
         Assert.IsFalse(session.IsEnabled);
@@ -40,15 +40,15 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void HideFailureRollsBackToVisibleTaskbars()
+    public async Task HideFailureRollsBackToVisibleTaskbars()
     {
         var calls = new List<string>();
         var controller = new StubController(calls) { HideSucceeds = false };
-        using var session = new TaskbarReplacementSession(
+        await using var session = new TaskbarReplacementSession(
             controller,
             new StubGuard(calls));
 
-        var result = session.Enable();
+        var result = await session.EnableAsync();
 
         Assert.IsFalse(result.Success);
         Assert.IsFalse(session.IsEnabled);
@@ -58,17 +58,17 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void LostGuardFailsSafeAndRestoresTaskbars()
+    public async Task LostGuardFailsSafeAndRestoresTaskbars()
     {
         var calls = new List<string>();
         var controller = new StubController(calls);
         var guard = new StubGuard(calls);
-        using var session = new TaskbarReplacementSession(controller, guard);
-        Assert.IsTrue(session.Enable().Success);
+        await using var session = new TaskbarReplacementSession(controller, guard);
+        Assert.IsTrue((await session.EnableAsync()).Success);
         guard.CanStart = false;
         guard.IsRunning = false;
 
-        var result = session.EnsureHidden();
+        var result = await session.EnsureHiddenAsync();
 
         Assert.IsFalse(result.Success);
         Assert.IsFalse(session.IsEnabled);
@@ -76,16 +76,16 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void DisableAndDisposeRestoreTaskbars()
+    public async Task DisableAndDisposeRestoreTaskbars()
     {
         var calls = new List<string>();
         var controller = new StubController(calls);
         var guard = new StubGuard(calls);
         var session = new TaskbarReplacementSession(controller, guard);
-        Assert.IsTrue(session.Enable().Success);
+        Assert.IsTrue((await session.EnableAsync()).Success);
 
-        var result = session.Disable();
-        session.Dispose();
+        var result = await session.DisableAsync();
+        await session.DisposeAsync();
 
         Assert.IsTrue(result.Success);
         Assert.IsFalse(session.IsEnabled);
@@ -94,16 +94,16 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void RevealShowsTaskbarsWithoutDisablingReplacementSession()
+    public async Task RevealShowsTaskbarsWithoutDisablingReplacementSession()
     {
         var calls = new List<string>();
         var controller = new StubController(calls);
-        using var session = new TaskbarReplacementSession(
+        await using var session = new TaskbarReplacementSession(
             controller,
             new StubGuard(calls));
-        Assert.IsTrue(session.Enable().Success);
+        Assert.IsTrue((await session.EnableAsync()).Success);
 
-        var result = session.Reveal();
+        var result = await session.RevealAsync();
 
         Assert.IsTrue(result.Success);
         Assert.IsTrue(session.IsEnabled);
@@ -111,17 +111,155 @@ public sealed class TaskbarReplacementSessionTests
     }
 
     [TestMethod]
-    public void RevealFailsWhenReplacementIsNotEnabled()
+    public async Task RevealFailsWhenReplacementIsNotEnabled()
     {
         var calls = new List<string>();
-        using var session = new TaskbarReplacementSession(
+        await using var session = new TaskbarReplacementSession(
             new StubController(calls),
             new StubGuard(calls));
 
-        var result = session.Reveal();
+        var result = await session.RevealAsync();
 
         Assert.IsFalse(result.Success);
         Assert.IsEmpty(calls);
+    }
+
+    [TestMethod]
+    public async Task SlowGuardDoesNotBlockCallerAndDisablePreventsLateHide()
+    {
+        var calls = new List<string>();
+        using var release = new ManualResetEventSlim();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var guard = new StubGuard(calls)
+        {
+            BeforeStart = () =>
+            {
+                started.SetResult();
+                Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(5)));
+            },
+        };
+        await using var session = new TaskbarReplacementSession(new StubController(calls), guard);
+        var enabling = session.EnableAsync();
+        try
+        {
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.IsFalse(enabling.IsCompleted);
+            var disabling = session.DisableAsync();
+            release.Set();
+            Assert.IsTrue((await enabling).Superseded);
+            Assert.IsTrue((await disabling).Success);
+            Assert.IsFalse(session.IsEnabled);
+            CollectionAssert.AreEqual(new[] { "guard", "show" }, calls);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    [TestMethod]
+    public async Task RevealSupersedesQueuedRefreshAndWaitsForInFlightHideCompensation()
+    {
+        var calls = new List<string>();
+        using var release = new ManualResetEventSlim();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var controller = new StubController(calls);
+        await using var session = new TaskbarReplacementSession(controller, new StubGuard(calls));
+        Assert.IsTrue((await session.EnableAsync()).Success);
+        controller.BeforeHide = () =>
+        {
+            started.SetResult();
+            Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(5)));
+        };
+        var refreshing = session.EnsureHiddenAsync();
+        try
+        {
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var queuedRefresh = session.EnsureHiddenAsync();
+            var revealing = session.RevealAsync();
+            release.Set();
+            Assert.IsTrue((await refreshing).Superseded);
+            Assert.IsTrue((await queuedRefresh).Superseded);
+            Assert.IsTrue((await revealing).Success);
+            Assert.IsTrue(session.IsEnabled);
+            CollectionAssert.AreEqual(
+                new[] { "guard", "hide", "guard", "hide", "show", "show" }, calls);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    [TestMethod]
+    public async Task ShutdownDrainsInFlightHideAndRejectsAllLaterHides()
+    {
+        var calls = new List<string>();
+        using var release = new ManualResetEventSlim();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var controller = new StubController(calls)
+        {
+            BeforeHide = () =>
+            {
+                started.SetResult();
+                Assert.IsTrue(release.Wait(TimeSpan.FromSeconds(5)));
+            },
+        };
+        var guard = new StubGuard(calls);
+        await using var session = new TaskbarReplacementSession(controller, guard);
+        var enabling = session.EnableAsync();
+        try
+        {
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var queued = session.EnsureHiddenAsync();
+            var shutdown = session.ShutdownAsync();
+            Assert.IsTrue((await session.EnableAsync()).Superseded);
+            Assert.IsTrue((await session.EnsureHiddenAsync()).Superseded);
+            release.Set();
+            Assert.IsTrue((await enabling).Superseded);
+            Assert.IsTrue((await queued).Superseded);
+            Assert.IsTrue((await shutdown).Success);
+            Assert.AreSame(shutdown, session.ShutdownAsync());
+            Assert.IsFalse(session.IsEnabled);
+            Assert.IsTrue(guard.Disposed);
+            CollectionAssert.AreEqual(new[] { "guard", "hide", "show", "show" }, calls);
+        }
+        finally
+        {
+            release.Set();
+        }
+    }
+
+    [TestMethod]
+    public async Task ControllerFaultRestoresTaskbarWithoutPoisoningQueue()
+    {
+        var calls = new List<string>();
+        var controller = new StubController(calls)
+        {
+            BeforeHide = () => throw new InvalidOperationException("native failure"),
+        };
+        await using var session = new TaskbarReplacementSession(controller, new StubGuard(calls));
+        var failed = await session.EnableAsync();
+        Assert.IsFalse(failed.Success);
+        StringAssert.Contains(failed.Error, "native failure");
+        Assert.IsFalse(session.IsEnabled);
+        Assert.AreEqual("show", calls[^1]);
+        controller.BeforeHide = null;
+        Assert.IsTrue((await session.EnableAsync()).Success);
+    }
+
+    [TestMethod]
+    public async Task FailedRestorationIsNotReportedAsSuccess()
+    {
+        var calls = new List<string>();
+        var controller = new StubController(calls) { ShowSucceeds = false };
+        await using var session = new TaskbarReplacementSession(controller, new StubGuard(calls));
+        Assert.IsTrue((await session.EnableAsync()).Success);
+        var result = await session.DisableAsync();
+        Assert.IsFalse(result.Success);
+        Assert.IsFalse(session.IsEnabled);
+        StringAssert.Contains(result.Error, "show failed");
+        Assert.IsFalse((await session.ShutdownAsync()).Success);
     }
 
     [TestMethod]
@@ -145,10 +283,13 @@ public sealed class TaskbarReplacementSessionTests
     private sealed class StubController(List<string> calls) : ITaskbarController
     {
         public bool HideSucceeds { get; init; } = true;
+        public bool ShowSucceeds { get; init; } = true;
+        public Action? BeforeHide { get; set; }
 
         public TaskbarOperationResult HideAll()
         {
             calls.Add("hide");
+            BeforeHide?.Invoke();
             return new TaskbarOperationResult(
                 HideSucceeds,
                 2,
@@ -158,7 +299,7 @@ public sealed class TaskbarReplacementSessionTests
         public TaskbarOperationResult ShowAll()
         {
             calls.Add("show");
-            return new TaskbarOperationResult(true, 2);
+            return new TaskbarOperationResult(ShowSucceeds, 2, ShowSucceeds ? null : "show failed");
         }
     }
 
@@ -171,10 +312,12 @@ public sealed class TaskbarReplacementSessionTests
         public bool IsRunning { get; set; }
 
         public bool Disposed { get; private set; }
+        public Action? BeforeStart { get; init; }
 
         public bool EnsureStarted(out string? error)
         {
             calls.Add("guard");
+            BeforeStart?.Invoke();
             if (IsRunning)
             {
                 error = null;

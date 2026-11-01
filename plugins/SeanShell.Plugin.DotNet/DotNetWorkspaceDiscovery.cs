@@ -22,6 +22,7 @@ public static class DotNetWorkspaceDiscovery
         ArgumentNullException.ThrowIfNull(roots);
         ArgumentOutOfRangeException.ThrowIfNegative(maximumDepth);
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumWorkspaces, 1);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var workspaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in roots
@@ -37,6 +38,7 @@ public static class DotNetWorkspaceDiscovery
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return workspaces
             .OrderBy(static path => Path.GetExtension(path).ToLowerInvariant()
                 is ".sln" or ".slnx" ? 0 : 1)
@@ -62,8 +64,12 @@ public static class DotNetWorkspaceDiscovery
         {
             cancellationToken.ThrowIfCancellationRequested();
             var candidate = pending.Dequeue();
-            foreach (var file in EnumerateWorkspaceFiles(candidate.Path))
+            foreach (var file in EnumerateWorkspaceFiles(
+                candidate.Path,
+                maximumWorkspaces - workspaces.Count,
+                cancellationToken))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 workspaces.Add(Path.GetFullPath(file));
                 if (workspaces.Count >= maximumWorkspaces)
                 {
@@ -76,8 +82,9 @@ public static class DotNetWorkspaceDiscovery
                 continue;
             }
 
-            foreach (var directory in EnumerateDirectories(candidate.Path))
+            foreach (var directory in EnumerateDirectories(candidate.Path, cancellationToken))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!ShouldSkip(directory))
                 {
                     pending.Enqueue((directory, candidate.Depth + 1));
@@ -86,33 +93,54 @@ public static class DotNetWorkspaceDiscovery
         }
     }
 
-    private static IEnumerable<string> EnumerateWorkspaceFiles(string path)
+    private static IEnumerable<string> EnumerateWorkspaceFiles(
+        string path,
+        int maximumFiles,
+        CancellationToken cancellationToken)
     {
+        var files = new List<string>();
         try
         {
-            return Directory.EnumerateFiles(path, "*", SearchOption.TopDirectoryOnly)
-                .Where(static file => Path.GetExtension(file).ToLowerInvariant()
-                    is ".sln" or ".slnx" or ".csproj")
-                .ToArray();
+            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.TopDirectoryOnly))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Path.GetExtension(file).ToLowerInvariant() is ".sln" or ".slnx" or ".csproj")
+                {
+                    files.Add(file);
+                    if (files.Count >= maximumFiles)
+                    {
+                        break;
+                    }
+                }
+            }
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException)
         {
-            return [];
         }
+
+        return files;
     }
 
-    private static IEnumerable<string> EnumerateDirectories(string path)
+    private static IEnumerable<string> EnumerateDirectories(
+        string path,
+        CancellationToken cancellationToken)
     {
+        var directories = new List<string>();
         try
         {
-            return Directory.EnumerateDirectories(path).ToArray();
+            foreach (var directory in Directory.EnumerateDirectories(path))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                directories.Add(directory);
+            }
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException)
         {
-            return [];
         }
+
+        return directories;
     }
 
     private static bool ShouldSkip(string path)

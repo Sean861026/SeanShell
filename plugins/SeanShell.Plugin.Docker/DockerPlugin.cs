@@ -51,6 +51,7 @@ public sealed class DockerPlugin : ISeanShellPlugin
                 _snapshot.StatusText,
                 RefreshAsync)
             {
+                ExecutionTimeout = TimeSpan.FromSeconds(30),
                 Kind = ShellCommandKind.Plugin,
                 Glyph = "\uE72C",
                 Keywords = ["docker", "container", "rescan", "reload", "engine"],
@@ -126,9 +127,13 @@ public sealed class DockerPlugin : ISeanShellPlugin
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _snapshot = await _provider
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var snapshot = await _provider
                 .GetContainersAsync(cancellationToken)
                 .ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _snapshot = snapshot;
         }
         finally
         {
