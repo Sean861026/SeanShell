@@ -28,6 +28,8 @@ public sealed partial class MainWindow : Window
     private static readonly TimeSpan DesktopWindowChangeDebounce =
         TimeSpan.FromMilliseconds(120);
     private readonly DesktopWindowService _desktopWindows;
+    private readonly DockRefreshCoordinator _dockRefreshCoordinator = new();
+    private readonly CancellationTokenSource _dockRefreshShutdown = new();
     private readonly DisplayMonitorService _displayMonitorService;
     private readonly DispatcherQueueTimer _displayChangeTimer;
     private readonly DispatcherQueueTimer _dockRefreshTimer;
@@ -61,7 +63,6 @@ public sealed partial class MainWindow : Window
     private IReadOnlyList<ShellCommand> _pinnedApplications = [];
     private long _desktopWindowChangeTimestamp;
     private int _desktopWindowChangeQueued;
-    private bool _refreshingDockWindows;
     private bool _refreshingGamingMode;
     private bool _shellStarted;
     private bool _taskbarAccessRevealed;
@@ -1105,21 +1106,37 @@ public sealed partial class MainWindow : Window
         return result;
     }
 
-    private async Task RefreshDockWindowsAsync(bool explicitlyRequested = false)
+    private async Task<bool> RefreshDockWindowsAsync(bool explicitlyRequested = false)
     {
-        if (_isClosing || _exitRequested || _refreshingDockWindows ||
+        if (_isClosing || _exitRequested ||
             (_gamingMode.Current.IsGaming && !explicitlyRequested))
         {
-            return;
+            return false;
         }
 
-        _refreshingDockWindows = true;
         try
         {
-            var snapshot = await Task.Run(_desktopWindows.Capture).ConfigureAwait(true);
+            using var lease = await _dockRefreshCoordinator
+                .EnterAsync(explicitlyRequested, _dockRefreshShutdown.Token)
+                .ConfigureAwait(true);
+            if (lease is null || _isClosing || _exitRequested ||
+                (_gamingMode.Current.IsGaming && !explicitlyRequested))
+            {
+                return false;
+            }
+
+            // A scan already running when the hotkey was pressed may have
+            // repopulated the cache. Invalidate only after its lease releases.
+            if (explicitlyRequested)
+            {
+                _desktopWindows.InvalidateCache();
+            }
+
+            var snapshot = await Task.Run(_desktopWindows.Capture, _dockRefreshShutdown.Token)
+                .ConfigureAwait(true);
             if (_isClosing || _exitRequested)
             {
-                return;
+                return false;
             }
 
             if (_showDesktop.IsDesktopShown &&
@@ -1134,23 +1151,27 @@ public sealed partial class MainWindow : Window
             {
                 dockWindow.ApplyWindowSnapshot(snapshot);
             }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (_isClosing || _exitRequested)
+        {
+            return false;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             ((App)Application.Current).Diagnostics.TryWrite(DiagnosticEventKind.DockActionFailed, exception);
             if (_isClosing || _exitRequested)
             {
-                return;
+                return false;
             }
 
             foreach (var dockWindow in _dockWindows)
             {
                 dockWindow.SetWindowSnapshotUnavailable(exception.Message);
             }
-        }
-        finally
-        {
-            _refreshingDockWindows = false;
+
+            return false;
         }
     }
 
@@ -1705,9 +1726,9 @@ public sealed partial class MainWindow : Window
                 ? _dockWindows[targetIndex]
                 : null;
             var request = dock?.FocusDock() ?? 0;
-            _desktopWindows.InvalidateCache();
-            await RefreshDockWindowsAsync(explicitlyRequested: true).ConfigureAwait(true);
-            if (!_isClosing && !_exitRequested)
+            var refreshed = await RefreshDockWindowsAsync(explicitlyRequested: true)
+                .ConfigureAwait(true);
+            if (refreshed && !_isClosing && !_exitRequested)
             {
                 dock?.CompleteKeyboardEntry(request);
             }
@@ -1752,6 +1773,7 @@ public sealed partial class MainWindow : Window
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         _isClosing = true;
+        _dockRefreshShutdown.Cancel();
         Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
         if (_desktopWindowObserver is not null)
         {

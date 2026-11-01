@@ -385,7 +385,9 @@ User presses Ctrl+Alt+D (or the selected Dock preset)
   -> standard WinUI Tab and arrow navigation continues through Dock controls
 
 Gaming mode keyboard entry
-  -> explicitly refresh the otherwise paused window inventory once
+  -> wait for any in-flight Dock scan, then invalidate its cache
+  -> capture and publish a fresh window inventory, even when periodic scans are paused
+  -> a failed or canceled refresh leaves the Launcher focused
   -> same request, Dock still foreground, and Launcher still focused: focus next running group
   -> already navigated, dismissed, switched away, or shut down: do not steal focus
   -> no running groups: retain Launcher focus
@@ -412,6 +414,8 @@ list handles plain activation keys in the tunneling `PreviewKeyDown` event befor
 the default ListView ItemClick can invoke mouse-toggle semantics. Focus restoration
 is scoped to the active Dock XamlRoot and never activates a Dock in the background.
 Final shell exit invalidates keyboard entry and ignores late inventory results.
+Periodic scans coalesce while another scan owns the refresh lease; an explicit
+keyboard request waits instead of being dropped. Shutdown cancels queued scans.
 
 ## Dock window activation
 
