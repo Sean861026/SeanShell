@@ -575,10 +575,10 @@ User enables Replace Windows taskbar
   -> hide every discovered taskbar and verify visibility
   -> start a two-second re-hide check for Explorer restarts
 
-User disables replacement or closes SeanShell normally
+User disables replacement or exits SeanShell from the Dock menu
   -> stop the re-hide check
   -> show and verify every Windows taskbar
-  -> persist the disabled preference
+  -> disabling persists the disabled preference; exiting retains the user's choice
 
 SeanShell main process crashes or is forcibly terminated
   -> recovery guard observes the owner-process handle becoming signaled
@@ -594,7 +594,10 @@ on a background queue. Disable, reveal, and shutdown invalidate stale hide
 requests; an in-flight hide is followed by a compensating show. The timer
 coalesces checks instead of accumulating work. Final shutdown drains restoration
 before closing the Docks, while AppBar registration/release stays on the UI
-dispatcher. Visibility is polled with a finite bound; successfully posting a
+dispatcher. Taskbar visibility uses `SetWindowPos` with `SWP_ASYNCWINDOWPOS`
+and only `SWP_HIDEWINDOW`/`SWP_SHOWWINDOW`, preserving position, size, activation,
+and window/owner Z-order. There is one request per target, not an unbounded
+retry loop. Visibility is polled with a finite bound; successfully posting a
 native request alone is not treated as successful restoration.
 
 Foreign application minimize/restore requests use `ShowWindowAsync` and bounded,

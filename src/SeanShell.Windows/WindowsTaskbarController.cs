@@ -6,12 +6,22 @@ namespace SeanShell.Windows;
 
 public sealed class WindowsTaskbarController : ITaskbarController
 {
-    private const int SwHide = 0;
-    private const int SwShow = 5;
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoMove = 0x0002;
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
+    private const uint SwpShowWindow = 0x0040;
+    private const uint SwpHideWindow = 0x0080;
+    private const uint SwpNoOwnerZOrder = 0x0200;
+    private const uint SwpAsyncWindowPos = 0x4000;
     private const int VisibilityPollAttempts = 40;
     private const int VisibilityPollIntervalMilliseconds = 50;
     private const string PrimaryTaskbarClass = "Shell_TrayWnd";
     private const string SecondaryTaskbarClass = "Shell_SecondaryTrayWnd";
+    private readonly DiagnosticJournal? _diagnostics;
+
+    public WindowsTaskbarController(DiagnosticJournal? diagnostics = null) =>
+        _diagnostics = diagnostics;
 
     public TaskbarOperationResult HideAll() =>
         SetVisibility(visible: false);
@@ -19,21 +29,28 @@ public sealed class WindowsTaskbarController : ITaskbarController
     public TaskbarOperationResult ShowAll() =>
         SetVisibility(visible: true);
 
-    private static TaskbarOperationResult SetVisibility(bool visible)
+    private TaskbarOperationResult SetVisibility(bool visible)
     {
         var taskbars = CaptureTaskbars();
         if (taskbars.Count == 0)
         {
-            return new TaskbarOperationResult(
-                false,
+            return Failure(
+                visible,
+                TaskbarFailureReason.NoTaskbars,
+                0,
                 0,
                 "Windows Explorer did not expose a taskbar window.");
         }
 
         var rejected = 0;
+        var flags = SwpAsyncWindowPos | SwpNoMove | SwpNoSize |
+            SwpNoZOrder | SwpNoActivate | SwpNoOwnerZOrder |
+            (visible ? SwpShowWindow : SwpHideWindow);
         foreach (var taskbar in taskbars)
         {
-            if (!ShowWindowAsync(taskbar, visible ? SwShow : SwHide))
+            // Post only visibility to Explorer's thread. Preserve geometry,
+            // activation, and both the taskbar's and its owner's Z order.
+            if (!SetWindowPos(taskbar, 0, 0, 0, 0, 0, flags))
             {
                 rejected++;
             }
@@ -41,9 +58,11 @@ public sealed class WindowsTaskbarController : ITaskbarController
 
         if (rejected > 0)
         {
-            return new TaskbarOperationResult(
-                false,
+            return Failure(
+                visible,
+                TaskbarFailureReason.RequestRejected,
                 taskbars.Count,
+                rejected,
                 $"Windows did not accept the visibility request for {rejected} taskbar window(s).");
         }
 
@@ -63,17 +82,34 @@ public sealed class WindowsTaskbarController : ITaskbarController
         }
 
         // Success means Windows accepted the request and the state is observed.
-        // ShowWindowAsync exposes no queue-drained acknowledgement. In particular,
-        // a compensating show can observe visible before an older queued hide runs;
+        // An async window-position request has no queue-drained acknowledgement.
+        // A compensating show can observe visible before an older queued hide runs;
         // the session orders that final show after every hide and keeps the guard.
         var mismatched = taskbars.Count(
             taskbar => !IsWindow(taskbar) || IsWindowVisible(taskbar) != visible);
         return mismatched == 0
             ? new TaskbarOperationResult(true, taskbars.Count)
-            : new TaskbarOperationResult(
-                false,
+            : Failure(
+                visible,
+                TaskbarFailureReason.VisibilityTimedOut,
                 taskbars.Count,
+                mismatched,
                 $"{mismatched} Windows taskbar window(s) did not change visibility.");
+    }
+
+    private TaskbarOperationResult Failure(
+        bool visible,
+        TaskbarFailureReason reason,
+        int targetCount,
+        int affectedCount,
+        string error)
+    {
+        _diagnostics?.TryWriteTaskbarFailure(
+            visible ? TaskbarFailureStage.Show : TaskbarFailureStage.Hide,
+            reason,
+            targetCount,
+            affectedCount);
+        return new TaskbarOperationResult(false, targetCount, error);
     }
 
     private static IReadOnlyList<nint> CaptureTaskbars()
@@ -127,9 +163,16 @@ public sealed class WindowsTaskbarController : ITaskbarController
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool IsWindowVisible(nint handle);
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindowAsync(nint handle, int command);
+    private static extern bool SetWindowPos(
+        nint handle,
+        nint insertAfter,
+        int x,
+        int y,
+        int width,
+        int height,
+        uint flags);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

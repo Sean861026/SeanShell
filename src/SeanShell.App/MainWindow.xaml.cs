@@ -105,12 +105,13 @@ public sealed partial class MainWindow : Window
         _showDesktop = new ShowDesktopSession(
             new WindowsShellDesktopController());
         _taskbarReplacement = new TaskbarReplacementSession(
-            new WindowsTaskbarController(),
+            new WindowsTaskbarController(app.Diagnostics),
             new TaskbarRecoveryGuard(
                 Environment.ProcessPath ??
                 throw new InvalidOperationException(
                     "The packaged SeanShell executable path is unavailable."),
-                Environment.ProcessId));
+                Environment.ProcessId,
+                app.Diagnostics));
         _monitors = _displayMonitorService.Capture();
         _dockWindows = CreateDockWindows(_monitors);
 
@@ -1179,15 +1180,29 @@ public sealed partial class MainWindow : Window
     private WorkAreaReservationResult SetDockWorkAreaReservation(bool enabled)
     {
         WorkAreaReservationResult result = WorkAreaReservationResult.Released();
+        var failureCount = 0;
         foreach (var dockWindow in _dockWindows)
         {
             var current = dockWindow.SetWorkAreaReservation(
                 enabled &&
                 !_immersiveMonitorHandles.Contains(dockWindow.MonitorHandle));
-            if (!current.Success && result.Success)
+            if (!current.Success)
             {
-                result = current;
+                failureCount++;
+                if (result.Success)
+                {
+                    result = current;
+                }
             }
+        }
+
+        if (!result.Success)
+        {
+            ((App)Application.Current).Diagnostics.TryWriteTaskbarFailure(
+                enabled ? TaskbarFailureStage.WorkAreaReserve : TaskbarFailureStage.WorkAreaRelease,
+                TaskbarFailureReason.ReservationRejected,
+                _dockWindows.Count,
+                failureCount);
         }
 
         if (enabled && !result.Success)
