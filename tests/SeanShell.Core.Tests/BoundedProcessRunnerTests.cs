@@ -4,6 +4,7 @@ using System.Text;
 namespace SeanShell.Core.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public sealed class BoundedProcessRunnerTests
 {
     [TestMethod]
@@ -66,11 +67,12 @@ public sealed class BoundedProcessRunnerTests
     {
         using var probe = new IsolatedProcessProbe();
         using var cancellation = new CancellationTokenSource();
+        var queryDeadline = TimeSpan.FromSeconds(15);
         var operation = probe.RunAsync(
             "while ($true) { [Console]::Out.Write('out'); [Console]::Error.Write('err'); Start-Sleep -Milliseconds 10 }",
-            TimeSpan.FromSeconds(15),
+            queryDeadline,
             cancellation.Token);
-        await probe.CaptureProcessAsync();
+        await probe.CaptureProcessAsync(operation, queryDeadline);
         await probe.WaitForInterpreterReadinessAsync(operation);
         var watch = Stopwatch.StartNew();
         cancellation.Cancel();
@@ -164,6 +166,96 @@ public sealed class BoundedProcessRunnerTests
 
         Assert.AreSame(expected, actual);
         Assert.HasCount(0, delays);
+    }
+
+    [TestMethod]
+    public async Task ProcessStartupCanTakeSixVirtualSecondsWithinItsQueryBudget()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var operation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var time = new StartupTimeProvider();
+        var waiting = WaitForProcessStartAsync(started.Task, operation.Task, TimeSpan.FromSeconds(15), time);
+
+        CollectionAssert.AreEqual(new[] { TimeSpan.FromSeconds(15) }, time.ScheduledDelays);
+        time.Advance(TimeSpan.FromSeconds(6));
+        Assert.AreEqual(0, time.FiredTimers);
+        Assert.IsFalse(waiting.IsCompleted);
+        started.SetResult();
+
+        await waiting.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.IsFalse(operation.Task.IsCompleted);
+    }
+
+    [TestMethod]
+    public async Task ProcessStartupWatchdogExpiresAtItsQueryBudget()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var operation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var time = new StartupTimeProvider();
+        var waiting = WaitForProcessStartAsync(started.Task, operation.Task, TimeSpan.FromSeconds(15), time);
+
+        time.Advance(TimeSpan.FromSeconds(14));
+        Assert.IsFalse(waiting.IsCompleted);
+        Assert.AreEqual(0, time.FiredTimers);
+        time.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.AreEqual(1, time.FiredTimers);
+        Assert.AreSame(waiting, await Task.WhenAny(waiting, Task.Delay(TimeSpan.FromSeconds(5))));
+        await Assert.ThrowsExactlyAsync<TimeoutException>(() => waiting);
+    }
+
+    [TestMethod]
+    public async Task ProcessStartupPreservesEarlyOperationFailure()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var operation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var expected = new InvalidOperationException("The probe failed before reporting process startup.");
+        var time = new StartupTimeProvider();
+        var waiting = WaitForProcessStartAsync(started.Task, operation.Task, TimeSpan.FromSeconds(15), time);
+
+        operation.SetException(expected);
+
+        var actual = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => waiting.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.AreSame(expected, actual);
+        Assert.AreEqual(0, time.FiredTimers);
+        Assert.IsFalse(started.Task.IsCompleted);
+    }
+
+    [TestMethod]
+    public async Task ProcessStartupRejectsOperationCompletionWithoutStartedSignal()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var operation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var time = new StartupTimeProvider();
+        var waiting = WaitForProcessStartAsync(started.Task, operation.Task, TimeSpan.FromSeconds(15), time);
+
+        operation.SetResult();
+
+        var error = await Assert.ThrowsExactlyAsync<AssertFailedException>(
+            () => waiting.WaitAsync(TimeSpan.FromSeconds(5)));
+        StringAssert.Contains(error.Message, "without reporting process startup");
+        Assert.AreEqual(0, time.FiredTimers);
+    }
+
+    private static async Task WaitForProcessStartAsync(
+        Task started,
+        Task operation,
+        TimeSpan setupBudget,
+        TimeProvider? timeProvider = null)
+    {
+        // Setup is not the behavior measured by the caller-cancellation test. Use its
+        // existing query deadline, while surfacing a failed Start/observer immediately.
+        await Task.WhenAny(started, operation)
+            .WaitAsync(setupBudget, timeProvider ?? TimeProvider.System);
+        if (started.IsCompleted)
+        {
+            await started;
+            return;
+        }
+
+        await operation;
+        Assert.Fail("The query operation completed without reporting process startup.");
     }
 
     private static void DeleteOwnedDirectoryWithRetry(Action delete, Action<TimeSpan> delay)
@@ -272,6 +364,9 @@ public sealed class BoundedProcessRunnerTests
         public async Task CaptureProcessAsync() =>
             _ = await _started.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
+        public Task CaptureProcessAsync(Task operation, TimeSpan setupBudget) =>
+            WaitForProcessStartAsync(_started.Task, operation, setupBudget);
+
         public async Task WaitForInterpreterReadinessAsync(Task operation)
         {
             var watch = Stopwatch.StartNew();
@@ -328,6 +423,93 @@ public sealed class BoundedProcessRunnerTests
             {
                 process.Kill(entireProcessTree: true);
                 Assert.IsTrue(process.WaitForExit(5000), "The owned probe did not terminate during cleanup.");
+            }
+        }
+    }
+
+    // The existing broker-test clock only overrides GetUtcNow; startup regression
+    // tests need one-shot timers for Task.WaitAsync without real six/fifteen-second sleeps.
+    private sealed class StartupTimeProvider : TimeProvider
+    {
+        private readonly object _gate = new();
+        private readonly List<StartupTimer> _timers = [];
+        private TimeSpan _elapsed;
+
+        public List<TimeSpan> ScheduledDelays { get; } = [];
+
+        public int FiredTimers { get; private set; }
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = new StartupTimer(this, callback, state);
+            lock (_gate)
+            {
+                _timers.Add(timer);
+                ScheduledDelays.Add(dueTime);
+                timer.Change(dueTime, period);
+            }
+
+            return timer;
+        }
+
+        public void Advance(TimeSpan elapsed)
+        {
+            var due = new List<StartupTimer>();
+            lock (_gate)
+            {
+                _elapsed += elapsed;
+                foreach (var timer in _timers)
+                {
+                    if (!timer.Disposed && timer.DueAt is { } dueAt && dueAt <= _elapsed)
+                    {
+                        timer.DueAt = null;
+                        FiredTimers++;
+                        due.Add(timer);
+                    }
+                }
+            }
+
+            foreach (var timer in due)
+            {
+                timer.Callback(timer.State);
+            }
+        }
+
+        private sealed class StartupTimer(StartupTimeProvider owner, TimerCallback callback, object? state) : ITimer
+        {
+            public TimerCallback Callback { get; } = callback;
+            public object? State { get; } = state;
+            public TimeSpan? DueAt { get; set; }
+            public bool Disposed { get; private set; }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period)
+            {
+                Assert.AreEqual(Timeout.InfiniteTimeSpan, period, "The startup watchdog must be a one-shot timer.");
+                lock (owner._gate)
+                {
+                    if (Disposed)
+                    {
+                        return false;
+                    }
+
+                    DueAt = dueTime == Timeout.InfiniteTimeSpan ? null : owner._elapsed + dueTime;
+                    return true;
+                }
+            }
+
+            public void Dispose()
+            {
+                lock (owner._gate)
+                {
+                    Disposed = true;
+                    DueAt = null;
+                }
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return ValueTask.CompletedTask;
             }
         }
     }

@@ -101,6 +101,21 @@ public sealed class InputLayoutSwitchController(IInputLayoutBackend backend, uin
             : InputLayoutSwitchResult.NotConfirmed;
     }
 
+    /// <summary>
+    /// Optional feedback is valid only while the confirmed target is still the
+    /// current foreground application and still uses the requested layout.
+    /// This never posts a request or changes the confirmation result.
+    /// </summary>
+    public bool CanNotifyConfirmedChange(
+        InputWindowIdentity? target,
+        nint layout,
+        InputLayoutSwitchResult result) =>
+        result == InputLayoutSwitchResult.Confirmed &&
+        layout != 0 &&
+        IsCurrentTarget(target) &&
+        backend.ReadActiveLayout(target!) == layout &&
+        backend.IsForeground(target!);
+
     private bool IsExternalTarget(InputWindowIdentity? target) =>
         target is { Handle: not 0, ThreadId: not 0, ProcessId: not 0 } &&
         target.ProcessId != shellProcessId;

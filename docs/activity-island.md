@@ -22,6 +22,18 @@ Minimizing an application does not produce an activation notification. Preview-c
 clicks, newly launched processes, Alt+Tab, and foreground changes initiated outside
 the Dock are not activity sources in this prototype.
 
+The preview also confirms explicit keyboard-layout changes made through the Dock:
+focus an application, open the Dock, then choose **Quick settings > Input methods**
+and select a different loaded layout. After Windows confirms the target's layout,
+the capsule shows **KEYBOARD LAYOUT** and that layout's display name. The exact
+target must still exist and remain foreground with the requested layout active.
+Already-active layouts, posted-but-unconfirmed requests, failures, and results
+arriving after focus moved do not produce feedback.
+
+This describes a keyboard layout, **not** the IME's Chinese/English composition
+mode. External/system keyboard changes are not watched. There is no new polling
+loop, keyboard hook, installed language, or system-default input preference.
+
 ## Presentation and lifecycle
 
 - A single lazily created, borderless window appears at the top center of the
@@ -35,8 +47,14 @@ the Dock are not activity sources in this prototype.
 - The window is always-on-top while visible but is shown without activation and
   omitted from window switchers. It does not register an AppBar, reserve desktop
   space, or change the foreground application's work area.
-- Each event replaces the previous content and restarts a 2.4-second dismissal
-  deadline. There is no notification queue or persistent history.
+- Changed content replaces the previous content and restarts a 2.4-second
+  dismissal deadline. Identical content on the same monitor while visible is
+  coalesced without extending the deadline. There is no notification queue or
+  persistent history; an expired or dismissed message can be shown again.
+- Updates on the same monitor do not replay the entrance animation or recreate
+  Acrylic. A new appearance or monitor transition uses the existing entrance;
+  reduced-effects preference changes still apply through the shared accessibility
+  path. A vanished target monitor drops the event rather than moving it to primary.
 - A pointer press dismisses the capsule early. It currently has no expand,
   playback, or command controls and is not a keyboard-focus destination.
 - Windows reduced-effects preferences remove the optional entrance animation
@@ -44,8 +62,11 @@ the Dock are not activity sources in this prototype.
 - Display changes dismiss the current capsule; subsequent events use a fresh
   monitor snapshot. Shell shutdown closes the window and stops its timer.
 
-The prototype displays only information already available in SeanShell's window
-inventory. It does not inspect application content or add global keyboard hooks.
+The prototype displays information already available in SeanShell's window and
+loaded-keyboard-layout inventories. It does not inspect application content or
+add global keyboard hooks. Visible headings, icons, and full accessibility names
+distinguish app activation, keyboard-layout confirmation and enablement preview.
+An accessibility name alone does not imply an automatic screen-reader announcement.
 This feature does not send activity data to a service or persist a title history.
 
 ## Gaming and full-screen behavior
@@ -63,7 +84,7 @@ The existing immersive reconciliation path dismisses a visible capsule when
 coverage changes. The island itself has no polling loop. It never changes
 SeanShell's taskbar replacement or recovery configuration.
 
-## Verification record — 2026-11-01
+## Activation-preview verification — 2026-11-01 (PR #175)
 
 Follow `AGENTS.md`: visual acceptance on this workstation is restricted to the
 notebook's built-in `SDC41A3` panel, even when external `AUS3437` is primary.
@@ -128,6 +149,41 @@ automatic selection was restored. No global GPU or display settings were changed
 The current run incorporates the stable bundled-runtime fix from PR #176. Those
 earlier failed captures are diagnostic history, not passing visual tests.
 
+## Keyboard-layout increment verification — 2026-11-01
+
+- Release x64 build passed with zero warnings/errors; **655 tests passed**, zero
+  skipped, using the freshly built app for broker integration tests. Runtime
+  integrity, formatting and diff checks passed. Independent reviews covered the
+  confirmation gate, lifecycle subscriptions, typed content and timer integration.
+- The first CI run exposed a five-second startup-observation timeout in the
+  existing process-cancellation fixture, before it requested cancellation. Its
+  test-only setup now observes both startup and operation completion within the
+  existing 15-second query budget, preserving early failures. Real-process tests
+  run outside parallel execution; four virtual-time regressions cover this setup.
+  Production deadlines, three-second deadline tests and the post-cancellation
+  five-second assertion are unchanged. The exact CI timing cause was not
+  reproduced locally; this is not a claim of a production cancellation defect.
+- Deterministic tests cover stale/reused targets, changed focus/layout, every
+  non-confirmed result, full semantic labels, duplicate coalescing, replacement
+  near expiry, old queued timer ticks, dismissal and overflow-safe timing.
+- The isolated `SeanShell.InputLayoutProbe --notebook-only` opened only on the
+  built-in `SDC41A3` panel. The actual Dock flow changed its target-thread layout
+  from `04040404` to `04090409`, with the probe observing one change and Dock
+  reporting confirmation. The Island's native window was visible on that panel
+  without becoming foreground; a 40-ms sampling trace measured a 2,416-ms lifetime.
+- The probe retained input focus and accepted test text. Selecting the already
+  active English layout left its change counter at one, reported already-active
+  status and did not show another Island during the sampled interval.
+- The same Dock flow restored `04040404`; refreshed probe status showed original
+  and current layout equal and two observed changes. No user application was an
+  input-change target, and no installed/default language, audio, GPU or display
+  setting was modified. The probe and SeanShell then exited normally.
+- Screenshots/interactions stayed on the notebook. As with PR #175, the capture
+  tool cannot enumerate the non-activating capsule, so this record claims native
+  lifecycle/focus and Dock/probe UI verification, **not** a new automated capsule
+  visual or screen-reader pass. Capsule geometry and typography remain unchanged;
+  kind-specific text/icon mapping is covered by the content tests.
+
 ## Next increments
 
 Future sources should reuse bounded, existing services rather than introduce a
@@ -135,12 +191,11 @@ second monitoring subsystem:
 
 - Media sessions: now-playing identity and explicit playback controls.
 - Audio: short volume/mute feedback, with duplicate-event coalescing.
-- Input: confirmed keyboard-layout changes, without claiming that a layout
-  switch also changes an IME's Chinese/English composition mode.
 - Plugins: opt-in, bounded progress events with expiry and cancellation state.
 - Interaction: accessible expanded controls, deliberate keyboard entry/return,
   event priority, and predictable dismissal.
 - Preferences: persisted enablement, placement and source controls only after
   the transient prototype's focus, accessibility, and gaming checks pass.
 
-These are planned extensions; none is part of the current activation-only preview.
+These are planned extensions; none is part of the current activation and
+confirmed-keyboard-layout preview.
