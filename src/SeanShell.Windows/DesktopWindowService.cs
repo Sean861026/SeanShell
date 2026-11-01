@@ -170,6 +170,9 @@ public sealed class DesktopWindowService
 
     public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
 
+    public bool IsForegroundApplication(nint handle) =>
+        IsWindow(handle) && !IsIconic(handle) && GetForegroundWindow() == handle;
+
     public nint CaptureForegroundMonitorHandle()
     {
         var foregroundWindow = GetForegroundWindow();
@@ -178,7 +181,7 @@ public sealed class DesktopWindowService
             : MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
     }
 
-    public IReadOnlyList<nint> CaptureImmersiveMonitorHandles()
+    public IReadOnlyList<nint> CaptureImmersiveMonitorHandles(bool includeMaximized = true)
     {
         var monitorHandles = new HashSet<nint>();
         var shellWindow = GetShellWindow();
@@ -204,7 +207,7 @@ public sealed class DesktopWindowService
                 TryGetWindowBounds(handle, out var windowBounds) &&
                 TryGetMonitorBounds(monitorHandle, out var monitorBounds) &&
                 WindowImmersiveStateResolver.IsImmersive(
-                    IsZoomed(handle),
+                    includeMaximized && IsZoomed(handle),
                     windowBounds,
                     monitorBounds))
             {
@@ -214,6 +217,40 @@ public sealed class DesktopWindowService
             return true;
         }, 0);
         return monitorHandles.ToArray();
+    }
+
+    public IReadOnlyList<nint> CaptureTopApplicationFullscreenMonitorHandles()
+    {
+        var windowsInZOrder = new List<ActivityIslandWindowCoverage>();
+        var shellWindow = GetShellWindow();
+        EnumWindows((handle, _) =>
+        {
+            if (handle == shellWindow || IsIconic(handle) || !IsTaskbarWindow(handle))
+            {
+                return true;
+            }
+
+            GetWindowThreadProcessId(handle, out var processId);
+            if (processId == 0 || processId == Environment.ProcessId)
+            {
+                return true;
+            }
+
+            var monitorHandle = MonitorFromWindow(handle, MonitorDefaultToNearest);
+            if (monitorHandle != 0)
+            {
+                var coversMonitor = TryGetWindowBounds(handle, out var windowBounds) &&
+                    TryGetMonitorBounds(monitorHandle, out var monitorBounds) &&
+                    WindowImmersiveStateResolver.IsImmersive(false, windowBounds, monitorBounds);
+                windowsInZOrder.Add(new ActivityIslandWindowCoverage(monitorHandle, coversMonitor));
+            }
+
+            return true;
+        }, 0);
+
+        // Island suppression follows the top eligible app on each display,
+        // unlike Dock work-area policy, which intentionally considers all apps.
+        return ActivityIslandFullscreenResolver.Resolve(windowsInZOrder);
     }
 
     public async Task<bool> RestoreAndActivateAsync(

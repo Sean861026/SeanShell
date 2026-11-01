@@ -268,6 +268,7 @@ public sealed partial class MainWindow : Window
         {
             if (state.Mode == ShellMode.Gaming)
             {
+                _activityIsland?.Dismiss();
                 await PrepareTaskbarReplacementForGamingAsync().ConfigureAwait(true);
                 if (_isClosing || _exitRequested || !_gamingMode.Current.IsGaming)
                 {
@@ -692,6 +693,7 @@ public sealed partial class MainWindow : Window
             ? Application.Current.Resources["ApplicationPageBackgroundThemeBrush"] as Brush
             : null;
         _launcherWindow?.SetReducedEffects(enabled);
+        _activityIsland?.SetReducedEffects(enabled);
         foreach (var dockWindow in _dockWindows)
         {
             dockWindow.SetReducedEffects(enabled);
@@ -730,6 +732,7 @@ public sealed partial class MainWindow : Window
 
     private void OnDisplaysChanged(object? sender, EventArgs e)
     {
+        _activityIsland?.Dismiss();
         _displayChangeTimer.Stop();
         _displayChangeTimer.Start();
     }
@@ -824,6 +827,9 @@ public sealed partial class MainWindow : Window
                 dockWindow.SystemAreaRequested += OnSystemAreaRequested;
                 dockWindow.NativeInputRequested += OnNativeInputRequested;
                 dockWindow.ExitRequested += OnExitRequested;
+                dockWindow.ActivityIslandToggleRequested += OnActivityIslandToggleRequested;
+                dockWindow.ApplicationActivated += OnApplicationActivated;
+                dockWindow.SetActivityIslandEnabled(_activityIslandEnabled);
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
                 dockWindow.PinOrderRequested += OnPinnedApplicationOrderChangedAsync;
@@ -965,6 +971,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshImmersiveState()
     {
+        ReconcileActivityIsland();
         var monitorHandles = _settings.ReplaceWindowsTaskbar &&
             _taskbarReplacement.IsEnabled &&
             !_taskbarAccessRevealed &&
@@ -1900,6 +1907,8 @@ public sealed partial class MainWindow : Window
     {
         _isClosing = true;
         ++_taskbarRequestRevision;
+        _activityIsland?.Shutdown();
+        _activityIsland = null;
         _dockRefreshShutdown.Cancel();
         Interlocked.Exchange(ref _desktopWindowChangeQueued, 0);
         if (_desktopWindowObserver is not null)
@@ -1941,6 +1950,8 @@ public sealed partial class MainWindow : Window
             dockWindow.ShowDesktopRequested -= OnShowDesktopRequested;
             dockWindow.NativeInputRequested -= OnNativeInputRequested;
             dockWindow.ExitRequested -= OnExitRequested;
+            dockWindow.ActivityIslandToggleRequested -= OnActivityIslandToggleRequested;
+            dockWindow.ApplicationActivated -= OnApplicationActivated;
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
             dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;
