@@ -113,6 +113,78 @@ public sealed class BoundedProcessRunnerTests
         }
     }
 
+    [TestMethod]
+    public void OwnedDirectoryCleanupRetriesTransientIoFailures()
+    {
+        var attempts = 0;
+        var delays = new List<TimeSpan>();
+
+        DeleteOwnedDirectoryWithRetry(() =>
+        {
+            if (++attempts < 3)
+            {
+                throw new IOException("The exited child still holds its current-directory handle.");
+            }
+        }, delays.Add);
+
+        Assert.AreEqual(3, attempts);
+        CollectionAssert.AreEqual(
+            new[] { TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100) },
+            delays);
+    }
+
+    [TestMethod]
+    public void OwnedDirectoryCleanupHasFiniteRetriesAndPreservesLastFailure()
+    {
+        var attempts = 0;
+        var delays = new List<TimeSpan>();
+        var expected = new IOException("The directory remains locked.");
+
+        var actual = Assert.ThrowsExactly<IOException>(() => DeleteOwnedDirectoryWithRetry(() =>
+        {
+            attempts++;
+            throw expected;
+        }, delays.Add));
+
+        Assert.AreSame(expected, actual);
+        Assert.AreEqual(50, attempts);
+        Assert.HasCount(49, delays);
+        Assert.AreEqual(TimeSpan.FromMilliseconds(4900), TimeSpan.FromTicks(delays.Sum(delay => delay.Ticks)));
+    }
+
+    [TestMethod]
+    public void OwnedDirectoryCleanupDoesNotHideNonIoFailures()
+    {
+        var expected = new UnauthorizedAccessException("Cleanup target is not accessible.");
+        var delays = new List<TimeSpan>();
+
+        var actual = Assert.ThrowsExactly<UnauthorizedAccessException>(() => DeleteOwnedDirectoryWithRetry(
+            () => throw expected,
+            delays.Add));
+
+        Assert.AreSame(expected, actual);
+        Assert.HasCount(0, delays);
+    }
+
+    private static void DeleteOwnedDirectoryWithRetry(Action delete, Action<TimeSpan> delay)
+    {
+        // A signaled process handle does not guarantee immediate filesystem-handle release
+        // on Windows/CI. Retry only this fixture's deletion, with at most 4.9 seconds of
+        // short backoffs. The final IOException remains visible; never silently leak data.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                delete();
+                return;
+            }
+            catch (IOException) when (attempt < 50)
+            {
+                delay(TimeSpan.FromMilliseconds(100));
+            }
+        }
+    }
+
     private sealed class IsolatedProcessProbe : IDisposable
     {
         private readonly string _directory;
@@ -244,7 +316,9 @@ public sealed class BoundedProcessRunnerTests
             finally
             {
                 process?.Dispose();
-                Directory.Delete(_directory, recursive: true);
+                DeleteOwnedDirectoryWithRetry(
+                    () => Directory.Delete(_directory, recursive: true),
+                    Thread.Sleep);
             }
         }
 
