@@ -86,8 +86,17 @@ RTX 4060 Laptop for the external panel. SeanShell has no explicit per-applicatio
 GPU preference; automatic selection does not establish which GPU rendered a frame.
 The packaged and build-output resource indexes matched, and their managed module
 identities matched, making stale deployment less likely.
-No GPU preference, display arrangement, driver, or runtime was changed during
-the retry. Follow `AGENTS.md`: this workstation's visual acceptance stays on the
+No display arrangement, driver, or runtime was changed during the retry.
+With explicit owner approval, a subsequent A/B test temporarily set the exact
+SeanShell executable and packaged app identity to the Windows power-saving GPU
+preference. The notebook Dock context menu still showed incorrect text after
+restart, so this preference did not make visual acceptance possible. Preference
+configuration alone does not prove which adapter rendered each frame. The test
+process was stopped and both temporary values were removed; read-back confirmed
+the original absence of both values (automatic selection). No global or unrelated
+application preferences were modified.
+
+Follow `AGENTS.md`: this workstation's visual acceptance stays on the
 notebook panel, even when the external display is configured as primary.
 
 The following are manual acceptance checks, not claims of completed live testing:
