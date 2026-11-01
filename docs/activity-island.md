@@ -151,10 +151,18 @@ earlier failed captures are diagnostic history, not passing visual tests.
 
 ## Keyboard-layout increment verification — 2026-11-01
 
-- Release x64 build passed with zero warnings/errors; **651 tests passed**, zero
+- Release x64 build passed with zero warnings/errors; **655 tests passed**, zero
   skipped, using the freshly built app for broker integration tests. Runtime
   integrity, formatting and diff checks passed. Independent reviews covered the
   confirmation gate, lifecycle subscriptions, typed content and timer integration.
+- The first CI run exposed a five-second startup-observation timeout in the
+  existing process-cancellation fixture, before it requested cancellation. Its
+  test-only setup now observes both startup and operation completion within the
+  existing 15-second query budget, preserving early failures. Real-process tests
+  run outside parallel execution; four virtual-time regressions cover this setup.
+  Production deadlines, three-second deadline tests and the post-cancellation
+  five-second assertion are unchanged. The exact CI timing cause was not
+  reproduced locally; this is not a claim of a production cancellation defect.
 - Deterministic tests cover stale/reused targets, changed focus/layout, every
   non-confirmed result, full semantic labels, duplicate coalescing, replacement
   near expiry, old queued timer ticks, dismissal and overflow-safe timing.
