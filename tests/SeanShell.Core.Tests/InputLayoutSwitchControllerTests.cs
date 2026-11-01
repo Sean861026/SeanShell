@@ -171,6 +171,92 @@ public sealed class InputLayoutSwitchControllerTests
         Assert.IsFalse(controller.IsCurrentTarget(Target with { ProcessId = 999 }));
     }
 
+    [TestMethod]
+    public void FeedbackRequiresTheConfirmedForegroundTargetAndCurrentLayout()
+    {
+        var backend = new FakeBackend { ActiveLayout = 2 };
+        var controller = new InputLayoutSwitchController(backend, 999);
+
+        Assert.IsTrue(controller.CanNotifyConfirmedChange(Target, 2, InputLayoutSwitchResult.Confirmed));
+        Assert.AreEqual(0, backend.PostCount);
+    }
+
+    [TestMethod]
+    [DataRow(InputLayoutSwitchResult.NoTarget)]
+    [DataRow(InputLayoutSwitchResult.TargetChanged)]
+    [DataRow(InputLayoutSwitchResult.FocusNotRestored)]
+    [DataRow(InputLayoutSwitchResult.LayoutUnavailable)]
+    [DataRow(InputLayoutSwitchResult.AlreadyActive)]
+    [DataRow(InputLayoutSwitchResult.RequestPosted)]
+    [DataRow(InputLayoutSwitchResult.RequestFailed)]
+    [DataRow(InputLayoutSwitchResult.NotConfirmed)]
+    public void NonConfirmedResultsNeverProduceFeedback(InputLayoutSwitchResult result)
+    {
+        var backend = new FakeBackend { ActiveLayout = 2 };
+        var controller = new InputLayoutSwitchController(backend, 999);
+
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 2, result));
+        Assert.AreEqual(0, backend.PostCount);
+    }
+
+    [TestMethod]
+    public void FeedbackIsSuppressedAfterFocusChangesWithoutChangingConfirmationSemantics()
+    {
+        var backend = new FakeBackend { ActiveLayout = 2, Foreground = false };
+        var controller = new InputLayoutSwitchController(backend, 999);
+
+        Assert.AreEqual(InputLayoutSwitchResult.Confirmed, controller.Confirm(Target, 2));
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 2, InputLayoutSwitchResult.Confirmed));
+    }
+
+    [TestMethod]
+    [DataRow(201, 300)]
+    [DataRow(200, 301)]
+    public void FeedbackIsSuppressedForAReusedWindowHandle(int thread, int process)
+    {
+        var backend = new FakeBackend
+        {
+            Target = Target with { ThreadId = (uint)thread, ProcessId = (uint)process },
+            ActiveLayout = 2,
+        };
+        var controller = new InputLayoutSwitchController(backend, 999);
+
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 2, InputLayoutSwitchResult.Confirmed));
+    }
+
+    [TestMethod]
+    public void FeedbackIsSuppressedForMissingOrShellTargets()
+    {
+        var backend = new FakeBackend { ActiveLayout = 2 };
+        var controller = new InputLayoutSwitchController(backend, 999);
+
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(null, 2, InputLayoutSwitchResult.Confirmed));
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(
+            Target with { ProcessId = 999 }, 2, InputLayoutSwitchResult.Confirmed));
+        backend.Target = null;
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 2, InputLayoutSwitchResult.Confirmed));
+    }
+
+    [TestMethod]
+    public void FeedbackIsSuppressedIfTheLayoutChangesAgain()
+    {
+        var backend = new FakeBackend { ActiveLayout = 2 };
+        var controller = new InputLayoutSwitchController(backend, 999);
+        Assert.AreEqual(InputLayoutSwitchResult.Confirmed, controller.Confirm(Target, 2));
+
+        backend.ActiveLayout = 1;
+
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 2, InputLayoutSwitchResult.Confirmed));
+    }
+
+    [TestMethod]
+    public void ZeroLayoutNeverProducesFeedback()
+    {
+        var controller = new InputLayoutSwitchController(new FakeBackend { ActiveLayout = 0 }, 999);
+
+        Assert.IsFalse(controller.CanNotifyConfirmedChange(Target, 0, InputLayoutSwitchResult.Confirmed));
+    }
+
     private sealed class FakeBackend : IInputLayoutBackend
     {
         public InputWindowIdentity? Target { get; set; } = InputLayoutSwitchControllerTests.Target;

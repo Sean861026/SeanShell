@@ -176,6 +176,8 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler<DesktopWindowSnapshot>? ApplicationActivated;
 
+    public event EventHandler<InputLayoutFeedback>? InputLayoutConfirmed;
+
     public event EventHandler? ExitRequested;
 
     public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
@@ -2345,7 +2347,7 @@ public sealed partial class DockWindow : Window
                     IsEnabled = snapshot.Target is not null,
                 };
                 item.Click += async (_, _) =>
-                    await RequestInputLayoutAsync(snapshot.Target, layout.Handle);
+                    await RequestInputLayoutAsync(snapshot.Target, layout);
                 flyout.Items.Add(item);
             }
 
@@ -2369,7 +2371,7 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    private async Task RequestInputLayoutAsync(InputWindowIdentity? target, nint layout)
+    private async Task RequestInputLayoutAsync(InputWindowIdentity? target, InputLayoutOption layout)
     {
         if (_allowClose || _inputSwitchPending)
         {
@@ -2389,7 +2391,7 @@ public sealed partial class DockWindow : Window
                         ? InputLayoutSwitchResult.FocusNotRestored
                         : _allowClose
                             ? InputLayoutSwitchResult.TargetChanged
-                            : _inputLayouts.Request(target, layout);
+                            : _inputLayouts.Request(target, layout.Handle);
             if (_allowClose)
             {
                 return;
@@ -2401,7 +2403,7 @@ public sealed partial class DockWindow : Window
                 {
                     return;
                 }
-                result = _inputLayouts.Confirm(target!, layout);
+                result = _inputLayouts.Confirm(target!, layout.Handle);
             }
 
             InputMethodStatusText.Text = result switch
@@ -2416,6 +2418,7 @@ public sealed partial class DockWindow : Window
                     "That layout is no longer loaded. Reopen Input methods to refresh.",
                 _ => "Change not confirmed. Use Windows input indicator / IME mode instead.",
             };
+            NotifyInputLayoutConfirmed(target, layout, result);
             if (_shellState.Current.Mode == ShellMode.Gaming)
             {
                 HideGamingSwitch();
@@ -2437,6 +2440,28 @@ public sealed partial class DockWindow : Window
                 ScheduleAutoHide();
             }
         }
+    }
+
+    private void NotifyInputLayoutConfirmed(
+        InputWindowIdentity? target,
+        InputLayoutOption layout,
+        InputLayoutSwitchResult result)
+    {
+        if (_allowClose || !_activityIslandEnabled)
+        {
+            return;
+        }
+
+        // Optional feedback must not turn a successful input request into a
+        // command failure if a window disappears or presentation fails.
+        _ = ActivityIslandCleanup.TryRun(() =>
+        {
+            if (_inputLayouts.CanNotifyConfirmedChange(target, layout.Handle, result))
+            {
+                InputLayoutConfirmed?.Invoke(this, new InputLayoutFeedback(target!, layout));
+            }
+        }, exception => ((App)Application.Current).Diagnostics.TryWrite(
+            DiagnosticEventKind.DockActionFailed, exception));
     }
 
     private async void OnNativeInputClicked(object sender, RoutedEventArgs e)

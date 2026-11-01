@@ -28,7 +28,7 @@
                 <FontIcon x:Name="ActivityGlyph" FontSize="20" Glyph="&#xE8A7;" />
             </Border>
             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                <TextBlock x:Name="ActivityLabel" CharacterSpacing="140" FontSize="10" FontWeight="SemiBold" Text="NOW ACTIVE" />
+                <TextBlock x:Name="ActivityLabel" CharacterSpacing="140" FontSize="10" FontWeight="SemiBold" MaxLines="1" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="ActivityTitle" FontSize="16" FontWeight="SemiBold" MaxLines="1" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="ActivityDetail" FontSize="11" MaxLines="1" TextTrimming="CharacterEllipsis" />
             </StackPanel>

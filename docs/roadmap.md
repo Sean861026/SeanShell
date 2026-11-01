@@ -238,9 +238,11 @@ Companion Taskbar supplies the essential pinned-app and system affordances.
 ## Activity Island preview
 
 The optional, session-only [Activity Island prototype](activity-island.md) adds
-transient Dock-activation feedback without reserving work area or requesting
-foreground focus. The linked document distinguishes current behavior from manual
-acceptance checks and later extensions.
+transient Dock-activation and confirmed keyboard-layout feedback without reserving
+work area or requesting foreground focus. Repeated identical events are coalesced;
+keyboard feedback requires the original target to remain foreground and does not
+claim an IME Chinese/English mode change. The linked document distinguishes current
+behavior from manual acceptance checks and later extensions.
 
 - [ ] Complete live focus, mixed-DPI, accessibility, and full-screen acceptance checks
 - [ ] Add media-session and volume/mute activity sources

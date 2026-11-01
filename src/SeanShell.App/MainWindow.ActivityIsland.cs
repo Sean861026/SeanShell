@@ -22,7 +22,7 @@ public sealed partial class MainWindow
             return;
         }
 
-        ShowActivityIsland("Activity Island enabled", "Preview for this session · tap to dismiss",
+        ShowActivityIsland(ActivityIslandContent.ForEnabledPreview(),
             sender is DockWindow source ? source.MonitorHandle : 0);
     }
 
@@ -30,7 +30,8 @@ public sealed partial class MainWindow
     {
         try
         {
-            ShowActivityIsland(window.ProcessName, window.Title, _desktopWindows.CaptureForegroundMonitorHandle());
+            ShowActivityIsland(ActivityIslandContent.ForActivation(window.ProcessName, window.Title),
+                _desktopWindows.CaptureForegroundMonitorHandle());
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
@@ -38,7 +39,30 @@ public sealed partial class MainWindow
         }
     }
 
-    private void ShowActivityIsland(string title, string detail, nint monitorHandle)
+    private void OnInputLayoutConfirmed(object? sender, InputLayoutFeedback feedback)
+    {
+        try
+        {
+            if (!_desktopWindows.IsForegroundApplication(feedback.Target.Handle))
+            {
+                return;
+            }
+
+            var monitorHandle = _desktopWindows.CaptureForegroundMonitorHandle();
+            if (!_desktopWindows.IsForegroundApplication(feedback.Target.Handle))
+            {
+                return;
+            }
+
+            ShowActivityIsland(ActivityIslandContent.ForInputLayout(feedback.Layout.DisplayName), monitorHandle);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            RetireActivityIsland(exception);
+        }
+    }
+
+    private void ShowActivityIsland(ActivityIslandContent content, nint monitorHandle)
     {
         if (!_activityIslandEnabled || _isClosing || _exitRequested || _gamingMode.Current.IsGaming)
         {
@@ -48,8 +72,9 @@ public sealed partial class MainWindow
         try
         {
             var monitors = _displayMonitorService.Capture();
-            var monitor = monitors.FirstOrDefault(candidate => candidate.Handle == monitorHandle)
-                ?? monitors.FirstOrDefault(candidate => candidate.IsPrimary);
+            // A vanished/unknown target monitor must not send feedback to an
+            // unrelated primary display during a topology or focus change.
+            var monitor = monitors.FirstOrDefault(candidate => candidate.Handle == monitorHandle);
             if (monitor is null || !ActivityIslandPolicy.CanShow(
                 _activityIslandEnabled,
                 _gamingMode.Current.IsGaming,
@@ -64,9 +89,12 @@ public sealed partial class MainWindow
             {
                 _activityIsland = null;
             }
-            _activityIsland ??= new ActivityIslandWindow();
-            _activityIsland.SetReducedEffects(_systemAccessibility.ReducedEffects);
-            _activityIsland.ShowActivity(title, detail, monitor, _systemAccessibility.TextScaleFactor);
+            if (_activityIsland is null)
+            {
+                _activityIsland = new ActivityIslandWindow();
+                _activityIsland.SetReducedEffects(_systemAccessibility.ReducedEffects);
+            }
+            _activityIsland.ShowActivity(content, monitor, _systemAccessibility.TextScaleFactor);
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {

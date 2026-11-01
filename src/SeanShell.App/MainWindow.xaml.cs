@@ -829,6 +829,7 @@ public sealed partial class MainWindow : Window
                 dockWindow.ExitRequested += OnExitRequested;
                 dockWindow.ActivityIslandToggleRequested += OnActivityIslandToggleRequested;
                 dockWindow.ApplicationActivated += OnApplicationActivated;
+                dockWindow.InputLayoutConfirmed += OnInputLayoutConfirmed;
                 dockWindow.SetActivityIslandEnabled(_activityIslandEnabled);
                 dockWindow.PinChangedRequested += OnPinnedApplicationChangedAsync;
                 dockWindow.PinMoveRequested += OnPinnedApplicationMovedAsync;
@@ -1952,6 +1953,7 @@ public sealed partial class MainWindow : Window
             dockWindow.ExitRequested -= OnExitRequested;
             dockWindow.ActivityIslandToggleRequested -= OnActivityIslandToggleRequested;
             dockWindow.ApplicationActivated -= OnApplicationActivated;
+            dockWindow.InputLayoutConfirmed -= OnInputLayoutConfirmed;
             dockWindow.PinChangedRequested -= OnPinnedApplicationChangedAsync;
             dockWindow.PinMoveRequested -= OnPinnedApplicationMovedAsync;
             dockWindow.PinOrderRequested -= OnPinnedApplicationOrderChangedAsync;

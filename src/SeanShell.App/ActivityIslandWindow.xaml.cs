@@ -20,10 +20,10 @@ public sealed partial class ActivityIslandWindow : Window
     private const int ToolWindowStyle = 0x00000080;
     private const int NoActivateStyle = 0x08000000;
     private readonly DispatcherQueueTimer _dismissTimer;
+    private readonly ActivityIslandPresentationState _presentation = new();
     private Storyboard? _entrance;
     private bool _allowClose;
     private bool _reducedEffects;
-    private long _dismissAt;
 
     public ActivityIslandWindow()
     {
@@ -89,18 +89,26 @@ public sealed partial class ActivityIslandWindow : Window
         ActivityLabel.Opacity = 0.72;
     }
 
-    public void ShowActivity(string title, string detail, DisplayMonitorSnapshot monitor, double textScaleFactor)
+    public void ShowActivity(ActivityIslandContent content, DisplayMonitorSnapshot monitor, double textScaleFactor)
     {
         if (_allowClose)
         {
             return;
         }
 
+        var change = _presentation.Present(content, monitor.Handle, Environment.TickCount64);
+        if (change == ActivityIslandPresentationChange.Unchanged)
+        {
+            return;
+        }
+
         _dismissTimer.Stop();
         StopEntrance();
-        ActivityTitle.Text = title;
-        ActivityDetail.Text = detail;
-        AutomationProperties.SetName(IslandRoot, $"Now active: {title}. {detail}");
+        ActivityLabel.Text = content.Label;
+        ActivityGlyph.Glyph = content.Glyph;
+        ActivityTitle.Text = content.Title;
+        ActivityDetail.Text = content.Detail;
+        AutomationProperties.SetName(IslandRoot, content.AccessibleName);
         var bounds = ActivityIslandLayout.Calculate(monitor, DisplayDpiService.GetScaleFactor(monitor.Handle), textScaleFactor);
         // Moving before showing avoids a flash at the previous monitor's position.
         AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, bounds.Width, bounds.Height));
@@ -108,8 +116,11 @@ public sealed partial class ActivityIslandWindow : Window
         _ = DwmWindowChrome.TryApplyRoundedClip(handle, bounds.Width, bounds.Height, bounds.Height / 2, 0);
         MonitorHandle = monitor.Handle;
         IsVisible = true;
-        AppWindow.Show(false);
-        if (!_reducedEffects)
+        if (change == ActivityIslandPresentationChange.Show)
+        {
+            AppWindow.Show(false);
+        }
+        if (change == ActivityIslandPresentationChange.Show && !_reducedEffects)
         {
             _entrance = new Storyboard();
             var fade = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(180) };
@@ -123,8 +134,8 @@ public sealed partial class ActivityIslandWindow : Window
             _entrance.Begin();
         }
 
-        _dismissAt = Environment.TickCount64 + 2400;
-        _dismissTimer.Interval = TimeSpan.FromMilliseconds(2400);
+        _dismissTimer.Interval = TimeSpan.FromMilliseconds(
+            Math.Max(1, _presentation.RemainingMilliseconds(Environment.TickCount64)));
         _dismissTimer.Start();
     }
 
@@ -137,6 +148,7 @@ public sealed partial class ActivityIslandWindow : Window
 
         var wasVisible = IsVisible;
         IsVisible = false;
+        _presentation.Dismiss();
         var succeeded = ActivityIslandCleanup.TryRun(_dismissTimer.Stop, ReportFailure);
         succeeded = ActivityIslandCleanup.TryRun(StopEntrance, ReportFailure) && succeeded;
         if (wasVisible)
@@ -158,6 +170,7 @@ public sealed partial class ActivityIslandWindow : Window
 
         _allowClose = true;
         IsVisible = false;
+        _presentation.Dismiss();
         _ = ActivityIslandCleanup.TryRun(_dismissTimer.Stop, ReportFailure);
         _ = ActivityIslandCleanup.TryRun(() => _dismissTimer.Tick -= OnDismissTick, ReportFailure);
         var entrance = _entrance;
@@ -185,7 +198,7 @@ public sealed partial class ActivityIslandWindow : Window
         if (!ActivityIslandCleanup.TryRun(() =>
         {
             // A queued tick from a replaced notification must not dismiss its successor.
-            var remaining = _dismissAt - Environment.TickCount64;
+            var remaining = _presentation.RemainingMilliseconds(Environment.TickCount64);
             if (IsVisible && remaining > 0)
             {
                 sender.Interval = TimeSpan.FromMilliseconds(remaining);
