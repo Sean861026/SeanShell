@@ -59,6 +59,7 @@ public sealed partial class DockWindow : Window
     private double _displayScaleFactor;
     private double _textScaleFactor = 1;
     private bool _allowClose;
+    private bool _activityIslandEnabled;
     private bool _autoHide = true;
     private bool _collapsed;
     private bool _contextMenuOpen;
@@ -170,6 +171,10 @@ public sealed partial class DockWindow : Window
 
     public event EventHandler? NativeInputRequested;
 
+    public event EventHandler? ActivityIslandToggleRequested;
+
+    public event EventHandler<DesktopWindowSnapshot>? ApplicationActivated;
+
     public event EventHandler? ExitRequested;
 
     public event Func<ShellCommand, bool, Task<bool>>? PinChangedRequested;
@@ -178,6 +183,9 @@ public sealed partial class DockWindow : Window
         PinMoveRequested;
 
     public event Func<IReadOnlyList<string>, Task<bool>>? PinOrderRequested;
+
+    public void SetActivityIslandEnabled(bool enabled) =>
+        _activityIslandEnabled = enabled;
 
     private void ApplyDisplayDensity(ShellDisplayDensity density)
     {
@@ -1671,7 +1679,7 @@ public sealed partial class DockWindow : Window
         DismissWindowPreview();
         if (item.WindowCount == 1)
         {
-            if (!_windowService.RestoreAndActivate(item.PrimaryWindow.Handle))
+            if (!TryActivateApplication(item.PrimaryWindow))
             {
                 ReportApplicationActionFailure("Unable to switch window",
                     new InvalidOperationException("Windows did not activate the selected window."));
@@ -1706,8 +1714,7 @@ public sealed partial class DockWindow : Window
                         .ToArray());
                 if (targetIndex >= 0)
                 {
-                    _ = _windowService.RestoreAndActivate(
-                        item.Windows[targetIndex].Handle);
+                    _ = TryActivateApplication(item.Windows[targetIndex]);
                 }
 
                 ScheduleAutoHide();
@@ -1730,7 +1737,11 @@ public sealed partial class DockWindow : Window
 
         if (item.WindowCount == 1)
         {
-            _ = _windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle);
+            if (_windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle))
+            {
+                NotifyApplicationActivated(item.PrimaryWindow);
+            }
+
             ScheduleAutoHide();
             return;
         }
@@ -1771,7 +1782,7 @@ public sealed partial class DockWindow : Window
             Icon = CreateMenuIcon("\uE8A7"),
         };
         activateItem.Click += (_, _) =>
-            _ = _windowService.RestoreAndActivate(window.Handle);
+            _ = TryActivateApplication(window);
 
         var toggleItem = new MenuFlyoutItem
         {
@@ -1787,7 +1798,7 @@ public sealed partial class DockWindow : Window
         {
             _ = toggleAction == TaskbarWindowAction.Minimize
                 ? _windowService.Minimize(window.Handle)
-                : _windowService.RestoreAndActivate(window.Handle);
+                : TryActivateApplication(window);
         };
 
         var closeItem = new MenuFlyoutItem
@@ -1838,7 +1849,7 @@ public sealed partial class DockWindow : Window
                 Icon = CreateMenuIcon("\uE8A7"),
             };
             activateItem.Click += (_, _) =>
-                _ = _windowService.RestoreAndActivate(window.Handle);
+                _ = TryActivateApplication(window);
             windowMenu.Items.Add(activateItem);
 
             var toggleAction =
@@ -1857,7 +1868,7 @@ public sealed partial class DockWindow : Window
             {
                 _ = toggleAction == TaskbarWindowAction.Minimize
                     ? _windowService.Minimize(window.Handle)
-                    : _windowService.RestoreAndActivate(window.Handle);
+                    : TryActivateApplication(window);
             };
             windowMenu.Items.Add(toggleItem);
             windowMenu.Items.Add(new MenuFlyoutSeparator());
@@ -1945,7 +1956,7 @@ public sealed partial class DockWindow : Window
                 Icon = CreateWindowStateIcon(window),
             };
             windowItem.Click += (_, _) =>
-                _ = _windowService.RestoreAndActivate(window.Handle);
+                _ = TryActivateApplication(window);
             flyout.Items.Add(windowItem);
         }
 
@@ -1955,6 +1966,26 @@ public sealed partial class DockWindow : Window
             ScheduleAutoHide();
         };
         flyout.ShowAt(anchor);
+    }
+
+    private bool TryActivateApplication(DesktopWindowSnapshot window)
+    {
+        if (_allowClose || !_windowService.RestoreAndActivate(window.Handle))
+        {
+            return false;
+        }
+
+        NotifyApplicationActivated(window);
+        return true;
+    }
+
+    private void NotifyApplicationActivated(DesktopWindowSnapshot window)
+    {
+        if (!_allowClose && _activityIslandEnabled &&
+            _windowService.IsForegroundApplication(window.Handle))
+        {
+            ApplicationActivated?.Invoke(this, window);
+        }
     }
 
     private static MenuFlyout CreateDockMenuFlyout()
@@ -2085,6 +2116,15 @@ public sealed partial class DockWindow : Window
         settingsItem.Click += (_, _) =>
             DashboardRequested?.Invoke(this, EventArgs.Empty);
         flyout.Items.Add(settingsItem);
+
+        var activityIslandItem = new ToggleMenuFlyoutItem
+        {
+            Text = "Activity Island (preview, this session)",
+            IsChecked = _activityIslandEnabled,
+        };
+        activityIslandItem.Click += (_, _) =>
+            ActivityIslandToggleRequested?.Invoke(this, EventArgs.Empty);
+        flyout.Items.Add(activityIslandItem);
 
         AddSystemTool(flyout, "Task Manager", "\uE9D9", "taskmgr.exe");
         flyout.Items.Add(new MenuFlyoutSeparator());

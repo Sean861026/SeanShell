@@ -234,3 +234,16 @@
 Replacement functionality takes priority over additional visual polish. New
 effects, animation refinements, and production iconography resume after the
 Companion Taskbar supplies the essential pinned-app and system affordances.
+
+## Activity Island preview
+
+The optional, session-only [Activity Island prototype](activity-island.md) adds
+transient Dock-activation feedback without reserving work area or requesting
+foreground focus. The linked document distinguishes current behavior from manual
+acceptance checks and later extensions.
+
+- [ ] Complete live focus, mixed-DPI, accessibility, and full-screen acceptance checks
+- [ ] Add media-session and volume/mute activity sources
+- [ ] Add confirmed input-layout feedback and bounded plugin progress events
+- [ ] Design accessible expanded interactions and event priority/coalescing
+- [ ] Add persisted preferences after the transient preview passes its usability gates

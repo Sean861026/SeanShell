@@ -179,6 +179,9 @@ public sealed class DesktopWindowService
 
     public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
 
+    public bool IsForegroundApplication(nint handle) =>
+        IsWindow(handle) && !IsIconic(handle) && GetForegroundWindow() == handle;
+
     public nint CaptureForegroundMonitorHandle()
     {
         var foregroundWindow = GetForegroundWindow();
@@ -187,7 +190,7 @@ public sealed class DesktopWindowService
             : MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
     }
 
-    public IReadOnlyList<nint> CaptureImmersiveMonitorHandles()
+    public IReadOnlyList<nint> CaptureImmersiveMonitorHandles(bool includeMaximized = true)
     {
         var monitorHandles = new HashSet<nint>();
         var shellWindow = GetShellWindow();
@@ -213,7 +216,7 @@ public sealed class DesktopWindowService
                 TryGetWindowBounds(handle, out var windowBounds) &&
                 TryGetMonitorBounds(monitorHandle, out var monitorBounds) &&
                 WindowImmersiveStateResolver.IsImmersive(
-                    IsZoomed(handle),
+                    includeMaximized && IsZoomed(handle),
                     windowBounds,
                     monitorBounds))
             {
