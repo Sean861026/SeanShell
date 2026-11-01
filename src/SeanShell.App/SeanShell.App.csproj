@@ -9,6 +9,9 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
+    <!-- Keep the verified native runtime with the app instead of selecting a
+         newer installed framework. Rebuild explicitly with false for comparison. -->
+    <WindowsAppSDKSelfContained Condition="'$(WindowsAppSDKSelfContained)' == ''">true</WindowsAppSDKSelfContained>
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,9 +19,10 @@
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <!--
       Broker mode must reach our custom Main before any WinRT activation. Packaged
-      UI launch already resolves the Windows App SDK framework through the package
-      dependency, so the generated deployment-manager module initializer is neither
-      needed nor safe for the identity-free broker child.
+      UI launch resolves bundled Windows App SDK components through generated
+      manifests (or the framework dependency when explicitly opted out). The
+      deployment-manager module initializer is neither needed nor safe for the
+      identity-free broker child.
     -->
     <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
     <WindowsAppSdkAutoInitialize>false</WindowsAppSdkAutoInitialize>

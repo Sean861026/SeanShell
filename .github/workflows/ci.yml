@@ -40,6 +40,9 @@ jobs:
           }
       - name: Build
         run: dotnet build SeanShell.sln -c Release -p:Platform=x64 --no-restore
+      - name: Validate bundled Windows App SDK output
+        shell: pwsh
+        run: ./tools/verify-bundled-runtime.ps1 -OutputDirectory ./src/SeanShell.App/bin/x64/Release/net10.0-windows10.0.26100.0/win-x64
       - name: Build isolated input layout probe
         run: dotnet build tools/SeanShell.InputLayoutProbe/SeanShell.InputLayoutProbe.csproj -c Release
       - name: Test
