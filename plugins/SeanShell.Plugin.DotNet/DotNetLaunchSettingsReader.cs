@@ -6,9 +6,12 @@ public static class DotNetLaunchSettingsReader
 {
     private const int MaximumUrls = 8;
 
-    public static IReadOnlyList<string> ReadLocalApplicationUrls(string projectDirectory)
+    public static IReadOnlyList<string> ReadLocalApplicationUrls(
+        string projectDirectory,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectDirectory);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var path = Path.Combine(
             Path.GetFullPath(projectDirectory),
@@ -21,7 +24,7 @@ public static class DotNetLaunchSettingsReader
 
         try
         {
-            using var stream = File.OpenRead(path);
+            using var stream = new CancellationReadStream(File.OpenRead(path), cancellationToken);
             using var document = JsonDocument.Parse(
                 stream,
                 new JsonDocumentOptions
@@ -29,13 +32,19 @@ public static class DotNetLaunchSettingsReader
                     AllowTrailingCommas = true,
                     CommentHandling = JsonCommentHandling.Skip,
                 });
+            cancellationToken.ThrowIfCancellationRequested();
             if (!document.RootElement.TryGetProperty("profiles", out var profiles) ||
                 profiles.ValueKind != JsonValueKind.Object)
             {
                 return [];
             }
 
-            return profiles.EnumerateObject()
+            var urls = profiles.EnumerateObject()
+                .Select(profile =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return profile;
+                })
                 .Select(static profile => profile.Value)
                 .Where(static profile => profile.ValueKind == JsonValueKind.Object)
                 .SelectMany(ReadApplicationUrls)
@@ -44,6 +53,8 @@ public static class DotNetLaunchSettingsReader
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Take(MaximumUrls)
                 .ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            return urls;
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or JsonException)

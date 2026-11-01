@@ -8,6 +8,12 @@ public sealed record ShellCommand(
 {
     public ShellCommandKind Kind { get; init; } = ShellCommandKind.Application;
 
+    /// <summary>
+    /// Optional finite deadline for cooperative, read-only background operations.
+    /// Interactive application launches are not timed out by default.
+    /// </summary>
+    public TimeSpan? ExecutionTimeout { get; init; }
+
     public IReadOnlyList<string> Keywords { get; init; } = [];
 
     public string Glyph { get; init; } = "\uE8B7";

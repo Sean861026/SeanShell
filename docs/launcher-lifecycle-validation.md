@@ -31,9 +31,18 @@ Use a Release x64 build and the configured Launcher shortcut or Dock button.
 
 The single-flight gate prevents overlapping dispatch, not future launches after
 completion. Escape does not undo an already dispatched external command. A
-provider that never completes can keep the action gate busy until shell restart;
-this change does not invent a timeout that might claim a still-running action
-was cancelled. Full-screen exclusive games may also refuse normal focus switching.
+provider that never completes is bounded for the four built-in read-only refresh
+commands by `ShellCommandExecutor` (30 seconds). Timeout requests cancellation
+and releases the gate without claiming the underlying work has stopped; the
+provider's serialization gate remains held until its worker finishes. Interactive
+app/build/test/run/log-follow commands have no automatic deadline. Full-screen
+exclusive games may also refuse normal focus switching.
+
+`ShellCommandExecutorTests`, `RefreshCommandPolicyTests`,
+`DotNetWorkspaceRefreshTests`, and `BoundedProcessRunnerTests` cover timeout,
+cancellation, blocked cancellation callbacks, late failures, snapshot retention,
+and owned query-process cleanup. These are controlled regressions, not a claim
+that every external tool or native window has been exercised live.
 
 ## Local validation, 2026-09-29
 
@@ -43,3 +52,22 @@ Escape, reopened with an empty query, and used Enter to open File Explorer.
 The palette hid on normal completion; the test-created Explorer window was closed.
 Delayed success/failure after reopen/shutdown is covered by controlled-task Core
 tests, not a claim that every real plugin or exclusive-full-screen game was tested.
+
+## Local validation, 2026-11-01
+
+Release x64 build: 0 warnings/errors; all 540 automated tests passed, including
+the production App executable broker path. Notebook-only inspection confirmed
+the SDC41A3 panel before capturing the Dock and Launcher. Ctrl+Alt+D expanded
+that Dock, its Launcher button opened the palette on the same panel, and a click
+inside the search field left the process responsive. The diagnostic journal
+contained startup/healthy events, with no new failure event during this check.
+
+Visual acceptance remains **blocked**: text and glyphs were missing or corrupted
+in the Dock and palette, and no accessibility tree was available. Do not infer
+that command execution, focus switching, calendar, or quick settings passed.
+Taskbar replacement was disabled in the persisted configuration; no live
+hide/restore or graceful/forced-exit recovery result is claimed for this build.
+The test-owned process was stopped without terminating Explorer or other apps.
+GPU, driver, and display preferences were not changed during this check. Keep
+the responsiveness change unmerged until the remaining interactive/recovery
+checks can be completed safely.

@@ -41,6 +41,7 @@ public sealed partial class DockWindow : Window
     private const int CompactDockHeight = 92;
     private const int WorkAreaVerticalMargin = 16;
     private readonly DesktopWindowService _windowService;
+    private readonly CancellationTokenSource _windowActionShutdown = new();
     private readonly ShellStateStore _shellState;
     private readonly DisplayMonitorSnapshot _monitor;
     private readonly AudioEndpointService _audioEndpoint = new();
@@ -251,7 +252,7 @@ public sealed partial class DockWindow : Window
         AppWindow.Show();
         ScheduleDisplayScaleRefresh();
         Activate();
-        _ = _windowService.RestoreAndActivate(dockWindow);
+        _ = _windowService.RestoreAndActivateAsync(dockWindow, _windowActionShutdown.Token);
         _ = LauncherButton.Focus(FocusState.Keyboard);
         return request;
     }
@@ -418,6 +419,7 @@ public sealed partial class DockWindow : Window
         }
 
         _allowClose = true;
+        _windowActionShutdown.Cancel();
         _keyboardEntryVersion++;
         _autoHideTimer.Stop();
         _displayScaleRefreshTimer.Stop();
@@ -1618,7 +1620,7 @@ public sealed partial class DockWindow : Window
         _returnFocusWindow = 0;
         if (returnFocusWindow != 0)
         {
-            _ = _windowService.RestoreAndActivate(returnFocusWindow);
+            _ = _windowService.RestoreAndActivateAsync(returnFocusWindow, _windowActionShutdown.Token);
         }
 
         if (_shellState.Current.Mode == ShellMode.Gaming)
@@ -1632,7 +1634,7 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    private void OnWindowListPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    private async void OnWindowListPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (_allowClose || _contextMenuOpen || _modalDialogOpen ||
             _clockFlyoutOpen || _quickSettingsFlyoutOpen ||
@@ -1671,7 +1673,14 @@ public sealed partial class DockWindow : Window
         DismissWindowPreview();
         if (item.WindowCount == 1)
         {
-            if (!_windowService.RestoreAndActivate(item.PrimaryWindow.Handle))
+            var activated = await _windowService.RestoreAndActivateAsync(
+                item.PrimaryWindow.Handle, _windowActionShutdown.Token).ConfigureAwait(true);
+            if (_allowClose)
+            {
+                return;
+            }
+
+            if (!activated)
             {
                 ReportApplicationActionFailure("Unable to switch window",
                     new InvalidOperationException("Windows did not activate the selected window."));
@@ -1706,8 +1715,8 @@ public sealed partial class DockWindow : Window
                         .ToArray());
                 if (targetIndex >= 0)
                 {
-                    _ = _windowService.RestoreAndActivate(
-                        item.Windows[targetIndex].Handle);
+                    _ = _windowService.RestoreAndActivateAsync(
+                        item.Windows[targetIndex].Handle, _windowActionShutdown.Token);
                 }
 
                 ScheduleAutoHide();
@@ -1730,8 +1739,12 @@ public sealed partial class DockWindow : Window
 
         if (item.WindowCount == 1)
         {
-            _ = _windowService.ToggleTaskbarWindow(item.PrimaryWindow.Handle);
-            ScheduleAutoHide();
+            _ = await _windowService.ToggleTaskbarWindowAsync(
+                item.PrimaryWindow.Handle, _windowActionShutdown.Token).ConfigureAwait(true);
+            if (!_allowClose)
+            {
+                ScheduleAutoHide();
+            }
             return;
         }
 
@@ -1771,7 +1784,7 @@ public sealed partial class DockWindow : Window
             Icon = CreateMenuIcon("\uE8A7"),
         };
         activateItem.Click += (_, _) =>
-            _ = _windowService.RestoreAndActivate(window.Handle);
+            _ = _windowService.RestoreAndActivateAsync(window.Handle, _windowActionShutdown.Token);
 
         var toggleItem = new MenuFlyoutItem
         {
@@ -1786,8 +1799,8 @@ public sealed partial class DockWindow : Window
         toggleItem.Click += (_, _) =>
         {
             _ = toggleAction == TaskbarWindowAction.Minimize
-                ? _windowService.Minimize(window.Handle)
-                : _windowService.RestoreAndActivate(window.Handle);
+                ? _windowService.MinimizeAsync(window.Handle, _windowActionShutdown.Token)
+                : _windowService.RestoreAndActivateAsync(window.Handle, _windowActionShutdown.Token);
         };
 
         var closeItem = new MenuFlyoutItem
@@ -1838,7 +1851,7 @@ public sealed partial class DockWindow : Window
                 Icon = CreateMenuIcon("\uE8A7"),
             };
             activateItem.Click += (_, _) =>
-                _ = _windowService.RestoreAndActivate(window.Handle);
+                _ = _windowService.RestoreAndActivateAsync(window.Handle, _windowActionShutdown.Token);
             windowMenu.Items.Add(activateItem);
 
             var toggleAction =
@@ -1856,8 +1869,8 @@ public sealed partial class DockWindow : Window
             toggleItem.Click += (_, _) =>
             {
                 _ = toggleAction == TaskbarWindowAction.Minimize
-                    ? _windowService.Minimize(window.Handle)
-                    : _windowService.RestoreAndActivate(window.Handle);
+                    ? _windowService.MinimizeAsync(window.Handle, _windowActionShutdown.Token)
+                    : _windowService.RestoreAndActivateAsync(window.Handle, _windowActionShutdown.Token);
             };
             windowMenu.Items.Add(toggleItem);
             windowMenu.Items.Add(new MenuFlyoutSeparator());
@@ -1896,8 +1909,8 @@ public sealed partial class DockWindow : Window
             foreach (var handle in windowHandles)
             {
                 _ = groupAction == TaskbarWindowGroupAction.RestoreAll
-                    ? _windowService.Restore(handle)
-                    : _windowService.Minimize(handle);
+                    ? _windowService.RestoreAsync(handle, _windowActionShutdown.Token)
+                    : _windowService.MinimizeAsync(handle, _windowActionShutdown.Token);
             }
         };
         var closeAllItem = new MenuFlyoutItem
@@ -1945,7 +1958,7 @@ public sealed partial class DockWindow : Window
                 Icon = CreateWindowStateIcon(window),
             };
             windowItem.Click += (_, _) =>
-                _ = _windowService.RestoreAndActivate(window.Handle);
+                _ = _windowService.RestoreAndActivateAsync(window.Handle, _windowActionShutdown.Token);
             flyout.Items.Add(windowItem);
         }
 
@@ -2323,9 +2336,16 @@ public sealed partial class DockWindow : Window
                 ? InputLayoutSwitchResult.NoTarget
                 : !_inputLayouts.IsCurrentTarget(target)
                     ? InputLayoutSwitchResult.TargetChanged
-                    : !_windowService.RestoreAndActivate(target.Handle)
+                    : !await _windowService.RestoreAndActivateAsync(
+                            target.Handle, _windowActionShutdown.Token).ConfigureAwait(true)
                         ? InputLayoutSwitchResult.FocusNotRestored
-                        : _inputLayouts.Request(target, layout);
+                        : _allowClose
+                            ? InputLayoutSwitchResult.TargetChanged
+                            : _inputLayouts.Request(target, layout);
+            if (_allowClose)
+            {
+                return;
+            }
             if (result == InputLayoutSwitchResult.RequestPosted)
             {
                 await Task.Delay(200);
@@ -2371,12 +2391,17 @@ public sealed partial class DockWindow : Window
         }
     }
 
-    private void OnNativeInputClicked(object sender, RoutedEventArgs e)
+    private async void OnNativeInputClicked(object sender, RoutedEventArgs e)
     {
         QuickSettingsButton.Flyout?.Hide();
         if (_returnFocusWindow != 0)
         {
-            _ = _windowService.RestoreAndActivate(_returnFocusWindow);
+            _ = await _windowService.RestoreAndActivateAsync(
+                _returnFocusWindow, _windowActionShutdown.Token).ConfigureAwait(true);
+        }
+        if (_allowClose)
+        {
+            return;
         }
         NativeInputRequested?.Invoke(this, EventArgs.Empty);
         _autoHideTimer.Stop();

@@ -24,6 +24,7 @@ public sealed class DesktopWindowService
     private readonly VirtualDesktopWindowService _virtualDesktops = new();
     private IReadOnlyList<DesktopWindowSnapshot> _cachedWindows = [];
     private long _cacheExpiresAt;
+    private long _activationRevision;
 
     public IReadOnlyList<DesktopWindowSnapshot> Capture()
     {
@@ -137,11 +138,11 @@ public sealed class DesktopWindowService
         return icon;
     }
 
-    public bool ToggleTaskbarWindow(nint handle)
+    public Task<bool> ToggleTaskbarWindowAsync(nint handle, CancellationToken cancellationToken = default)
     {
         if (!IsWindow(handle))
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         var action = TaskbarWindowActionResolver.Resolve(
@@ -149,32 +150,22 @@ public sealed class DesktopWindowService
             IsIconic(handle));
         if (action == TaskbarWindowAction.Minimize)
         {
-            return Minimize(handle);
+            return MinimizeAsync(handle, cancellationToken);
         }
 
-        return RestoreAndActivate(handle);
+        return RestoreAndActivateAsync(handle, cancellationToken);
     }
 
-    public bool Minimize(nint handle)
+    public Task<bool> MinimizeAsync(nint handle, CancellationToken cancellationToken = default)
     {
-        if (!IsWindow(handle))
-        {
-            return false;
-        }
-
-        _ = ShowWindow(handle, SwMinimize);
-        return true;
+        Interlocked.Increment(ref _activationRevision);
+        return SetMinimizedAsync(handle, minimized: true, cancellationToken);
     }
 
-    public bool Restore(nint handle)
+    public Task<bool> RestoreAsync(nint handle, CancellationToken cancellationToken = default)
     {
-        if (!IsWindow(handle))
-        {
-            return false;
-        }
-
-        _ = ShowWindow(handle, SwRestore);
-        return true;
+        Interlocked.Increment(ref _activationRevision);
+        return SetMinimizedAsync(handle, minimized: false, cancellationToken);
     }
 
     public nint CaptureForegroundWindowHandle() => GetForegroundWindow();
@@ -225,19 +216,101 @@ public sealed class DesktopWindowService
         return monitorHandles.ToArray();
     }
 
-    public bool RestoreAndActivate(nint handle)
+    public async Task<bool> RestoreAndActivateAsync(
+        nint handle,
+        CancellationToken cancellationToken = default)
     {
-        if (!IsWindow(handle))
+        var revision = Interlocked.Increment(ref _activationRevision);
+        var previousForeground = GetForegroundWindow();
+        if (!await SetMinimizedAsync(handle, minimized: false, cancellationToken)
+                .ConfigureAwait(true) ||
+            cancellationToken.IsCancellationRequested ||
+            revision != Interlocked.Read(ref _activationRevision))
         {
             return false;
         }
 
-        if (IsIconic(handle))
+        // Do not issue an additional foreground request after the user selects
+        // another app. This cannot cancel SW_RESTORE already posted to Windows:
+        // that native restore itself activates and may execute after a timeout.
+        // SW_SHOWNOACTIVATE is not an equivalent restore-to-maximized operation.
+        var foreground = GetForegroundWindow();
+        if (foreground != previousForeground && foreground != handle)
         {
-            _ = ShowWindow(handle, SwRestore);
+            return false;
         }
 
-        return SetForegroundWindow(handle);
+        if (!SetForegroundWindow(handle))
+        {
+            return false;
+        }
+
+        return await WaitForWindowStateAsync(
+            handle,
+            () => GetForegroundWindow() == handle && !IsIconic(handle),
+            () => revision == Interlocked.Read(ref _activationRevision),
+            cancellationToken).ConfigureAwait(true);
+    }
+
+    private static async Task<bool> SetMinimizedAsync(
+        nint handle,
+        bool minimized,
+        CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested || !IsWindow(handle))
+        {
+            return false;
+        }
+
+        if (IsIconic(handle) == minimized)
+        {
+            return true;
+        }
+
+        // This posts to the foreign window's thread instead of synchronously
+        // waiting for a potentially hung application to process WM_SHOWWINDOW.
+        if (!ShowWindowAsync(handle, minimized ? SwMinimize : SwRestore))
+        {
+            return false;
+        }
+
+        return await WaitForWindowStateAsync(
+            handle,
+            () => IsIconic(handle) == minimized,
+            static () => true,
+            cancellationToken).ConfigureAwait(true);
+    }
+
+    private static async Task<bool> WaitForWindowStateAsync(
+        nint handle,
+        Func<bool> matches,
+        Func<bool> isCurrent,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (!cancellationToken.IsCancellationRequested && IsWindow(handle) && isCurrent())
+        {
+            if (matches())
+            {
+                return true;
+            }
+
+            if (Stopwatch.GetElapsedTime(started) >= TimeSpan.FromMilliseconds(750))
+            {
+                break;
+            }
+
+            try
+            {
+                await Task.Delay(25, cancellationToken).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     public bool RequestClose(nint handle) =>
@@ -357,7 +430,7 @@ public sealed class DesktopWindowService
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(nint handle, int command);
+    private static extern bool ShowWindowAsync(nint handle, int command);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

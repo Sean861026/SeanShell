@@ -15,7 +15,8 @@ public interface ITaskbarRecoveryGuard
 public sealed record TaskbarOperationResult(
     bool Success,
     int TaskbarCount,
-    string? Error = null);
+    string? Error = null,
+    bool Superseded = false);
 
 public static class TaskbarRecoveryArguments
 {
@@ -48,10 +49,15 @@ public static class TaskbarRecoveryArguments
     }
 }
 
-public sealed class TaskbarReplacementSession : IDisposable
+public sealed class TaskbarReplacementSession : IAsyncDisposable
 {
     private readonly ITaskbarController _controller;
     private readonly ITaskbarRecoveryGuard _guard;
+    private readonly object _queueGate = new();
+    private Task _tail = Task.CompletedTask;
+    private Task<TaskbarOperationResult>? _shutdown;
+    private long _revision;
+    private bool _isEnabled;
 
     public TaskbarReplacementSession(
         ITaskbarController controller,
@@ -63,78 +69,205 @@ public sealed class TaskbarReplacementSession : IDisposable
         _guard = guard;
     }
 
-    public bool IsEnabled { get; private set; }
+    public bool IsEnabled => Volatile.Read(ref _isEnabled);
 
-    public TaskbarOperationResult Enable()
+    public Task<TaskbarOperationResult> EnableAsync()
     {
+        lock (_queueGate)
+        {
+            if (_shutdown is not null)
+            {
+                return Task.FromResult(SupersededResult());
+            }
+
+            var revision = ++_revision;
+            return Enqueue(() => Hide(revision, enabling: true));
+        }
+    }
+
+    public Task<TaskbarOperationResult> EnsureHiddenAsync()
+    {
+        lock (_queueGate)
+        {
+            if (_shutdown is not null)
+            {
+                return Task.FromResult(SupersededResult());
+            }
+
+            var revision = _revision;
+            return Enqueue(() => Hide(revision, enabling: false));
+        }
+    }
+
+    public Task<TaskbarOperationResult> RevealAsync()
+    {
+        lock (_queueGate)
+        {
+            if (_shutdown is not null)
+            {
+                return Task.FromResult(SupersededResult());
+            }
+
+            var revision = ++_revision;
+            return Enqueue(() =>
+            {
+                if (!IsCurrent(revision))
+                {
+                    return SupersededResult();
+                }
+
+                return IsEnabled
+                    ? _controller.ShowAll()
+                    : new TaskbarOperationResult(false, 0, "Taskbar replacement is not enabled.");
+            });
+        }
+    }
+
+    public Task<TaskbarOperationResult> DisableAsync()
+    {
+        lock (_queueGate)
+        {
+            if (_shutdown is not null)
+            {
+                return _shutdown;
+            }
+
+            ++_revision;
+            Volatile.Write(ref _isEnabled, false);
+            return Enqueue(_controller.ShowAll);
+        }
+    }
+
+    // Shutdown invalidates pending hides immediately, then queues the final show
+    // behind any in-flight native request. Nothing can enqueue another hide after it.
+    public Task<TaskbarOperationResult> ShutdownAsync()
+    {
+        lock (_queueGate)
+        {
+            if (_shutdown is not null)
+            {
+                return _shutdown;
+            }
+
+            ++_revision;
+            Volatile.Write(ref _isEnabled, false);
+            _shutdown = Enqueue(() =>
+            {
+                try
+                {
+                    return _controller.ShowAll();
+                }
+                finally
+                {
+                    if (_guard is IDisposable disposable)
+                    {
+                        // Disposing the handle does not terminate the recovery
+                        // process: it still restores Explorer if the owner exits.
+                        disposable.Dispose();
+                    }
+                }
+            });
+            return _shutdown;
+        }
+    }
+
+    public async ValueTask DisposeAsync() =>
+        _ = await ShutdownAsync().ConfigureAwait(false);
+
+    private TaskbarOperationResult Hide(long revision, bool enabling)
+    {
+        if (!IsCurrent(revision))
+        {
+            return SupersededResult();
+        }
+
+        if (!enabling && !IsEnabled)
+        {
+            return new TaskbarOperationResult(false, 0, "Taskbar replacement is not enabled.");
+        }
+
         if (!_guard.EnsureStarted(out var guardError))
         {
-            IsEnabled = false;
-            _ = _controller.ShowAll();
-            return new TaskbarOperationResult(
-                false,
-                0,
-                $"The recovery guard could not start. {guardError}");
+            Volatile.Write(ref _isEnabled, false);
+            return RestoreAfterFailure(new TaskbarOperationResult(
+                false, 0, $"The recovery guard could not start. {guardError}"));
+        }
+
+        // Guard readiness can take two seconds. A disable/exit received while
+        // waiting must not be followed by a fresh hide request.
+        if (!IsCurrent(revision))
+        {
+            return SupersededResult();
         }
 
         var result = _controller.HideAll();
-        IsEnabled = result.Success;
-        if (!result.Success)
+        lock (_queueGate)
         {
-            _ = _controller.ShowAll();
+            if (_revision == revision && _shutdown is null)
+            {
+                Volatile.Write(ref _isEnabled, result.Success);
+                if (result.Success)
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                result = SupersededResult();
+            }
         }
 
-        return result;
+        // A hide already posted to Explorer cannot be withdrawn. Always post
+        // the compensating show after it, including when the intent changed.
+        return RestoreAfterFailure(result);
     }
 
-    public TaskbarOperationResult EnsureHidden()
+    private bool IsCurrent(long revision)
     {
-        if (!IsEnabled)
+        lock (_queueGate)
         {
-            return new TaskbarOperationResult(
-                false,
-                0,
-                "Taskbar replacement is not enabled.");
+            return _revision == revision && _shutdown is null;
         }
-
-        if (!_guard.EnsureStarted(out var guardError))
-        {
-            IsEnabled = false;
-            _ = _controller.ShowAll();
-            return new TaskbarOperationResult(
-                false,
-                0,
-                $"The recovery guard stopped and could not restart. {guardError}");
-        }
-
-        return _controller.HideAll();
     }
 
-    public TaskbarOperationResult Reveal()
+    // Caller holds _queueGate. Task.Run also offloads the recovery-guard
+    // handshake; no native polling or process readiness wait runs on the UI.
+    private Task<TaskbarOperationResult> Enqueue(Func<TaskbarOperationResult> operation)
     {
-        if (!IsEnabled)
+        var previous = _tail;
+        var current = Task.Run(async () =>
         {
-            return new TaskbarOperationResult(
-                false,
-                0,
-                "Taskbar replacement is not enabled.");
-        }
-
-        return _controller.ShowAll();
+            await previous.ConfigureAwait(false);
+            try
+            {
+                return operation();
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                Volatile.Write(ref _isEnabled, false);
+                return RestoreAfterFailure(new TaskbarOperationResult(false, 0, exception.Message));
+            }
+        });
+        _tail = current;
+        return current;
     }
 
-    public TaskbarOperationResult Disable()
+    private TaskbarOperationResult RestoreAfterFailure(TaskbarOperationResult result)
     {
-        IsEnabled = false;
-        return _controller.ShowAll();
-    }
-
-    public void Dispose()
-    {
-        _ = Disable();
-        if (_guard is IDisposable disposable)
+        try
         {
-            disposable.Dispose();
+            var restore = _controller.ShowAll();
+            return restore.Success ? result : result with
+            {
+                Error = $"{result.Error} Taskbar restoration failed: {restore.Error}",
+            };
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            return result with { Error = $"{result.Error} Taskbar restoration failed: {exception.Message}" };
         }
     }
+
+    private static TaskbarOperationResult SupersededResult() =>
+        new(false, 0, "A newer taskbar request superseded this operation.", Superseded: true);
 }

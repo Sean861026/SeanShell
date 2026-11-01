@@ -1,10 +1,24 @@
 using System.Diagnostics;
 using System.Text;
+using SeanShell.Core;
 
 namespace SeanShell.Plugin.Wsl;
 
 public sealed class WslProcessDistributionProvider : IWslDistributionProvider
 {
+    private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(10);
+    private readonly Func<ProcessStartInfo, TimeSpan, CancellationToken, Task<ProcessExecutionResult>> _runAsync;
+
+    public WslProcessDistributionProvider() : this(BoundedProcessRunner.RunAsync)
+    {
+    }
+
+    internal WslProcessDistributionProvider(
+        Func<ProcessStartInfo, TimeSpan, CancellationToken, Task<ProcessExecutionResult>> runAsync)
+    {
+        _runAsync = runAsync;
+    }
+
     public async ValueTask<IReadOnlyList<WslDistributionSnapshot>> GetDistributionsAsync(
         CancellationToken cancellationToken)
     {
@@ -20,47 +34,24 @@ public sealed class WslProcessDistributionProvider : IWslDistributionProvider
         startInfo.ArgumentList.Add("--list");
         startInfo.ArgumentList.Add("--verbose");
 
-        using var process = new Process { StartInfo = startInfo };
         try
         {
-            if (!process.Start())
-            {
-                return [];
-            }
-
-            var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            var output = await outputTask.ConfigureAwait(false);
-            _ = await errorTask.ConfigureAwait(false);
-            return process.ExitCode == 0
-                ? WslDistributionParser.Parse(output)
+            var result = await _runAsync(startInfo, QueryTimeout, cancellationToken).ConfigureAwait(false);
+            return result.ExitCode == 0
+                ? WslDistributionParser.Parse(result.StandardOutput)
                 : [];
         }
         catch (OperationCanceledException)
         {
-            TryTerminate(process);
+            throw;
+        }
+        catch (TimeoutException)
+        {
             throw;
         }
         catch
         {
-            TryTerminate(process);
             return [];
-        }
-    }
-
-    private static void TryTerminate(Process process)
-    {
-        try
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
-        }
-        catch
-        {
-            // The process may have already exited or become inaccessible.
         }
     }
 }

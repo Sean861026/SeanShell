@@ -59,6 +59,7 @@ public sealed class GitPlugin : ISeanShellPlugin
                 $"Rescan {_roots.Count} configured location{(_roots.Count == 1 ? string.Empty : "s")}",
                 RefreshAsync)
             {
+                ExecutionTimeout = TimeSpan.FromSeconds(30),
                 Kind = ShellCommandKind.Plugin,
                 Glyph = "\uE72C",
                 Keywords = ["git", "repository", "rescan", "reload"],
@@ -115,13 +116,16 @@ public sealed class GitPlugin : ISeanShellPlugin
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var paths = GitRepositoryDiscovery.Discover(
-                _roots,
-                cancellationToken: cancellationToken);
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var paths = await Task.Run(
+                () => GitRepositoryDiscovery.Discover(_roots, cancellationToken: cancellationToken),
+                cancellationToken).ConfigureAwait(false);
             var inspections = paths
                 .Select(path => _inspector.InspectAsync(path, cancellationToken).AsTask())
                 .ToArray();
             var snapshots = await Task.WhenAll(inspections).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             _repositories = snapshots
                 .Where(static snapshot => snapshot is not null)
                 .Cast<GitRepositorySnapshot>()

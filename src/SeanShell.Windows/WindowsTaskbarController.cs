@@ -30,31 +30,44 @@ public sealed class WindowsTaskbarController : ITaskbarController
                 "Windows Explorer did not expose a taskbar window.");
         }
 
+        var rejected = 0;
         foreach (var taskbar in taskbars)
         {
-            _ = ShowWindow(taskbar, visible ? SwShow : SwHide);
+            if (!ShowWindowAsync(taskbar, visible ? SwShow : SwHide))
+            {
+                rejected++;
+            }
+        }
+
+        if (rejected > 0)
+        {
+            return new TaskbarOperationResult(
+                false,
+                taskbars.Count,
+                $"Windows did not accept the visibility request for {rejected} taskbar window(s).");
         }
 
         for (var attempt = 0; attempt < VisibilityPollAttempts; attempt++)
         {
             var pending = taskbars
-                .Where(taskbar => IsWindowVisible(taskbar) != visible)
+                .Where(taskbar => !IsWindow(taskbar) || IsWindowVisible(taskbar) != visible)
                 .ToArray();
             if (pending.Length == 0)
             {
                 break;
             }
 
-            foreach (var taskbar in pending)
-            {
-                _ = ShowWindow(taskbar, visible ? SwShow : SwHide);
-            }
-
+            // Poll the observed state, not the result of posting the request.
+            // Do not flood a hung Explorer thread with duplicate hide messages.
             Thread.Sleep(VisibilityPollIntervalMilliseconds);
         }
 
+        // Success means Windows accepted the request and the state is observed.
+        // ShowWindowAsync exposes no queue-drained acknowledgement. In particular,
+        // a compensating show can observe visible before an older queued hide runs;
+        // the session orders that final show after every hide and keeps the guard.
         var mismatched = taskbars.Count(
-            taskbar => IsWindowVisible(taskbar) != visible);
+            taskbar => !IsWindow(taskbar) || IsWindowVisible(taskbar) != visible);
         return mismatched == 0
             ? new TaskbarOperationResult(true, taskbars.Count)
             : new TaskbarOperationResult(
@@ -116,5 +129,9 @@ public sealed class WindowsTaskbarController : ITaskbarController
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ShowWindow(nint handle, int command);
+    private static extern bool ShowWindowAsync(nint handle, int command);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindow(nint handle);
 }

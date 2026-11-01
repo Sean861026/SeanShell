@@ -125,6 +125,12 @@ results, errors, progress, and asynchronous icon notifications. Shutdown invalid
 the session before cancelling searches or closing the native window. An action
 already dispatched keeps the command/pin gate busy across hide/reopen until it
 finishes, so repeated Enter/clicks cannot start concurrent duplicate operations.
+The four built-in read-only refresh commands have a 30-second overall deadline.
+On timeout the executor requests cancellation, observes late failures without
+waiting for an uncooperative provider, and releases the Launcher gate. Shutdown
+also cancels pending commands after invalidating their UI session. Ordinary app,
+terminal, build, test, run, and log-follow launches do not inherit this deadline;
+hiding the Launcher still does not undo a dispatched action.
 Searches and Escape remain available during an action. Recoverable Launcher
 failures enter the bounded local diagnostic journal without messages, queries,
 paths, or command arguments; this is failure reporting, not a command audit log.
@@ -288,6 +294,12 @@ Git plugin initialization or explicit Launcher refresh
 
 Normal Launcher queries never start Git processes. The cache changes only during
 plugin initialization or the explicit **Refresh Git repositories** command.
+Discovery runs on a worker, not on the Launcher dispatcher. Git, WSL, and Docker
+read-only query processes have a separate 10-second deadline even when their
+caller supplies no cancellation token. This covers process exit and both output
+pipes; timeout/cancellation attempts to terminate only the owned query process
+tree, observes pending reads, and preserves the previous snapshot. Caller
+cancellation is not reported as a process timeout.
 
 ## WSL distribution refresh and launch
 
@@ -332,6 +344,7 @@ remove, pull, and Compose commands are not represented as `ShellCommand` records
 
 ```text
 .NET plugin initialization or explicit Launcher refresh
+  -> acquire the single-flight refresh gate and dispatch scanning to a worker
   -> inspect configured developer roots to a bounded depth
   -> skip build, dependency, reparse-point, and inaccessible directories
   -> cap discovery at 24 .sln, .slnx, and .csproj files
@@ -354,6 +367,9 @@ User selects an explicit .NET action
 Normal Launcher queries never read project files. Build, test, and run occur only
 after user selection. Restore and project-mutation commands are not represented as
 `ShellCommand` records.
+Discovery, XML/JSON reads, and Razor inspection cooperate with cancellation.
+Cancelled, failed, or disposed scans never replace the last completed snapshot;
+the refresh gate remains owned until the worker has actually completed.
 
 ## Launcher shortcut change
 
@@ -573,6 +589,20 @@ SeanShell main process crashes or is forcibly terminated
 The guard must acknowledge readiness before any taskbar is hidden. Failure to
 start the guard, discover a taskbar, or verify the requested visibility fails
 safe by showing all taskbars and clearing the persisted replacement preference.
+The session serializes native visibility operations and the recovery handshake
+on a background queue. Disable, reveal, and shutdown invalidate stale hide
+requests; an in-flight hide is followed by a compensating show. The timer
+coalesces checks instead of accumulating work. Final shutdown drains restoration
+before closing the Docks, while AppBar registration/release stays on the UI
+dispatcher. Visibility is polled with a finite bound; successfully posting a
+native request alone is not treated as successful restoration.
+
+Foreign application minimize/restore requests use `ShowWindowAsync` and bounded,
+cancellable state verification. A newer action prevents an older continuation
+from issuing an additional foreground request. Windows cannot withdraw an
+already-posted native request: a hung application may process its restore later,
+including Windows' activation side effect. A timeout is not reported as success
+or a guarantee that the OS canceled that request.
 
 ## Launcher and pinned Dock applications
 
