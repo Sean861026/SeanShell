@@ -10,8 +10,8 @@ public sealed class BoundedProcessRunnerTests
     public async Task DrainsBothPipesBeforeReturningExitCode()
     {
         using var probe = new IsolatedProcessProbe();
-        var result = await BoundedProcessRunner.RunAsync(
-            probe.StartInfo("[Console]::Out.Write('o' * 131072); [Console]::Error.Write('e' * 131072); exit 7"),
+        var result = await probe.RunAsync(
+            "[Console]::Out.Write('o' * 131072); [Console]::Error.Write('e' * 131072); exit 7",
             TimeSpan.FromSeconds(15),
             CancellationToken.None);
 
@@ -25,11 +25,11 @@ public sealed class BoundedProcessRunnerTests
     {
         using var probe = new IsolatedProcessProbe();
         var watch = Stopwatch.StartNew();
-        var operation = BoundedProcessRunner.RunAsync(
-            probe.StartInfo("while ($true) { Start-Sleep -Milliseconds 20 }"),
+        var operation = probe.RunAsync(
+            "while ($true) { Start-Sleep -Milliseconds 20 }",
             TimeSpan.FromSeconds(3),
             CancellationToken.None);
-        await probe.CaptureProcessAsync(operation);
+        await probe.CaptureProcessAsync();
 
         var error = await Assert.ThrowsExactlyAsync<TimeoutException>(async () => await operation);
 
@@ -39,15 +39,39 @@ public sealed class BoundedProcessRunnerTests
     }
 
     [TestMethod]
+    public async Task DeadlineCleansUpBeforeInterpreterReadinessAndLateObservation()
+    {
+        using var probe = new IsolatedProcessProbe();
+        // Model a cold interpreter that cannot reach readiness before the unchanged
+        // deadline. The OS process is captured at Start, not through a PID file.
+        var operation = probe.RunAsync(
+            "while ($true) { Start-Sleep -Milliseconds 20 }",
+            TimeSpan.FromSeconds(3),
+            CancellationToken.None,
+            startupScript: "Start-Sleep -Seconds 30;");
+
+        await Assert.ThrowsExactlyAsync<TimeoutException>(async () => await operation);
+        await probe.CaptureProcessAsync();
+        await probe.AssertExitedAsync();
+
+        Assert.IsFalse(File.Exists(probe.ReadyPath));
+        // Re-observe after cleanup definitely finished: the retained handle still
+        // identifies this exact child even though a fresh PID lookup would fail.
+        await probe.CaptureProcessAsync();
+        await probe.AssertExitedAsync();
+    }
+
+    [TestMethod]
     public async Task CallerCancellationTerminatesChildWhileBothPipesAreBeingRead()
     {
         using var probe = new IsolatedProcessProbe();
         using var cancellation = new CancellationTokenSource();
-        var operation = BoundedProcessRunner.RunAsync(
-            probe.StartInfo("while ($true) { [Console]::Out.Write('out'); [Console]::Error.Write('err'); Start-Sleep -Milliseconds 10 }"),
+        var operation = probe.RunAsync(
+            "while ($true) { [Console]::Out.Write('out'); [Console]::Error.Write('err'); Start-Sleep -Milliseconds 10 }",
             TimeSpan.FromSeconds(15),
             cancellation.Token);
-        await probe.CaptureProcessAsync(operation);
+        await probe.CaptureProcessAsync();
+        await probe.WaitForInterpreterReadinessAsync(operation);
         var watch = Stopwatch.StartNew();
         cancellation.Cancel();
 
@@ -65,10 +89,11 @@ public sealed class BoundedProcessRunnerTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
-        await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => BoundedProcessRunner.RunAsync(
-            probe.StartInfo("exit 0"), TimeSpan.FromSeconds(15), cancellation.Token));
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => probe.RunAsync(
+            "exit 0", TimeSpan.FromSeconds(15), cancellation.Token));
 
-        Assert.IsFalse(File.Exists(probe.ProcessIdPath));
+        Assert.IsFalse(probe.HasStarted);
+        Assert.IsFalse(File.Exists(probe.ReadyPath));
     }
 
     [TestMethod]
@@ -92,7 +117,10 @@ public sealed class BoundedProcessRunnerTests
     {
         private readonly string _directory;
         private readonly string _executable;
+        private readonly object _gate = new();
+        private readonly TaskCompletionSource<Process> _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private Process? _process;
+        private bool _disposed;
 
         public IsolatedProcessProbe()
         {
@@ -107,9 +135,15 @@ public sealed class BoundedProcessRunnerTests
             Directory.CreateDirectory(_directory);
         }
 
-        public string ProcessIdPath => Path.Combine(_directory, "child.pid");
+        public string ReadyPath => Path.Combine(_directory, "ready");
 
-        public ProcessStartInfo StartInfo(string script)
+        public bool HasStarted => _started.Task.IsCompletedSuccessfully;
+
+        public Task<ProcessExecutionResult> RunAsync(
+            string script,
+            TimeSpan timeout,
+            CancellationToken cancellationToken,
+            string startupScript = "")
         {
             var startInfo = new ProcessStartInfo(_executable)
             {
@@ -123,25 +157,54 @@ public sealed class BoundedProcessRunnerTests
             startInfo.ArgumentList.Add("-NoProfile");
             startInfo.ArgumentList.Add("-NonInteractive");
             startInfo.ArgumentList.Add("-EncodedCommand");
-            // The child only writes its own PID to our unique temporary directory and
+            // The child only writes readiness to our unique temporary directory and
             // emits test data. No WSL, Docker, Git, network, or desktop state is touched.
-            var fullScript = $"[IO.File]::WriteAllText('{ProcessIdPath.Replace("'", "''", StringComparison.Ordinal)}', $PID.ToString()); {script}";
+            var fullScript = $"{startupScript} [IO.File]::WriteAllText('{ReadyPath.Replace("'", "''", StringComparison.Ordinal)}', 'ready'); {script}";
             startInfo.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(fullScript)));
-            return startInfo;
+            return BoundedProcessRunner.RunAsync(startInfo, timeout, cancellationToken, OnProcessStarted);
         }
 
-        public async Task CaptureProcessAsync(Task operation)
+        private void OnProcessStarted(Process process)
         {
-            var deadline = Stopwatch.StartNew();
-            while (deadline.Elapsed < TimeSpan.FromSeconds(5))
+            // This runs synchronously before the runner can kill/dispose its Process.
+            // Acquire a separate retained handle now, never look up a PID after cleanup.
+            var owned = Process.GetProcessById(process.Id);
+            try
             {
-                if (File.Exists(ProcessIdPath) && int.TryParse(await File.ReadAllTextAsync(ProcessIdPath), out var processId))
+                _ = owned.Handle;
+                Assert.AreEqual(process.StartTime.ToUniversalTime(), owned.StartTime.ToUniversalTime());
+                lock (_gate)
                 {
-                    _process = Process.GetProcessById(processId);
-                    _ = _process.Handle;
-                    return;
+                    if (!_disposed)
+                    {
+                        _process = owned;
+                        _started.TrySetResult(owned);
+                        return;
+                    }
                 }
 
+                // If the fixture failed/disposed while Start was delayed, clean up the
+                // exact process immediately instead of waiting for its query deadline.
+                Terminate(owned);
+                _started.TrySetCanceled();
+            }
+            catch
+            {
+                owned.Dispose();
+                throw;
+            }
+
+            owned.Dispose();
+        }
+
+        public async Task CaptureProcessAsync() =>
+            _ = await _started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        public async Task WaitForInterpreterReadinessAsync(Task operation)
+        {
+            var watch = Stopwatch.StartNew();
+            while (!File.Exists(ReadyPath) && watch.Elapsed < TimeSpan.FromSeconds(10))
+            {
                 if (operation.IsCompleted)
                 {
                     await operation;
@@ -151,30 +214,46 @@ public sealed class BoundedProcessRunnerTests
                 await Task.Delay(20);
             }
 
-            Assert.Fail("The isolated probe did not start within its test deadline.");
+            Assert.IsTrue(File.Exists(ReadyPath), "The isolated interpreter never became ready.");
         }
 
         public async Task AssertExitedAsync()
         {
-            Assert.IsNotNull(_process);
-            await _process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            Assert.IsTrue(_process.HasExited);
+            var process = await _started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.IsTrue(process.HasExited);
         }
 
         public void Dispose()
         {
+            Process? process;
+            lock (_gate)
+            {
+                _disposed = true;
+                process = _process;
+                _process = null;
+            }
+
             try
             {
-                if (_process is not null && !_process.HasExited)
+                if (process is not null)
                 {
-                    _process.Kill(entireProcessTree: true);
-                    _process.WaitForExit(5000);
+                    Terminate(process);
                 }
             }
             finally
             {
-                _process?.Dispose();
+                process?.Dispose();
                 Directory.Delete(_directory, recursive: true);
+            }
+        }
+
+        private static void Terminate(Process process)
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                Assert.IsTrue(process.WaitForExit(5000), "The owned probe did not terminate during cleanup.");
             }
         }
     }

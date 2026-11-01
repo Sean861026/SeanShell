@@ -16,7 +16,14 @@ public static class BoundedProcessRunner
     public static Task<ProcessExecutionResult> RunAsync(
         ProcessStartInfo startInfo,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        RunAsync(startInfo, timeout, cancellationToken, processStarted: null);
+
+    internal static Task<ProcessExecutionResult> RunAsync(
+        ProcessStartInfo startInfo,
+        TimeSpan timeout,
+        CancellationToken cancellationToken,
+        Action<Process>? processStarted)
     {
         ArgumentNullException.ThrowIfNull(startInfo);
         if (timeout <= TimeSpan.Zero || timeout.TotalMilliseconds > uint.MaxValue - 1)
@@ -29,13 +36,14 @@ public static class BoundedProcessRunner
             throw new ArgumentException("Query processes must redirect stdout and stderr without shell execution.", nameof(startInfo));
         }
 
-        return RunWithDeadlineAsync(startInfo, timeout, cancellationToken);
+        return RunWithDeadlineAsync(startInfo, timeout, cancellationToken, processStarted);
     }
 
     private static async Task<ProcessExecutionResult> RunWithDeadlineAsync(
         ProcessStartInfo startInfo,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<Process>? processStarted)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var deadline = new CancellationTokenSource(timeout);
@@ -43,7 +51,7 @@ public static class BoundedProcessRunner
         var operationToken = lifetime.Token;
         // Executable discovery, Start, or native process cleanup can block synchronously.
         // The worker owns cleanup; the caller's wait remains bounded even during those calls.
-        var worker = Task.Run(() => RunCoreAsync(startInfo, operationToken), CancellationToken.None);
+        var worker = Task.Run(() => RunCoreAsync(startInfo, operationToken, processStarted), CancellationToken.None);
         try
         {
             return await worker.WaitAsync(operationToken).ConfigureAwait(false);
@@ -75,7 +83,8 @@ public static class BoundedProcessRunner
 
     private static async Task<ProcessExecutionResult> RunCoreAsync(
         ProcessStartInfo startInfo,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<Process>? processStarted)
     {
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var process = new Process { StartInfo = startInfo };
@@ -95,6 +104,9 @@ public static class BoundedProcessRunner
                 throw new InvalidOperationException($"Unable to start query process '{startInfo.FileName}'.");
             }
 
+            // Internal test seam: capture ownership before cleanup can race the observer,
+            // independently of how long the child interpreter takes to initialize.
+            processStarted?.Invoke(process);
             lifetime.Token.ThrowIfCancellationRequested();
             outputTask = process.StandardOutput.ReadToEndAsync(lifetime.Token);
             errorTask = process.StandardError.ReadToEndAsync(lifetime.Token);
