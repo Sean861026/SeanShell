@@ -15,9 +15,12 @@ public static class DotNetWorkspaceInspector
             "obj",
         };
 
-    public static DotNetWorkspaceSnapshot? Inspect(string path)
+    public static DotNetWorkspaceSnapshot? Inspect(
+        string path,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
@@ -46,14 +49,16 @@ public static class DotNetWorkspaceInspector
 
         try
         {
+            using var stream = new CancellationReadStream(File.OpenRead(fullPath), cancellationToken);
             using var reader = XmlReader.Create(
-                fullPath,
+                stream,
                 new XmlReaderSettings
                 {
                     DtdProcessing = DtdProcessing.Prohibit,
                     XmlResolver = null,
                 });
             var document = XDocument.Load(reader, LoadOptions.None);
+            cancellationToken.ThrowIfCancellationRequested();
             var sdkValues = new[] { document.Root?.Attribute("Sdk")?.Value }
                 .Concat(document.Root?.Elements()
                     .Where(static element => element.Name.LocalName == "Sdk")
@@ -62,21 +67,22 @@ public static class DotNetWorkspaceInspector
                 .Where(static value => !string.IsNullOrWhiteSpace(value))
                 .Cast<string>();
             var sdk = string.Join(";", sdkValues);
-            var targetFrameworks = ReadTargetFrameworks(document);
-            var packageReferences = ReadItemNames(document, "PackageReference");
-            var frameworkReferences = ReadItemNames(document, "FrameworkReference");
+            var targetFrameworks = ReadTargetFrameworks(document, cancellationToken);
+            var packageReferences = ReadItemNames(document, "PackageReference", cancellationToken);
+            var frameworkReferences = ReadItemNames(document, "FrameworkReference", cancellationToken);
             var projectDirectory = Path.GetDirectoryName(fullPath)!;
             var projectType = Classify(
                 document,
                 sdk,
                 packageReferences,
                 frameworkReferences,
-                projectDirectory);
+                projectDirectory,
+                cancellationToken);
             var isTestProject =
-                HasBooleanProperty(document, "IsTestProject") ||
+                HasBooleanProperty(document, "IsTestProject", cancellationToken) ||
                 packageReferences.Any(static package =>
                     Contains(package, "Microsoft.NET.Test.Sdk"));
-            var outputType = ReadProperty(document, "OutputType");
+            var outputType = ReadProperty(document, "OutputType", cancellationToken);
             var isRunnable = !isTestProject &&
                 (outputType is not null &&
                     (outputType.Equals("Exe", StringComparison.OrdinalIgnoreCase) ||
@@ -84,8 +90,9 @@ public static class DotNetWorkspaceInspector
                  projectType is "ASP.NET Core" or "ASP.NET Core / Blazor" or
                      "Blazor WebAssembly" or ".NET Worker" or ".NET MAUI");
             var localApplicationUrls =
-                DotNetLaunchSettingsReader.ReadLocalApplicationUrls(projectDirectory);
+                DotNetLaunchSettingsReader.ReadLocalApplicationUrls(projectDirectory, cancellationToken);
 
+            cancellationToken.ThrowIfCancellationRequested();
             return new(
                 fullPath,
                 Path.GetFileNameWithoutExtension(fullPath),
@@ -103,8 +110,10 @@ public static class DotNetWorkspaceInspector
         }
     }
 
-    private static IReadOnlyList<string> ReadTargetFrameworks(XDocument document) =>
-        document.Descendants()
+    private static IReadOnlyList<string> ReadTargetFrameworks(
+        XDocument document,
+        CancellationToken cancellationToken) =>
+        EnumerateElements(document, cancellationToken)
             .Where(static element =>
                 element.Name.LocalName is "TargetFramework" or "TargetFrameworks")
             .SelectMany(static element => element.Value.Split(
@@ -113,8 +122,11 @@ public static class DotNetWorkspaceInspector
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-    private static IReadOnlyList<string> ReadItemNames(XDocument document, string itemName) =>
-        document.Descendants()
+    private static IReadOnlyList<string> ReadItemNames(
+        XDocument document,
+        string itemName,
+        CancellationToken cancellationToken) =>
+        EnumerateElements(document, cancellationToken)
             .Where(element => element.Name.LocalName == itemName)
             .Select(static element =>
                 element.Attribute("Include")?.Value ??
@@ -128,7 +140,8 @@ public static class DotNetWorkspaceInspector
         string sdk,
         IReadOnlyList<string> packageReferences,
         IReadOnlyList<string> frameworkReferences,
-        string projectDirectory)
+        string projectDirectory,
+        CancellationToken cancellationToken)
     {
         if (Contains(sdk, "Microsoft.NET.Sdk.BlazorWebAssembly") ||
             packageReferences.Any(static package =>
@@ -137,7 +150,7 @@ public static class DotNetWorkspaceInspector
             return "Blazor WebAssembly";
         }
 
-        if (HasBooleanProperty(document, "UseMaui"))
+        if (HasBooleanProperty(document, "UseMaui", cancellationToken))
         {
             return ".NET MAUI";
         }
@@ -146,7 +159,7 @@ public static class DotNetWorkspaceInspector
             frameworkReferences.Any(static framework =>
                 Contains(framework, "Microsoft.AspNetCore.App")))
         {
-            return ContainsRazorFile(projectDirectory)
+            return ContainsRazorFile(projectDirectory, cancellationToken)
                 ? "ASP.NET Core / Blazor"
                 : "ASP.NET Core";
         }
@@ -157,7 +170,7 @@ public static class DotNetWorkspaceInspector
         }
 
         if (Contains(sdk, "Microsoft.NET.Sdk.Razor") ||
-            ContainsRazorFile(projectDirectory))
+            ContainsRazorFile(projectDirectory, cancellationToken))
         {
             return "Razor";
         }
@@ -165,25 +178,43 @@ public static class DotNetWorkspaceInspector
         return "C#";
     }
 
-    private static bool HasBooleanProperty(XDocument document, string propertyName) =>
-        document.Descendants()
+    private static bool HasBooleanProperty(
+        XDocument document,
+        string propertyName,
+        CancellationToken cancellationToken) =>
+        EnumerateElements(document, cancellationToken)
             .Any(element =>
                 element.Name.LocalName == propertyName &&
                 bool.TryParse(element.Value, out var value) &&
                 value);
 
-    private static string? ReadProperty(XDocument document, string propertyName) =>
-        document.Descendants()
+    private static string? ReadProperty(
+        XDocument document,
+        string propertyName,
+        CancellationToken cancellationToken) =>
+        EnumerateElements(document, cancellationToken)
             .FirstOrDefault(element => element.Name.LocalName == propertyName)
             ?.Value
             .Trim();
 
-    private static bool ContainsRazorFile(string root)
+    private static IEnumerable<XElement> EnumerateElements(
+        XDocument document,
+        CancellationToken cancellationToken)
+    {
+        foreach (var element in document.Descendants())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return element;
+        }
+    }
+
+    private static bool ContainsRazorFile(string root, CancellationToken cancellationToken)
     {
         var pending = new Queue<(string Path, int Depth)>();
         pending.Enqueue((root, 0));
         while (pending.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var candidate = pending.Dequeue();
             try
             {
@@ -193,6 +224,7 @@ public static class DotNetWorkspaceInspector
                         SearchOption.TopDirectoryOnly)
                     .Any())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     return true;
                 }
 
@@ -203,6 +235,7 @@ public static class DotNetWorkspaceInspector
 
                 foreach (var directory in Directory.EnumerateDirectories(candidate.Path))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (!ExcludedDirectoryNames.Contains(Path.GetFileName(directory)) &&
                         !File.GetAttributes(directory).HasFlag(FileAttributes.ReparsePoint))
                     {
@@ -216,6 +249,7 @@ public static class DotNetWorkspaceInspector
             }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return false;
     }
 

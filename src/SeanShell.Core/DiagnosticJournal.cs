@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SeanShell.Core;
 
@@ -18,6 +19,30 @@ public enum DiagnosticEventKind
     LauncherSearchFailed,
     LauncherActionFailed,
     LauncherActivationFailed,
+    TaskbarOperationFailed,
+}
+
+public enum TaskbarFailureStage
+{
+    GuardStart,
+    GuardReadiness,
+    Hide,
+    Show,
+    WorkAreaReserve,
+    WorkAreaRelease,
+}
+
+public enum TaskbarFailureReason
+{
+    NotReady,
+    ProcessNotCreated,
+    HandshakeMismatch,
+    TimedOut,
+    Exception,
+    NoTaskbars,
+    RequestRejected,
+    VisibilityTimedOut,
+    ReservationRejected,
 }
 
 /// <summary>
@@ -49,7 +74,30 @@ public sealed class DiagnosticJournal
         _buildVersion = Limit(buildVersion ?? "unknown");
     }
 
-    public bool TryWrite(DiagnosticEventKind kind, Exception? exception = null)
+    public bool TryWrite(DiagnosticEventKind kind, Exception? exception = null) =>
+        TryWriteCore(kind, exception, taskbar: null);
+
+    // Only closed enums and counts cross this boundary. Never journal the
+    // operation's display message, executable path, HWND, or guard stdout.
+    public bool TryWriteTaskbarFailure(
+        TaskbarFailureStage stage,
+        TaskbarFailureReason reason,
+        int targetCount = 0,
+        int affectedCount = 0,
+        Exception? exception = null) =>
+        TryWriteCore(
+            DiagnosticEventKind.TaskbarOperationFailed,
+            exception,
+            new TaskbarFailureSummary(
+                Enum.IsDefined(stage) ? stage.ToString() : "Unknown",
+                Enum.IsDefined(reason) ? reason.ToString() : "Unknown",
+                Math.Max(0, targetCount),
+                Math.Max(0, affectedCount)));
+
+    private bool TryWriteCore(
+        DiagnosticEventKind kind,
+        Exception? exception,
+        TaskbarFailureSummary? taskbar)
     {
         try
         {
@@ -72,7 +120,7 @@ public sealed class DiagnosticJournal
 
             var entry = new DiagnosticEntry(
                 1, DateTimeOffset.UtcNow, _sessionId, Environment.ProcessId, _buildVersion,
-                Enum.IsDefined(kind) ? kind.ToString() : "Unknown", errors.ToArray());
+                Enum.IsDefined(kind) ? kind.ToString() : "Unknown", errors.ToArray(), taskbar);
             var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(entry) + "\n");
             if (bytes.Length > _maximumFileBytes)
             {
@@ -107,6 +155,12 @@ public sealed class DiagnosticJournal
 
     private sealed record ErrorSummary(string Type, int HResult, string[] Methods);
 
+    private sealed record TaskbarFailureSummary(
+        string Stage,
+        string Reason,
+        int TargetCount,
+        int AffectedCount);
+
     private sealed record DiagnosticEntry(
         int SchemaVersion,
         DateTimeOffset TimestampUtc,
@@ -114,5 +168,7 @@ public sealed class DiagnosticJournal
         int ProcessId,
         string BuildVersion,
         string Event,
-        ErrorSummary[] Errors);
+        ErrorSummary[] Errors,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        TaskbarFailureSummary? Taskbar);
 }

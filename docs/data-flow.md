@@ -483,6 +483,9 @@ Snapshots contain a local path, display name, classified project type, target
 framework names, a solution marker, test-project status, run capability, and up
 to eight validated loopback launch-profile URLs. File contents are not retained
 or logged. The cache changes only during initialization or an explicit refresh.
+The entire discovery/inspection pipeline runs on a worker. The plugin publishes
+one completed snapshot under its lifetime lock, so cached queries do not wait for
+filesystem reads and cancelled or disposed scans cannot publish late results.
 
 Explicit build, test, and run selections flow from immutable snapshot metadata to
 `ProcessStartInfo.ArgumentList`. SeanShell never constructs a `cmd.exe` or

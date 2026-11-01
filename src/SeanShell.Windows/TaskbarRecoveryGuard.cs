@@ -7,10 +7,14 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
 {
     private readonly string _executablePath;
     private readonly int _ownerProcessId;
+    private readonly DiagnosticJournal? _diagnostics;
     private Process? _process;
     private bool _ready;
 
-    public TaskbarRecoveryGuard(string executablePath, int ownerProcessId)
+    public TaskbarRecoveryGuard(
+        string executablePath,
+        int ownerProcessId,
+        DiagnosticJournal? diagnostics = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         if (ownerProcessId <= 0)
@@ -20,12 +24,20 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
 
         _executablePath = Path.GetFullPath(executablePath);
         _ownerProcessId = ownerProcessId;
+        _diagnostics = diagnostics;
     }
 
     public bool EnsureStarted(out string? error)
     {
         if (_process is { HasExited: false })
         {
+            if (!_ready)
+            {
+                _diagnostics?.TryWriteTaskbarFailure(
+                    TaskbarFailureStage.GuardReadiness,
+                    TaskbarFailureReason.NotReady);
+            }
+
             error = _ready
                 ? null
                 : "The taskbar recovery guard has not confirmed readiness.";
@@ -35,6 +47,7 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
         _process?.Dispose();
         _process = null;
         _ready = false;
+        var failureStage = TaskbarFailureStage.GuardStart;
         try
         {
             var startInfo = new ProcessStartInfo
@@ -51,10 +64,14 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
             _process = Process.Start(startInfo);
             if (_process is null)
             {
+                _diagnostics?.TryWriteTaskbarFailure(
+                    TaskbarFailureStage.GuardStart,
+                    TaskbarFailureReason.ProcessNotCreated);
                 error = "Windows did not create the taskbar recovery guard.";
                 return false;
             }
 
+            failureStage = TaskbarFailureStage.GuardReadiness;
             var ready = _process.StandardOutput
                 .ReadLineAsync()
                 .WaitAsync(TimeSpan.FromSeconds(2))
@@ -65,6 +82,9 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
                     TaskbarRecoveryArguments.ReadyMessage,
                     StringComparison.Ordinal))
             {
+                _diagnostics?.TryWriteTaskbarFailure(
+                    TaskbarFailureStage.GuardReadiness,
+                    TaskbarFailureReason.HandshakeMismatch);
                 error = "The taskbar recovery guard did not confirm readiness.";
                 return false;
             }
@@ -80,6 +100,12 @@ public sealed class TaskbarRecoveryGuard : ITaskbarRecoveryGuard, IDisposable
                 TimeoutException or
                 System.ComponentModel.Win32Exception)
         {
+            _diagnostics?.TryWriteTaskbarFailure(
+                failureStage,
+                exception is TimeoutException
+                    ? TaskbarFailureReason.TimedOut
+                    : TaskbarFailureReason.Exception,
+                exception: exception);
             error = exception.Message;
             return false;
         }

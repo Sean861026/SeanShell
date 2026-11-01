@@ -57,6 +57,25 @@ from the command line. Its manifest enables Windows package-content integrity
 enforcement. A production certificate and release-signing pipeline will be added
 after the MVP interaction model is stable.
 
+The app bundles its verified Windows App SDK runtime by default
+(`WindowsAppSDKSelfContained=true`). This prevents an independently updated
+shared runtime from silently changing the WinUI version used by a build. It
+increases package size; runtime security and servicing updates now require a
+dependency update, rebuild, regression check, and redistribution of SeanShell.
+Review dependency servicing at least monthly and before each release, and
+prioritize applicable security fixes. This is independent of .NET's
+`SelfContained` publish setting and does not remove package registration.
+
+For a diagnostic comparison only, rebuild with the shared runtime:
+
+```powershell
+dotnet run --project src/SeanShell.App/SeanShell.App.csproj -c Release -p:Platform=x64 -p:WindowsAppSDKSelfContained=false
+```
+
+Omit that override and rebuild to return to the default. Do not use `--no-build`
+when switching deployment modes. The notebook rendering observations and their
+limits are recorded in [Launcher validation](docs/launcher-lifecycle-validation.md).
+
 ## Safety boundary
 
 The default remains **Overlay mode** beside Explorer. Users can opt into

@@ -7,6 +7,91 @@ namespace SeanShell.Core.Tests;
 public sealed class DiagnosticJournalTests
 {
     [TestMethod]
+    [DataRow(TaskbarFailureStage.GuardReadiness, TaskbarFailureReason.TimedOut)]
+    [DataRow(TaskbarFailureStage.GuardReadiness, TaskbarFailureReason.HandshakeMismatch)]
+    [DataRow(TaskbarFailureStage.GuardReadiness, TaskbarFailureReason.NotReady)]
+    [DataRow(TaskbarFailureStage.GuardStart, TaskbarFailureReason.ProcessNotCreated)]
+    [DataRow(TaskbarFailureStage.GuardStart, TaskbarFailureReason.Exception)]
+    [DataRow(TaskbarFailureStage.Hide, TaskbarFailureReason.RequestRejected)]
+    [DataRow(TaskbarFailureStage.Hide, TaskbarFailureReason.VisibilityTimedOut)]
+    [DataRow(TaskbarFailureStage.Show, TaskbarFailureReason.NoTaskbars)]
+    [DataRow(TaskbarFailureStage.WorkAreaReserve, TaskbarFailureReason.ReservationRejected)]
+    [DataRow(TaskbarFailureStage.WorkAreaRelease, TaskbarFailureReason.ReservationRejected)]
+    public void TaskbarFailuresContainOnlyTypedStageReasonCountsAndSafeErrors(
+        TaskbarFailureStage stage,
+        TaskbarFailureReason reason)
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "events.jsonl");
+        var journal = new DiagnosticJournal(path);
+        var exception = new IOException("private-executable-path-and-guard-stdout");
+        exception.Data["command-line"] = "private-arguments";
+
+        Assert.IsTrue(journal.TryWriteTaskbarFailure(stage, reason, 2, 1, exception));
+
+        var text = File.ReadAllText(path);
+        Assert.IsFalse(text.Contains("private-", StringComparison.Ordinal));
+        using var entry = JsonDocument.Parse(text);
+        Assert.AreEqual("TaskbarOperationFailed", entry.RootElement.GetProperty("Event").GetString());
+        var taskbar = entry.RootElement.GetProperty("Taskbar");
+        Assert.AreEqual(stage.ToString(), taskbar.GetProperty("Stage").GetString());
+        Assert.AreEqual(reason.ToString(), taskbar.GetProperty("Reason").GetString());
+        Assert.AreEqual(2, taskbar.GetProperty("TargetCount").GetInt32());
+        Assert.AreEqual(1, taskbar.GetProperty("AffectedCount").GetInt32());
+        Assert.AreEqual(4, taskbar.EnumerateObject().Count());
+        Assert.AreEqual(exception.HResult,
+            entry.RootElement.GetProperty("Errors")[0].GetProperty("HResult").GetInt32());
+    }
+
+    [TestMethod]
+    public void UnknownTaskbarEnumsAndNegativeCountsAreNormalized()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "events.jsonl");
+        var journal = new DiagnosticJournal(path);
+
+        Assert.IsTrue(journal.TryWriteTaskbarFailure(
+            (TaskbarFailureStage)int.MaxValue,
+            (TaskbarFailureReason)int.MaxValue,
+            -1,
+            -2));
+
+        using var entry = JsonDocument.Parse(File.ReadAllText(path));
+        var taskbar = entry.RootElement.GetProperty("Taskbar");
+        Assert.AreEqual("Unknown", taskbar.GetProperty("Stage").GetString());
+        Assert.AreEqual("Unknown", taskbar.GetProperty("Reason").GetString());
+        Assert.AreEqual(0, taskbar.GetProperty("TargetCount").GetInt32());
+        Assert.AreEqual(0, taskbar.GetProperty("AffectedCount").GetInt32());
+    }
+
+    [TestMethod]
+    public void TaskbarDiagnosticStorageFailureDoesNotEscape()
+    {
+        using var directory = new TemporaryDirectory();
+        var parent = Path.Combine(directory.Path, "file-not-directory");
+        File.WriteAllText(parent, "unchanged");
+        var journal = new DiagnosticJournal(Path.Combine(parent, "events.jsonl"));
+
+        Assert.IsFalse(journal.TryWriteTaskbarFailure(
+            TaskbarFailureStage.Hide, TaskbarFailureReason.RequestRejected, 2, 1));
+        Assert.AreEqual("unchanged", File.ReadAllText(parent));
+    }
+
+    [TestMethod]
+    public void NonTaskbarDiagnosticsKeepExistingSchemaWithoutTaskbarPayload()
+    {
+        using var directory = new TemporaryDirectory();
+        var path = Path.Combine(directory.Path, "events.jsonl");
+        var journal = new DiagnosticJournal(path);
+
+        Assert.IsTrue(journal.TryWrite(DiagnosticEventKind.SessionStarted));
+
+        using var entry = JsonDocument.Parse(File.ReadAllText(path));
+        Assert.AreEqual(1, entry.RootElement.GetProperty("SchemaVersion").GetInt32());
+        Assert.IsFalse(entry.RootElement.TryGetProperty("Taskbar", out _));
+    }
+
+    [TestMethod]
     [DataRow(DiagnosticEventKind.DockActionFailed)]
     [DataRow(DiagnosticEventKind.LauncherSearchFailed)]
     [DataRow(DiagnosticEventKind.LauncherActionFailed)]
