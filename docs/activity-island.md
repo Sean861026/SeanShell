@@ -72,6 +72,24 @@ tree, so the preview toggle and visual/focus checks could not be validated.
 The test instance was stopped; the checklist below remains open. Do not treat
 the capture symptom as a confirmed application rendering diagnosis.
 
+A same-day retry explicitly targeted the notebook's internal `SDC41A3` panel
+(2560x1600, negative desktop X coordinates), not the external `AUS3437` display.
+Rebinding the notebook Dock and refreshing its capture reproduced the mixed text;
+accessibility data was still unavailable. The process loaded the installed
+Windows App Runtime **2.6.4.0**, despite the project's SDK reference being 2.3.1.
+Upstream reports describe similar cross-GPU/mixed-DPI text corruption:
+[WinUI #12434](https://github.com/microsoft/microsoft-ui-xaml/issues/12434) and
+[WinUI #12464](https://github.com/microsoft/microsoft-ui-xaml/issues/12464).
+These are diagnostic leads, not proof of this application's root cause.
+Read-only adapter mapping identified Intel Arc for the notebook panel and NVIDIA
+RTX 4060 Laptop for the external panel. SeanShell has no explicit per-application
+GPU preference; automatic selection does not establish which GPU rendered a frame.
+The packaged and build-output resource indexes matched, and their managed module
+identities matched, making stale deployment less likely.
+No GPU preference, display arrangement, driver, or runtime was changed during
+the retry. Follow `AGENTS.md`: this workstation's visual acceptance stays on the
+notebook panel, even when the external display is configured as primary.
+
 The following are manual acceptance checks, not claims of completed live testing:
 
 - [ ] Start SeanShell: no island appears until the session toggle is enabled.
