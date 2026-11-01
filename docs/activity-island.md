@@ -51,73 +51,82 @@ This feature does not send activity data to a service or persist a title history
 ## Gaming and full-screen behavior
 
 Gaming Mode suppresses the capsule and dismisses it when the mode begins.
-Full-monitor window coverage on the target display also suppresses it. This
-coverage check is deliberately conservative; it is not a promise to classify
-every application-specific full-screen mode. Ordinary maximization alone is not
-a suppression condition unless the resulting window covers the monitor bounds.
+Full-monitor coverage by the top eligible application on the target display
+also suppresses it. Each monitor uses its own top-to-bottom window order; a
+normal application above a background full-monitor window permits the capsule.
+SeanShell, shell, minimized, invisible, and other non-taskbar windows are excluded.
+This coverage check is not a promise to classify every application-specific
+full-screen mode. Ordinary maximization alone is not a suppression condition
+unless the top application's resulting window covers the monitor bounds.
 
 The existing immersive reconciliation path dismisses a visible capsule when
 coverage changes. The island itself has no polling loop. It never changes
 SeanShell's taskbar replacement or recovery configuration.
 
-## Verification checklist
+## Verification record — 2026-11-01
 
-Core tests cover 100%, 150%, and 200% scaling, negative monitor coordinates, tiny
-work areas, invalid inputs, and all enable/gaming/coverage/shutdown combinations.
-Those tests validate geometry and policy, not live WinUI presentation.
+Follow `AGENTS.md`: visual acceptance on this workstation is restricted to the
+notebook's built-in `SDC41A3` panel, even when external `AUS3437` is primary.
+No external-display screenshot or interaction was used for this acceptance.
 
-On 2026-11-01 the local Release build and automated tests passed. A live launch
-was attempted, but the capture returned overlapping text and no accessibility
-tree, so the preview toggle and visual/focus checks could not be validated.
-The test instance was stopped; the checklist below remains open. Do not treat
-the capture symptom as a confirmed application rendering diagnosis.
+### Automated and code review
 
-A same-day retry explicitly targeted the notebook's internal `SDC41A3` panel
-(2560x1600, negative desktop X coordinates), not the external `AUS3437` display.
-Rebinding the notebook Dock and refreshing its capture reproduced the mixed text;
-accessibility data was still unavailable. The process loaded the installed
-Windows App Runtime **2.6.4.0**, despite the project's SDK reference being 2.3.1.
-Upstream reports describe similar cross-GPU/mixed-DPI text corruption:
-[WinUI #12434](https://github.com/microsoft/microsoft-ui-xaml/issues/12434) and
-[WinUI #12464](https://github.com/microsoft/microsoft-ui-xaml/issues/12464).
-These are diagnostic leads, not proof of this application's root cause.
-Read-only adapter mapping identified Intel Arc for the notebook panel and NVIDIA
-RTX 4060 Laptop for the external panel. SeanShell has no explicit per-application
-GPU preference; automatic selection does not establish which GPU rendered a frame.
-The packaged and build-output resource indexes matched, and their managed module
-identities matched, making stale deployment less likely.
-No display arrangement, driver, or runtime was changed during the retry.
-With explicit owner approval, a subsequent A/B test temporarily set the exact
-SeanShell executable and packaged app identity to the Windows power-saving GPU
-preference. The notebook Dock context menu still showed incorrect text after
-restart, so this preference did not make visual acceptance possible. Preference
-configuration alone does not prove which adapter rendered each frame. The test
-process was stopped and both temporary values were removed; read-back confirmed
-the original absence of both values (automatic selection). No global or unrelated
-application preferences were modified.
+- Release x64 solution build: zero warnings and errors; **609 tests passed**,
+  zero skipped, including broker tests against the freshly built app executable.
+- Bundled-runtime/package-integrity checks, formatting verification, and
+  `git diff --check` passed.
+- Geometry tests cover 100%, 150%, and 200% scaling, negative monitor coordinates,
+  text scaling, tiny work areas and invalid inputs. Policy tests cover every
+  enable/gaming/coverage/shutdown combination and per-monitor Z-order suppression.
+- Cleanup tests cover failing cleanup and diagnostics while preserving
+  out-of-memory propagation. Independent review checked timer/shutdown failure
+  isolation and architecture-compatible, read-back-verified native window styles.
 
-Follow `AGENTS.md`: this workstation's visual acceptance stays on the
-notebook panel, even when the external display is configured as primary.
+### Notebook live acceptance
 
-The following are manual acceptance checks, not claims of completed live testing:
+- Session default-off and reset-to-off after a normal restart were observed.
+- The notebook Dock's multi-window picker activated two owned QA windows with
+  long Traditional Chinese/English titles. The Island appeared at the notebook's
+  top center at 150% scaling, with negative desktop X coordinates.
+- A bounded, read-only native trace recorded the target QA window retaining
+  foreground while the Island was visible. `WS_EX_NOACTIVATE` and `WS_EX_TOOLWINDOW`
+  were present. One complete show/hide interval measured **2,404 ms** (40-ms sampling).
+- Re-activating the owned QA app in actual full-monitor mode via the Dock did
+  not display an Island. The fixture constrained all fullscreen transitions to
+  `SDC41A3`; it did not change Windows display configuration.
+- The owner confirmed the capsule's appearance on the built-in panel was normal
+  and explicitly approved merging. This is **owner-confirmed visual acceptance**:
+  the desktop tool did not enumerate the non-activating Island as a capture target,
+  so no direct automated Island screenshot pass is claimed.
+- Both QA windows and SeanShell were closed normally. Native inspection found no
+  orphan Island; work areas and the original settings remained unchanged.
+  Windows taskbar replacement stayed off throughout this run.
 
-- [ ] Start SeanShell: no island appears until the session toggle is enabled.
-- [ ] Enable from each display; confirm the capsule appears on the invoking display.
-- [ ] Activate an application through each supported Dock path; continue typing
-  in that application and confirm the capsule never takes keyboard focus.
-- [ ] Minimize a foreground window; confirm it does not show an activation capsule.
-- [ ] Trigger two activations quickly; confirm only the latest content remains
-  and its dismissal deadline is not shortened by the earlier event.
-- [ ] Click the capsule to dismiss; otherwise confirm dismissal after about 2.4 seconds.
-- [ ] Test mixed-DPI displays, negative monitor origins, and long window titles;
-  confirm on-screen placement and readable clipping/trimming.
-- [ ] Enter Gaming Mode or full-monitor coverage while visible; confirm dismissal
-  and no island over a game or full-screen application.
-- [ ] Test reduced motion and high contrast; confirm the animation/material fallback
-  and legible text, without a change to application focus.
-- [ ] Change display topology, disable the toggle, and exit SeanShell while visible;
-  confirm no orphan window. Restart and confirm the preference is off again.
-- [ ] Confirm taskbar recovery, maximized work areas, and Dock auto-hide are unchanged.
+The live run caught and fixed background fullscreen coverage incorrectly hiding
+the Island behind a normal foreground application. Island suppression now follows
+the top eligible application on each monitor; existing Dock work-area policy is
+unchanged.
+
+### Extended checks still to perform
+
+These are not claims of completed live testing. Retain them before promoting the
+session-only preview to persisted, expanded controls:
+
+- Exercise every activation path, minimization, rapid replacement of notifications,
+  and pointer-press early dismissal under varied application responsiveness.
+- Exercise reduced motion, high contrast and enlarged text using real OS settings.
+- Exercise display hot-plug/topology changes and taskbar-replacement recovery with
+  a visible Island. Multi-monitor geometry remains covered automatically; do not
+  use the external panel for visual acceptance without explicit owner direction.
+
+### Earlier rendering investigation
+
+Earlier retries in this PR were blocked by corrupted captures using the installed
+Windows App Runtime 2.6.4. An explicitly authorized temporary per-app power-saving
+GPU preference did not resolve that symptom; both test values were removed and
+automatic selection was restored. No global GPU or display settings were changed.
+The current run incorporates the stable bundled-runtime fix from PR #176. Those
+earlier failed captures are diagnostic history, not passing visual tests.
 
 ## Next increments
 

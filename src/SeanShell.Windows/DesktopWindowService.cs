@@ -219,6 +219,40 @@ public sealed class DesktopWindowService
         return monitorHandles.ToArray();
     }
 
+    public IReadOnlyList<nint> CaptureTopApplicationFullscreenMonitorHandles()
+    {
+        var windowsInZOrder = new List<ActivityIslandWindowCoverage>();
+        var shellWindow = GetShellWindow();
+        EnumWindows((handle, _) =>
+        {
+            if (handle == shellWindow || IsIconic(handle) || !IsTaskbarWindow(handle))
+            {
+                return true;
+            }
+
+            GetWindowThreadProcessId(handle, out var processId);
+            if (processId == 0 || processId == Environment.ProcessId)
+            {
+                return true;
+            }
+
+            var monitorHandle = MonitorFromWindow(handle, MonitorDefaultToNearest);
+            if (monitorHandle != 0)
+            {
+                var coversMonitor = TryGetWindowBounds(handle, out var windowBounds) &&
+                    TryGetMonitorBounds(monitorHandle, out var monitorBounds) &&
+                    WindowImmersiveStateResolver.IsImmersive(false, windowBounds, monitorBounds);
+                windowsInZOrder.Add(new ActivityIslandWindowCoverage(monitorHandle, coversMonitor));
+            }
+
+            return true;
+        }, 0);
+
+        // Island suppression follows the top eligible app on each display,
+        // unlike Dock work-area policy, which intentionally considers all apps.
+        return ActivityIslandFullscreenResolver.Resolve(windowsInZOrder);
+    }
+
     public async Task<bool> RestoreAndActivateAsync(
         nint handle,
         CancellationToken cancellationToken = default)

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
@@ -15,6 +16,9 @@ namespace SeanShell.App;
 /// <summary>A transient, non-activating status surface; never an AppBar.</summary>
 public sealed partial class ActivityIslandWindow : Window
 {
+    private const int ExtendedWindowStyle = -20;
+    private const int ToolWindowStyle = 0x00000080;
+    private const int NoActivateStyle = 0x08000000;
     private readonly DispatcherQueueTimer _dismissTimer;
     private Storyboard? _entrance;
     private bool _allowClose;
@@ -24,30 +28,47 @@ public sealed partial class ActivityIslandWindow : Window
     public ActivityIslandWindow()
     {
         InitializeComponent();
-        var presenter = OverlappedPresenter.Create();
-        presenter.IsAlwaysOnTop = true;
-        presenter.IsMaximizable = false;
-        presenter.IsMinimizable = false;
-        presenter.IsResizable = false;
-        presenter.SetBorderAndTitleBar(false, false);
-        AppWindow.SetPresenter(presenter);
-        AppWindow.IsShownInSwitchers = false;
-        var handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        var style = GetWindowLongPtr(handle, -20).ToInt64();
-        _ = SetWindowLongPtr(handle, -20, new nint(style | 0x00000080L | 0x08000000L));
-        _ = DwmWindowChrome.TryConfigureFloatingSurface(handle);
         _dismissTimer = DispatcherQueue.CreateTimer();
         _dismissTimer.IsRepeating = false;
         _dismissTimer.Tick += OnDismissTick;
-        AppWindow.Closing += OnClosing;
-        SetReducedEffects(false);
+        try
+        {
+            var presenter = OverlappedPresenter.Create();
+            presenter.IsAlwaysOnTop = true;
+            presenter.IsMaximizable = false;
+            presenter.IsMinimizable = false;
+            presenter.IsResizable = false;
+            presenter.SetBorderAndTitleBar(false, false);
+            AppWindow.SetPresenter(presenter);
+            AppWindow.IsShownInSwitchers = false;
+            var handle = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            ConfigureNonActivatingWindow(handle);
+            _ = DwmWindowChrome.TryConfigureFloatingSurface(handle);
+            AppWindow.Closing += OnClosing;
+            ApplyReducedEffects(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            Shutdown();
+            throw;
+        }
     }
 
     public bool IsVisible { get; private set; }
 
+    public bool IsClosed => _allowClose;
+
     public nint MonitorHandle { get; private set; }
 
     public void SetReducedEffects(bool enabled)
+    {
+        if (!_allowClose && !ActivityIslandCleanup.TryRun(() => ApplyReducedEffects(enabled), ReportFailure))
+        {
+            Shutdown();
+        }
+    }
+
+    private void ApplyReducedEffects(bool enabled)
     {
         _reducedEffects = enabled;
         StopEntrance();
@@ -114,12 +135,17 @@ public sealed partial class ActivityIslandWindow : Window
             return;
         }
 
-        _dismissTimer.Stop();
-        StopEntrance();
-        if (IsVisible)
+        var wasVisible = IsVisible;
+        IsVisible = false;
+        var succeeded = ActivityIslandCleanup.TryRun(_dismissTimer.Stop, ReportFailure);
+        succeeded = ActivityIslandCleanup.TryRun(StopEntrance, ReportFailure) && succeeded;
+        if (wasVisible)
         {
-            AppWindow.Hide();
-            IsVisible = false;
+            succeeded = ActivityIslandCleanup.TryRun(() => AppWindow.Hide(), ReportFailure) && succeeded;
+        }
+        if (!succeeded)
+        {
+            Shutdown();
         }
     }
 
@@ -130,10 +156,15 @@ public sealed partial class ActivityIslandWindow : Window
             return;
         }
 
-        Dismiss();
         _allowClose = true;
-        _dismissTimer.Tick -= OnDismissTick;
-        Close();
+        IsVisible = false;
+        _ = ActivityIslandCleanup.TryRun(_dismissTimer.Stop, ReportFailure);
+        _ = ActivityIslandCleanup.TryRun(() => _dismissTimer.Tick -= OnDismissTick, ReportFailure);
+        var entrance = _entrance;
+        _entrance = null;
+        _ = ActivityIslandCleanup.TryRun(() => entrance?.Stop(), ReportFailure);
+        _ = ActivityIslandCleanup.TryRun(() => AppWindow.Hide(), ReportFailure);
+        _ = ActivityIslandCleanup.TryRun(Close, ReportFailure);
     }
 
     private void StopEntrance()
@@ -151,15 +182,21 @@ public sealed partial class ActivityIslandWindow : Window
             return;
         }
 
-        // A queued tick from a replaced notification must not dismiss its successor.
-        var remaining = _dismissAt - Environment.TickCount64;
-        if (IsVisible && remaining > 0)
+        if (!ActivityIslandCleanup.TryRun(() =>
         {
-            sender.Interval = TimeSpan.FromMilliseconds(remaining);
-            sender.Start();
-            return;
+            // A queued tick from a replaced notification must not dismiss its successor.
+            var remaining = _dismissAt - Environment.TickCount64;
+            if (IsVisible && remaining > 0)
+            {
+                sender.Interval = TimeSpan.FromMilliseconds(remaining);
+                sender.Start();
+                return;
+            }
+            Dismiss();
+        }, ReportFailure))
+        {
+            Shutdown();
         }
-        Dismiss();
     }
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs args) => Dismiss();
@@ -168,14 +205,44 @@ public sealed partial class ActivityIslandWindow : Window
     {
         if (!_allowClose)
         {
-            args.Cancel = true;
-            Dismiss();
+            if (!ActivityIslandCleanup.TryRun(() =>
+            {
+                args.Cancel = true;
+                Dismiss();
+            }, ReportFailure))
+            {
+                Shutdown();
+            }
         }
     }
 
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    private static extern nint GetWindowLongPtr(nint window, int index);
+    private static void ReportFailure(Exception exception) =>
+        _ = ActivityIslandCleanup.TryRun(() =>
+            ((App)Application.Current).Diagnostics.TryWrite(DiagnosticEventKind.DockActionFailed, exception));
 
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    private static extern nint SetWindowLongPtr(nint window, int index, nint value);
+    private static void ConfigureNonActivatingWindow(nint handle)
+    {
+        const int requiredStyle = ToolWindowStyle | NoActivateStyle;
+        var style = GetWindowLong(handle, ExtendedWindowStyle);
+        Marshal.SetLastPInvokeError(0);
+        var previousStyle = SetWindowLong(handle, ExtendedWindowStyle, style | requiredStyle);
+        var error = Marshal.GetLastPInvokeError();
+        if (previousStyle == 0 && error != 0)
+        {
+            throw new Win32Exception(error);
+        }
+
+        if ((GetWindowLong(handle, ExtendedWindowStyle) & requiredStyle) != requiredStyle)
+        {
+            throw new InvalidOperationException("The non-activating Island window style was not applied.");
+        }
+    }
+
+    // GWL_EXSTYLE is a 32-bit value on every architecture; the W entry points
+    // exist on x86 as well as x64/ARM64, unlike Get/SetWindowLongPtrW exports.
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong(nint window, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongW", SetLastError = true)]
+    private static extern int SetWindowLong(nint window, int index, int value);
 }
